@@ -1,13 +1,11 @@
 # doc_Start
 
-Personal homepage built with Astro 6.x, Tailwind CSS 4.x, and DaisyUI 5.x — multilingual (en, de, es, fr, zh), performance-focused.
+`skill_Manag` is a Go CLI tool that propagates Claude Code skill files from a single master vault to all matching `.agents/skills/` directories across a codebase — git-tracked, SSH-safe, no symlinks.
+
+Entry points: `main.go` → `cmd/root.go` (cobra setup + menu loop) → `cmd/interactive_Menu.go` (TUI entry).
 
 ## Docs
 
-- [Fonts — setup, variable chain, preloading, usage](Architecture/Fonts/linker_Fonts.md)
-- [Icons — SVGO optimization, Lucide imports, icon registry for content collections](Architecture/Icons/linker_Icons.md)
-- [Code blocks — expressive-code setup, themes, usage, props](Architecture/Code_Blocks/linker_Code_Blocks.md)
-- [Content collections — structure, schema, routing, adding new collections](Architecture/Content_Collections/linker_Content_Collections.md)
-- [Multilingual content — tone guidelines and tooltip translations](Translations/linker_Translations.md)
-- [Astro MDX frontmatter format](Astro/mdx_Frontmatter.md)
-- [OG images — dynamic per-page generation, build sequence, adding to a page](Architecture/Og_Images/linker_Og_Images.md)
+- [Architecture](Architecture/linker_Architecture.md) — code structure, TUI screens and their phase models, core logic files; start here for any code change
+- [Sync concept and opt-in rule](Descr/sync_Concept.md) — what sync does and doesn't do, vault/project relationship, 4-step flow; read before changing sync behaviour
+- [README — user-facing install, commands, config](../../README.md) — how users install and run the tool

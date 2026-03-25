@@ -54,26 +54,16 @@ func init() {
 	deleteCmd.Flags().BoolVar(&deleteDryRun, "dry-run", false, "Preview what would be deleted without removing anything")
 }
 
+func doDeleteInteractive(root string) error {
+	if root == "" {
+		return fmt.Errorf("scan root is required: use --root or set 'root' in ~/.config/skill_Manag/config.yaml")
+	}
+	return runInteractiveDelete(root, deleteDryRun)
+}
+
 func runDelete(cmd *cobra.Command, args []string) error {
-	// No args → interactive TUI
 	if len(args) == 0 {
-		root := viper.GetString("root")
-		if root == "" {
-			return fmt.Errorf("scan root is required: use --root or set 'root' in ~/.config/skill_Manag/config.yaml")
-		}
-
-		fmt.Printf("\n%s\n", styles.Muted.Render("Scanning "+root+"..."))
-
-		targets, err := internal.FindAllSkillTargets(root)
-		if err != nil {
-			return fmt.Errorf("scanning projects: %w", err)
-		}
-		if len(targets) == 0 {
-			fmt.Println(styles.Muted.Render("No skills found in any project."))
-			return nil
-		}
-
-		return runInteractiveDelete(targets, deleteDryRun)
+		return doDeleteInteractive(viper.GetString("root"))
 	}
 
 	skillName := args[0]
@@ -95,8 +85,6 @@ func runDelete(cmd *cobra.Command, args []string) error {
 	if root == "" {
 		return fmt.Errorf("scan root is required: use --root or set 'root' in ~/.config/skill_Manag/config.yaml")
 	}
-
-	fmt.Printf("\n%s\n", styles.Muted.Render("Scanning "+root+"..."))
 
 	targets, err := internal.FindTargetsByName(root, skillName)
 	if err != nil {

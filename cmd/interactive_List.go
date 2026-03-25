@@ -4,7 +4,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/key"
+	"github.com/charmbracelet/bubbles/spinner"
+	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"skill_Manag/internal"
 	"skill_Manag/styles"
 )
@@ -12,104 +17,152 @@ import (
 type listPhase int
 
 const (
-	listPhaseBrowse listPhase = iota
+	listPhaseLoading listPhase = iota
+	listPhaseBrowse
 	listPhaseFilter
 	listPhaseDone
 )
 
+type listScanDoneMsg struct {
+	targets      []internal.Target
+	masterSkills map[string]string
+	err          error
+}
+
 // listModel is the bubbletea model for the skill browser TUI
 type listModel struct {
-	all      []internal.Target // full unfiltered list
-	filtered []int             // indices into all that match current filter
-	selected map[int]bool      // indices into all — persists across filter changes
-	cursor   int               // position within filtered
+	vault    string
+	root     string
+	all      []internal.Target
+	filtered []int
+	selected map[int]bool
+	cursor   int
 	filter   string
 	phase    listPhase
-	master   map[string]string // nil if --source not provided
-	messages []string          // result lines shown after sync/delete
+	spinner  spinner.Model
+	table    table.Model
+	master   map[string]string
+	messages []string
+	help     help.Model
+	showHelp bool
 }
 
 func (m listModel) Init() tea.Cmd {
-	return nil
+	return tea.Batch(m.spinner.Tick, listScanCmd(m.vault, m.root))
+}
+
+func listScanCmd(vault, root string) tea.Cmd {
+	return func() tea.Msg {
+		var masterSkills map[string]string
+		if vault != "" {
+			var err error
+			masterSkills, err = internal.ReadMasterSkills(vault)
+			if err != nil {
+				return listScanDoneMsg{err: err}
+			}
+		}
+		targets, err := internal.FindAllSkillTargets(root)
+		if err != nil {
+			return listScanDoneMsg{err: err}
+		}
+		return listScanDoneMsg{targets: targets, masterSkills: masterSkills}
+	}
 }
 
 func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	keyMsg, ok := msg.(tea.KeyMsg)
-	if !ok {
+	switch msg := msg.(type) {
+	case listScanDoneMsg:
+		if msg.err != nil {
+			m.phase = listPhaseDone
+			m.messages = []string{styles.Error.Render("✗ " + msg.err.Error())}
+			return m, nil
+		}
+		filtered := make([]int, len(msg.targets))
+		for i := range msg.targets {
+			filtered[i] = i
+		}
+		m.all = msg.targets
+		m.filtered = filtered
+		m.selected = make(map[int]bool)
+		m.master = msg.masterSkills
+		m.table = buildTable(msg.targets, filtered, m.selected)
+		m.phase = listPhaseBrowse
 		return m, nil
+
+	case spinner.TickMsg:
+		if m.phase == listPhaseLoading {
+			var cmd tea.Cmd
+			m.spinner, cmd = m.spinner.Update(msg)
+			return m, cmd
+		}
+		return m, nil
+
+	case tea.KeyMsg:
+		if m.phase == listPhaseLoading {
+			if msg.String() == "ctrl+c" {
+				return m, tea.Quit
+			}
+			return m, nil
+		}
+		if m.phase == listPhaseFilter {
+			return m.updateFilter(msg)
+		}
+		if m.phase == listPhaseDone {
+			return m, tea.Quit
+		}
+		return m.updateBrowse(msg)
 	}
 
-	// Filter mode — capture typing
-	if m.phase == listPhaseFilter {
-		return m.updateFilter(keyMsg)
-	}
-
-	// Results screen — any key exits
-	if m.phase == listPhaseDone {
-		return m, tea.Quit
-	}
-
-	return m.updateBrowse(keyMsg)
+	return m, nil
 }
 
-func (m listModel) updateFilter(key tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch key.String() {
+func (m listModel) updateFilter(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch k.String() {
 	case "esc":
-		// Clear filter and return to browse
 		m.filter = ""
 		m.phase = listPhaseBrowse
 		m.rebuildFiltered()
 		m.cursor = 0
-
 	case "backspace":
 		if len(m.filter) > 0 {
 			m.filter = m.filter[:len(m.filter)-1]
 			m.rebuildFiltered()
 			m.clampCursor()
 		}
-
 	case "enter":
 		m.phase = listPhaseBrowse
-
 	case "ctrl+c":
 		return m, tea.Quit
-
 	default:
-		// Append typed character to filter
-		if len(key.String()) == 1 {
-			m.filter += key.String()
+		if len(k.String()) == 1 {
+			m.filter += k.String()
 			m.rebuildFiltered()
 			m.clampCursor()
 		}
 	}
-
 	return m, nil
 }
 
-func (m listModel) updateBrowse(key tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch key.String() {
-	case "ctrl+c", "q":
+func (m listModel) updateBrowse(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch {
+	case key.Matches(k, listKeys.Quit):
 		return m, tea.Quit
-
-	case "up", "k":
-		if m.cursor > 0 {
-			m.cursor--
-		}
-
-	case "down", "j":
-		if m.cursor < len(m.filtered)-1 {
-			m.cursor++
-		}
-
-	case " ":
-		// Toggle selection of item under cursor
+	case key.Matches(k, listKeys.Help):
+		m.showHelp = !m.showHelp
+	case key.Matches(k, listKeys.Up):
+		m.table.MoveUp(1)
+		m.cursor = m.table.Cursor()
+	case key.Matches(k, listKeys.Down):
+		m.table.MoveDown(1)
+		m.cursor = m.table.Cursor()
+	case key.Matches(k, listKeys.Toggle):
 		if len(m.filtered) > 0 {
 			idx := m.filtered[m.cursor]
 			m.selected[idx] = !m.selected[idx]
+			m.table = buildTable(m.all, m.filtered, m.selected)
+			m.table.SetCursor(m.cursor)
 		}
-
-	case "a":
-		// Select all visible / deselect all visible
+	case key.Matches(k, listKeys.All):
 		allSelected := true
 		for _, idx := range m.filtered {
 			if !m.selected[idx] {
@@ -120,36 +173,29 @@ func (m listModel) updateBrowse(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 		for _, idx := range m.filtered {
 			m.selected[idx] = !allSelected
 		}
-
-	case "/":
+		m.table = buildTable(m.all, m.filtered, m.selected)
+		m.table.SetCursor(m.cursor)
+	case key.Matches(k, listKeys.Filter):
 		m.phase = listPhaseFilter
-
-	case "esc":
-		// Clear filter from browse mode
+	case k.String() == "esc":
 		m.filter = ""
 		m.rebuildFiltered()
 		m.cursor = 0
-
-	case "s":
-		// Sync selected items from master
+	case key.Matches(k, listKeys.Sync):
 		if m.master == nil {
-			m.messages = append(m.messages, styles.Error.Render("✗ --source not set — cannot sync without a master skills directory"))
+			m.messages = []string{styles.Error.Render("✗ vault not configured — run Setup to set a vault path")}
 			m.phase = listPhaseDone
 			return m, nil
 		}
 		m.runSync()
 		m.phase = listPhaseDone
-
-	case "d":
-		// Delete selected items
+	case key.Matches(k, listKeys.Delete):
 		m.runDelete()
 		m.phase = listPhaseDone
 	}
-
 	return m, nil
 }
 
-// runSync copies master skills into all selected targets
 func (m *listModel) runSync() {
 	for idx, sel := range m.selected {
 		if !sel {
@@ -167,13 +213,12 @@ func (m *listModel) runSync() {
 			m.messages = append(m.messages, fmt.Sprintf("%s %s  %s",
 				styles.Success.Render("✓"),
 				styles.SkillName.Render(target.SkillName),
-				styles.Muted.Render("synced → "+target.ProjectPath),
+				styles.Muted.Render("synced → "+shortPath(target.ProjectPath)),
 			))
 		}
 	}
 }
 
-// runDelete removes all selected skill directories
 func (m *listModel) runDelete() {
 	for idx, sel := range m.selected {
 		if !sel {
@@ -189,19 +234,23 @@ func (m *listModel) runDelete() {
 			))
 		} else {
 			m.messages = append(m.messages, fmt.Sprintf("%s %s  %s",
-				styles.Error.Render("✗"),
+				styles.Warning.Render("✗"),
 				styles.SkillName.Render(target.SkillName),
-				styles.Muted.Render("deleted from "+target.ProjectPath),
+				styles.Muted.Render("deleted from "+shortPath(target.ProjectPath)),
 			))
 		}
 	}
 }
 
 func (m listModel) View() string {
-	if m.phase == listPhaseDone {
+	switch m.phase {
+	case listPhaseLoading:
+		return "\n  " + m.spinner.View() + "  " + styles.Muted.Render("Scanning projects…") + "\n"
+	case listPhaseDone:
 		return m.doneView()
+	default:
+		return m.browseView()
 	}
-	return m.browseView()
 }
 
 func (m listModel) browseView() string {
@@ -212,7 +261,6 @@ func (m listModel) browseView() string {
 		}
 	}
 
-	// Header
 	header := fmt.Sprintf("Skills — %d installed", len(m.all))
 	if m.filter != "" {
 		header = fmt.Sprintf("Skills — %d matching %q", len(m.filtered), m.filter)
@@ -222,49 +270,31 @@ func (m listModel) browseView() string {
 	}
 	s := styles.Header.Render(header) + "\n"
 
-	// Filter line
 	if m.phase == listPhaseFilter {
 		s += styles.Warning.Render("Filter: "+m.filter+"▌") + "\n"
 	} else if m.filter != "" {
 		s += styles.Muted.Render("Filter: "+m.filter+"  (esc to clear)") + "\n"
-	} else {
-		s += styles.Muted.Render("/ filter   space select   a all   s sync   d delete   q quit") + "\n"
 	}
 	s += "\n"
-
-	// Item list
-	for i, idx := range m.filtered {
-		target := m.all[idx]
-
-		cursor := "  "
-		if i == m.cursor {
-			cursor = styles.Success.Render("> ")
-		}
-
-		checkbox := "[ ]"
-		if m.selected[idx] {
-			checkbox = styles.Success.Render("[✓]")
-		}
-
-		s += fmt.Sprintf("%s%s %-25s %s\n",
-			cursor,
-			checkbox,
-			styles.SkillName.Render(target.SkillName),
-			styles.Muted.Render(target.ProjectPath),
-		)
-	}
-
+	s += m.table.View() + "\n"
+	s += "\n" + m.helpView()
 	return s
+}
+
+func (m listModel) helpView() string {
+	if m.showHelp {
+		return m.help.FullHelpView(listKeys.FullHelp())
+	}
+	return m.help.ShortHelpView(listKeys.ShortHelp())
 }
 
 func (m listModel) doneView() string {
 	s := styles.Header.Render("Results") + "\n\n"
 	s += strings.Join(m.messages, "\n") + "\n"
-	s += "\n" + styles.Muted.Render("Press any key to exit") + "\n"
+	s += "\n" + styles.Muted.Render("Press any key to continue") + "\n"
 	return s
 }
 
-// rebuildFiltered updates the filtered index list based on current filter string
 func (m *listModel) rebuildFiltered() {
 	m.filtered = m.filtered[:0]
 	for i, t := range m.all {
@@ -272,37 +302,67 @@ func (m *listModel) rebuildFiltered() {
 			m.filtered = append(m.filtered, i)
 		}
 	}
+	m.table = buildTable(m.all, m.filtered, m.selected)
 }
 
-// clampCursor keeps the cursor within bounds after the filtered list changes
 func (m *listModel) clampCursor() {
 	if m.cursor >= len(m.filtered) {
 		m.cursor = max(0, len(m.filtered)-1)
 	}
+	m.table.SetCursor(m.cursor)
 }
 
-func max(a, b int) int {
-	if a > b {
-		return a
+func buildTable(all []internal.Target, filtered []int, selected map[int]bool) table.Model {
+	cols := []table.Column{
+		{Title: "", Width: 3},   // checkbox
+		{Title: "Skill", Width: 26},
+		{Title: "Project", Width: 36},
 	}
-	return b
+
+	rows := make([]table.Row, len(filtered))
+	for i, idx := range filtered {
+		t := all[idx]
+		check := "[ ]"
+		if selected[idx] {
+			check = "[✓]"
+		}
+		rows[i] = table.Row{check, t.SkillName, shortPath(t.ProjectPath)}
+	}
+
+	tableStyles := table.DefaultStyles()
+	tableStyles.Header = tableStyles.Header.
+		Foreground(lipgloss.Color("#626262")).
+		BorderStyle(lipgloss.NormalBorder()).
+		BorderForeground(lipgloss.Color("#333333")).
+		Bold(false)
+	tableStyles.Selected = tableStyles.Selected.
+		Foreground(lipgloss.Color("#87CEEB")).
+		Background(lipgloss.Color("#1a1a2e")).
+		Bold(false)
+
+	t := table.New(
+		table.WithColumns(cols),
+		table.WithRows(rows),
+		table.WithFocused(true),
+		table.WithHeight(15),
+		table.WithStyles(tableStyles),
+	)
+	return t
 }
 
-// runInteractiveList starts the skill browser TUI
-func runInteractiveList(targets []internal.Target, masterSkills map[string]string) error {
-	filtered := make([]int, len(targets))
-	for i := range targets {
-		filtered[i] = i
-	}
+func runInteractiveList(vault, root string) error {
+	sp := spinner.New()
+	sp.Spinner = spinner.Points
+	sp.Style = styles.SkillName
 
 	m := listModel{
-		all:      targets,
-		filtered: filtered,
-		selected: make(map[int]bool),
-		phase:    listPhaseBrowse,
-		master:   masterSkills,
+		vault:   vault,
+		root:    root,
+		phase:   listPhaseLoading,
+		spinner: sp,
+		help:    help.New(),
 	}
 
-	_, err := tea.NewProgram(m).Run()
+	_, err := tea.NewProgram(m, tea.WithAltScreen()).Run()
 	return err
 }

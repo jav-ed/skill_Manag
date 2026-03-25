@@ -2,120 +2,234 @@ package cmd
 
 import (
 	"fmt"
+	"path/filepath"
+	"sort"
+	"strings"
 
+	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/key"
+	"github.com/charmbracelet/bubbles/paginator"
+	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"skill_Manag/internal"
 	"skill_Manag/styles"
 )
 
-// deleteItem represents one selectable skill installation in the delete TUI
-type deleteItem struct {
-	target   internal.Target
-	selected bool
+type deleteSkillItem struct {
+	skillName string
+	targets   []internal.Target
+	selected  bool
 }
 
-// deleteModel is the bubbletea model for the interactive delete screen
+type deleteScanDoneMsg struct {
+	items []deleteSkillItem
+	err   error
+}
+
 type deleteModel struct {
-	items   []deleteItem
-	cursor  int
-	dryRun  bool
-	phase   phase // reuses phase type from interactive_Sync.go
-	results []internal.DeleteResult
+	root      string
+	items     []deleteSkillItem
+	cursor    int
+	dryRun    bool
+	phase     phase
+	spinner   spinner.Model
+	paginator paginator.Model
+	results   []internal.DeleteResult
+	help      help.Model
+	showHelp  bool
+	err       error
 }
 
 func (m deleteModel) Init() tea.Cmd {
-	return nil
+	return tea.Batch(m.spinner.Tick, deleteScanCmd(m.root))
+}
+
+func deleteScanCmd(root string) tea.Cmd {
+	return func() tea.Msg {
+		targets, err := internal.FindAllSkillTargets(root)
+		if err != nil {
+			return deleteScanDoneMsg{err: err}
+		}
+		return deleteScanDoneMsg{items: groupDeleteTargets(targets)}
+	}
+}
+
+func groupDeleteTargets(targets []internal.Target) []deleteSkillItem {
+	grouped := make(map[string]*deleteSkillItem)
+	for _, t := range targets {
+		if _, ok := grouped[t.SkillName]; !ok {
+			grouped[t.SkillName] = &deleteSkillItem{skillName: t.SkillName}
+		}
+		grouped[t.SkillName].targets = append(grouped[t.SkillName].targets, t)
+	}
+	names := make([]string, 0, len(grouped))
+	for name := range grouped {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	items := make([]deleteSkillItem, len(names))
+	for i, name := range names {
+		items[i] = *grouped[name]
+	}
+	return items
 }
 
 func (m deleteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	keyMsg, ok := msg.(tea.KeyMsg)
-	if !ok {
-		return m, nil
-	}
-
-	switch keyMsg.String() {
-	case "ctrl+c", "q":
-		return m, tea.Quit
-
-	case "up", "k":
-		if m.cursor > 0 {
-			m.cursor--
-		}
-
-	case "down", "j":
-		if m.cursor < len(m.items)-1 {
-			m.cursor++
-		}
-
-	case " ":
-		m.items[m.cursor].selected = !m.items[m.cursor].selected
-
-	case "a":
-		// Toggle all
-		allSelected := true
-		for _, item := range m.items {
-			if !item.selected {
-				allSelected = false
-				break
-			}
-		}
-		for i := range m.items {
-			m.items[i].selected = !allSelected
-		}
-
-	case "enter":
-		if m.phase == phaseSelect {
+	switch msg := msg.(type) {
+	case deleteScanDoneMsg:
+		if msg.err != nil {
+			m.err = msg.err
 			m.phase = phaseDone
-			m.deleteSelected()
-		} else {
+			return m, nil
+		}
+		if len(msg.items) == 0 {
+			m.phase = phaseDone
+			return m, nil
+		}
+		m.items = msg.items
+		m.paginator.SetTotalPages(len(msg.items))
+		m.phase = phaseSelect
+		return m, nil
+
+	case spinner.TickMsg:
+		if m.phase == phaseLoading {
+			var cmd tea.Cmd
+			m.spinner, cmd = m.spinner.Update(msg)
+			return m, cmd
+		}
+		return m, nil
+
+	case tea.KeyMsg:
+		if m.phase == phaseLoading {
+			if msg.String() == "ctrl+c" {
+				return m, tea.Quit
+			}
+			return m, nil
+		}
+		if m.phase == phaseDone {
 			return m, tea.Quit
+		}
+		if m.phase == phaseConfirm {
+			switch msg.String() {
+			case "y", "Y", "enter":
+				m.phase = phaseDone
+				m.deleteSelected()
+			case "n", "N", "esc":
+				m.phase = phaseSelect
+			case "ctrl+c":
+				return m, tea.Quit
+			}
+			return m, nil
+		}
+
+		switch {
+		case key.Matches(msg, deleteKeys.Quit):
+			return m, tea.Quit
+		case key.Matches(msg, deleteKeys.Help):
+			m.showHelp = !m.showHelp
+		case key.Matches(msg, deleteKeys.Up):
+			if m.cursor > 0 {
+				m.cursor--
+			} else if !m.paginator.OnFirstPage() {
+				m.paginator.PrevPage()
+				m.cursor = pageSize - 1
+			}
+		case key.Matches(msg, deleteKeys.Down):
+			start, end := m.paginator.GetSliceBounds(len(m.items))
+			if m.cursor < end-start-1 {
+				m.cursor++
+			} else if !m.paginator.OnLastPage() {
+				m.paginator.NextPage()
+				m.cursor = 0
+			}
+		case key.Matches(msg, deleteKeys.Toggle):
+			start, _ := m.paginator.GetSliceBounds(len(m.items))
+			m.items[start+m.cursor].selected = !m.items[start+m.cursor].selected
+		case key.Matches(msg, deleteKeys.All):
+			allSelected := true
+			for _, item := range m.items {
+				if !item.selected {
+					allSelected = false
+					break
+				}
+			}
+			for i := range m.items {
+				m.items[i].selected = !allSelected
+			}
+		case key.Matches(msg, deleteKeys.Confirm):
+			for _, item := range m.items {
+				if item.selected {
+					m.phase = phaseConfirm
+					break
+				}
+			}
 		}
 	}
 
 	return m, nil
 }
 
-// deleteSelected runs the actual deletion for every selected item
 func (m *deleteModel) deleteSelected() {
 	for _, item := range m.items {
 		if !item.selected {
 			continue
 		}
-		result := internal.DeleteSkill(item.target, m.dryRun)
-		m.results = append(m.results, result)
+		for _, target := range item.targets {
+			result := internal.DeleteSkill(target, m.dryRun)
+			m.results = append(m.results, result)
+		}
 	}
 }
 
 func (m deleteModel) View() string {
-	if m.phase == phaseDone {
-		return m.deleteResultsView()
+	switch m.phase {
+	case phaseLoading:
+		return "\n  " + m.spinner.View() + "  " + styles.Muted.Render("Scanning projects…") + "\n"
+	case phaseConfirm:
+		return m.confirmView()
+	case phaseDone:
+		return m.resultsView()
+	default:
+		return m.selectView()
 	}
-	return m.deleteSelectView()
 }
 
-func (m deleteModel) deleteSelectView() string {
-	s := styles.Error.Render("Select skills to delete") + "\n"
-	s += styles.Muted.Render("↑/↓ navigate   space toggle   a select all   enter confirm   q quit") + "\n\n"
+func (m deleteModel) confirmView() string {
+	count := 0
+	for _, item := range m.items {
+		if item.selected {
+			count++
+		}
+	}
+	s := styles.Error.Render(fmt.Sprintf("Delete %d skill(s)?", count)) + "\n\n"
+	s += styles.Muted.Render("  This will inshallah permanently remove the selected skills from all matching projects.") + "\n\n"
+	s += "  " + styles.Warning.Render("y / enter") + styles.Muted.Render("  confirm   ") +
+		styles.Warning.Render("n / esc") + styles.Muted.Render("  cancel") + "\n"
+	return s
+}
 
-	for i, item := range m.items {
+func (m deleteModel) selectView() string {
+	s := styles.Error.Render("Select skills to delete") + "\n"
+
+	start, end := m.paginator.GetSliceBounds(len(m.items))
+	for i, item := range m.items[start:end] {
 		cursor := "  "
 		if i == m.cursor {
 			cursor = styles.Error.Render("> ")
 		}
-
-		// Start with nothing selected — safer default for a destructive action
 		checkbox := "[ ]"
 		if item.selected {
 			checkbox = styles.Error.Render("[✗]")
 		}
-
-		row := fmt.Sprintf("%s%s %s  %s",
-			cursor,
-			checkbox,
-			styles.SkillName.Render(item.target.SkillName),
-			styles.Muted.Render(item.target.ProjectPath),
+		projectCount := fmt.Sprintf("%d project", len(item.targets))
+		if len(item.targets) != 1 {
+			projectCount += "s"
+		}
+		s += fmt.Sprintf("%s%s %-22s %s\n",
+			cursor, checkbox,
+			styles.SkillName.Render(item.skillName),
+			styles.Muted.Render(projectCount),
 		)
-		s += row + "\n"
 	}
 
 	selected := 0
@@ -124,56 +238,107 @@ func (m deleteModel) deleteSelectView() string {
 			selected++
 		}
 	}
-	s += fmt.Sprintf("\n%s\n", styles.Muted.Render(fmt.Sprintf("%d / %d selected", selected, len(m.items))))
-
+	s += fmt.Sprintf("\n%s", styles.Muted.Render(fmt.Sprintf("%d / %d selected", selected, len(m.items))))
+	if m.paginator.TotalPages > 1 {
+		s += "   " + styles.Muted.Render(m.paginator.View())
+	}
+	s += "\n\n" + m.helpView()
 	return s
 }
 
-func (m deleteModel) deleteResultsView() string {
+func (m deleteModel) resultsView() string {
+	if m.err != nil {
+		return styles.Error.Render("✗ "+m.err.Error()) + "\n\n" + styles.Muted.Render("Press any key to continue") + "\n"
+	}
+	if len(m.results) == 0 {
+		return styles.Muted.Render("No skills found in any project.") + "\n\n" + styles.Muted.Render("Press any key to continue") + "\n"
+	}
+
 	s := styles.Header.Render("Delete results") + "\n\n"
-
+	bySkill := make(map[string][]internal.DeleteResult)
+	order := []string{}
 	for _, result := range m.results {
-		if result.Err != nil {
-			s += fmt.Sprintf("%s %s  %s\n",
-				styles.Error.Render("✗"),
-				styles.SkillName.Render(result.Target.SkillName),
-				styles.Error.Render(result.Err.Error()),
-			)
-			continue
+		name := result.Target.SkillName
+		if _, seen := bySkill[name]; !seen {
+			order = append(order, name)
 		}
+		bySkill[name] = append(bySkill[name], result)
+	}
 
-		icon := styles.Error.Render("✗")
+	for _, skillName := range order {
+		results := bySkill[skillName]
+		errCount, deleted := 0, 0
+		for _, r := range results {
+			if r.Err != nil {
+				errCount++
+			} else {
+				deleted++
+			}
+		}
+		icon := styles.Warning.Render("✗")
 		verb := "deleted from"
 		if m.dryRun {
 			icon = styles.Warning.Render("~")
 			verb = "would delete from"
 		}
-
-		s += fmt.Sprintf("%s %s  %s\n",
+		if errCount > 0 && deleted == 0 {
+			icon = styles.Error.Render("✗")
+		}
+		projectCount := fmt.Sprintf("%d project", deleted)
+		if deleted != 1 {
+			projectCount += "s"
+		}
+		summary := projectCount
+		if errCount > 0 {
+			summary += styles.Error.Render(fmt.Sprintf("  %d error(s)", errCount))
+		}
+		s += fmt.Sprintf("%s %-22s %s\n",
 			icon,
-			styles.SkillName.Render(result.Target.SkillName),
-			styles.Muted.Render(verb+" "+result.Target.ProjectPath),
+			styles.SkillName.Render(skillName),
+			styles.Muted.Render(verb+" "+summary),
 		)
 	}
-
-	s += "\n" + styles.Muted.Render("Press enter to exit") + "\n"
+	s += "\n" + styles.Muted.Render("Press any key to continue") + "\n"
 	return s
 }
 
-// runInteractiveDelete starts the bubbletea TUI for skill deletion.
-// Nothing is pre-selected — safer default for a destructive action.
-func runInteractiveDelete(targets []internal.Target, dryRun bool) error {
-	items := make([]deleteItem, len(targets))
-	for i, t := range targets {
-		items[i] = deleteItem{target: t, selected: false}
+func (m deleteModel) helpView() string {
+	if m.showHelp {
+		return m.help.FullHelpView(deleteKeys.FullHelp())
 	}
+	return m.help.ShortHelpView(deleteKeys.ShortHelp())
+}
+
+func runInteractiveDelete(root string, dryRun bool) error {
+	sp := spinner.New()
+	sp.Spinner = spinner.Points
+	sp.Style = styles.SkillName
+
+	pg := paginator.New()
+	pg.Type = paginator.Dots
+	pg.PerPage = pageSize
+	pg.ActiveDot = styles.Error.Render("•")
+	pg.InactiveDot = styles.Muted.Render("·")
 
 	m := deleteModel{
-		items:  items,
-		dryRun: dryRun,
-		phase:  phaseSelect,
+		root:      root,
+		dryRun:    dryRun,
+		phase:     phaseLoading,
+		spinner:   sp,
+		paginator: pg,
+		help:      help.New(),
 	}
 
-	_, err := tea.NewProgram(m).Run()
+	_, err := tea.NewProgram(m, tea.WithAltScreen()).Run()
 	return err
+}
+
+// shortPath returns the last 2 path components for compact display
+func shortPath(p string) string {
+	p = filepath.ToSlash(p)
+	parts := strings.Split(strings.TrimRight(p, "/"), "/")
+	if len(parts) >= 2 {
+		return parts[len(parts)-2] + "/" + parts[len(parts)-1]
+	}
+	return filepath.Base(p)
 }
