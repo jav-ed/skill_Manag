@@ -1,0 +1,60 @@
+# build output
+dist/
+.output/
+
+# dependencies
+node_modules/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+
+# environment variables
+.env
+.env.production
+
+# macOS-specific files
+.DS_Store
+
+
+.astro
+.venv
+.vscode
+
+**/*.pyc
+
+# build webpage: 
+# pnpm astro build
+# pnpm astro preview
+dist
+dist*
+
+stats.html
+
+fast*
+
+# no npm lock file
+package-lock.json
+
+# cursor working files
+Cursor
+
+
+.claude/skills
+
+Repos/
+
+# Go binary
+skill_Manag
+skill_Manag.exe
+
+# Go test / coverage
+*.test
+*.out
+
+# Go workspace
+go.work
+go.work.sum
