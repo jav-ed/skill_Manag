@@ -1,8 +1,9 @@
-package cmd
+package tui
 
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
@@ -14,58 +15,45 @@ import (
 	"skill_Manag/styles"
 )
 
-type phase int
-
-const (
-	phaseLoading phase = iota
-	phaseSelect
-	phaseSyncing
-	phaseConfirm
-	phaseDone
-)
-
-// syncTickMsg drives the progress bar one step forward
 type syncTickMsg struct{}
 
 func syncTickCmd() tea.Cmd {
 	return func() tea.Msg { return syncTickMsg{} }
 }
 
-// skillItem represents one vault skill and all projects it maps to
 type skillItem struct {
 	skillName string
 	targets   []internal.Target
 	selected  bool
 }
 
-// syncScanDoneMsg is sent when background scanning completes
 type syncScanDoneMsg struct {
 	items  []skillItem
 	master map[string]string
 	err    error
 }
 
-const pageSize = 10
-
-type model struct {
-	vault     string
-	root      string
-	items     []skillItem
-	master    map[string]string
-	cursor    int
-	dryRun    bool
-	phase     phase
-	spinner   spinner.Model
-	progress  progress.Model
-	paginator paginator.Model
-	syncIdx   int
-	results   []internal.SyncResult
-	help      help.Model
-	showHelp  bool
-	err       error
+type syncModel struct {
+	vault       string
+	root        string
+	items       []skillItem
+	master      map[string]string
+	cursor      int
+	dryRun      bool
+	phase       phase
+	spinner     spinner.Model
+	progress    progress.Model
+	paginator   paginator.Model
+	syncIdx     int
+	results     []internal.SyncResult
+	help        help.Model
+	showHelp    bool
+	err         error
+	linkHovered bool
+	backHovered bool
 }
 
-func (m model) Init() tea.Cmd {
+func (m syncModel) Init() tea.Cmd {
 	return tea.Batch(m.spinner.Tick, syncScanCmd(m.vault, m.root))
 }
 
@@ -103,7 +91,7 @@ func groupSyncTargets(targets []internal.Target) []skillItem {
 	return items
 }
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m syncModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case syncScanDoneMsg:
 		if msg.err != nil {
@@ -129,7 +117,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.phase = phaseDone
 			return m, nil
 		}
-		// Sync one skill, advance index
 		item := m.items[m.syncIdx]
 		for _, target := range item.targets {
 			result := internal.SyncSkill(m.master, target, m.dryRun)
@@ -159,6 +146,36 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case tea.MouseMsg:
+		var openURL, goBack bool
+		m.linkHovered, m.backHovered, openURL, goBack = handleHeaderMouse(msg, m.linkHovered, m.backHovered, true)
+		if openURL {
+			openBrowser("https://javedab.com")
+		}
+		if goBack {
+			return m, tea.Quit
+		}
+		// selectView layout: row 3=title, row 4=col header, row 5=divider → items at row 6.
+		if m.phase == phaseSelect {
+			const itemsStart = 6
+			if msg.Y >= itemsStart {
+				idx := msg.Y - itemsStart
+				start, end := m.paginator.GetSliceBounds(len(m.items))
+				if idx >= 0 && idx < end-start {
+					switch msg.Action {
+					case tea.MouseActionMotion:
+						m.cursor = idx
+					case tea.MouseActionPress:
+						if msg.Button == tea.MouseButtonLeft {
+							m.cursor = idx
+							m.items[start+idx].selected = !m.items[start+idx].selected
+						}
+					}
+				}
+			}
+		}
+		return m, nil
+
 	case tea.KeyMsg:
 		if m.phase == phaseLoading {
 			if msg.String() == "ctrl+c" {
@@ -166,11 +183,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		}
-
 		if m.phase == phaseDone {
 			return m, tea.Quit
 		}
-
 		switch {
 		case key.Matches(msg, syncKeys.Quit):
 			return m, tea.Quit
@@ -221,27 +236,40 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Batch(syncTickCmd(), m.progress.SetPercent(0))
 		}
 	}
-
 	return m, nil
 }
 
-
-func (m model) View() string {
+func (m syncModel) View() string {
+	header := styles.AppHeader("sync", m.linkHovered, m.backHovered) + "\n\n"
 	switch m.phase {
 	case phaseLoading:
-		return "\n  " + m.spinner.View() + "  " + styles.Muted.Render("Scanning projects…") + "\n"
+		return "\n" + header + "  " + m.spinner.View() + "  " + styles.Muted.Render("Scanning projects…") + "\n"
 	case phaseSyncing:
 		label := fmt.Sprintf("  Syncing  %d / %d", m.syncIdx+1, len(m.items))
-		return "\n" + styles.Header.Render(label) + "\n\n  " + m.progress.View() + "\n"
+		return "\n" + header + styles.Header.Render(label) + "\n\n  " + m.progress.View() + "\n"
 	case phaseDone:
-		return m.resultsView()
+		return "\n" + header + m.resultsView()
 	default:
-		return m.selectView()
+		return "\n" + header + m.selectView()
 	}
 }
 
-func (m model) selectView() string {
-	s := styles.Header.Render("Select skills to sync") + "\n"
+func (m syncModel) selectView() string {
+	selected := 0
+	for _, item := range m.items {
+		if item.selected {
+			selected++
+		}
+	}
+
+	divider := styles.Muted.Render(strings.Repeat("─", 52))
+	colHdr := "  " + styles.Muted.Render("[·]") + " " +
+		styles.Muted.Render(fmt.Sprintf("%-22s  %s", "skill", "projects"))
+
+	s := styles.Header.Render("Select skills to sync") + "   " +
+		styles.Muted.Render(fmt.Sprintf("%d / %d selected", selected, len(m.items))) + "\n"
+	s += colHdr + "\n"
+	s += "  " + divider + "\n"
 
 	start, end := m.paginator.GetSliceBounds(len(m.items))
 	for i, item := range m.items[start:end] {
@@ -257,35 +285,30 @@ func (m model) selectView() string {
 		if len(item.targets) != 1 {
 			projectCount += "s"
 		}
-		s += fmt.Sprintf("%s%s %-22s %s\n",
+		s += fmt.Sprintf("%s%s %-22s  %s\n",
 			cursor, checkbox,
 			styles.SkillName.Render(item.skillName),
 			styles.Muted.Render(projectCount),
 		)
 	}
 
-	selected := 0
-	for _, item := range m.items {
-		if item.selected {
-			selected++
-		}
-	}
-	s += fmt.Sprintf("\n%s", styles.Muted.Render(fmt.Sprintf("%d / %d selected", selected, len(m.items))))
+	s += "  " + divider + "\n"
 	if m.paginator.TotalPages > 1 {
-		s += "   " + styles.Muted.Render(m.paginator.View())
+		s += "\n" + styles.Muted.Render(m.paginator.View()) + "\n"
 	}
-	s += "\n\n" + m.helpView()
+	s += "\n" + m.helpView()
 	return s
 }
 
-func (m model) resultsView() string {
+func (m syncModel) resultsView() string {
 	if m.err != nil {
-		return styles.Error.Render("✗ "+m.err.Error()) + "\n\n" + styles.Muted.Render("Press any key to continue") + "\n"
+		return styles.Error.Render("✗ "+m.err.Error()) + "\n\n" +
+			m.help.ShortHelpView([]key.Binding{syncKeys.Quit}) + "\n"
 	}
 	if len(m.results) == 0 {
-		return styles.Muted.Render("No matching skills found in any project.") + "\n\n" + styles.Muted.Render("Press any key to continue") + "\n"
+		return styles.Muted.Render("No matching skills found in any project.") + "\n\n" +
+			m.help.ShortHelpView([]key.Binding{syncKeys.Quit}) + "\n"
 	}
-
 	s := styles.Header.Render("Results") + "\n\n"
 	bySkill := make(map[string][]internal.SyncResult)
 	order := []string{}
@@ -296,7 +319,6 @@ func (m model) resultsView() string {
 		}
 		bySkill[name] = append(bySkill[name], result)
 	}
-
 	for _, skillName := range order {
 		results := bySkill[skillName]
 		errCount, fileCount := 0, 0
@@ -331,18 +353,19 @@ func (m model) resultsView() string {
 			styles.Muted.Render(verb+" "+summary),
 		)
 	}
-	s += "\n" + styles.Muted.Render("Press any key to continue") + "\n"
+	s += "\n" + m.help.ShortHelpView([]key.Binding{syncKeys.Quit}) + "\n"
 	return s
 }
 
-func (m model) helpView() string {
+func (m syncModel) helpView() string {
 	if m.showHelp {
 		return m.help.FullHelpView(syncKeys.FullHelp())
 	}
 	return m.help.ShortHelpView(syncKeys.ShortHelp())
 }
 
-func runInteractive(vault, root string, dryRun bool) error {
+// RunSync opens the interactive sync TUI.
+func RunSync(vault, root string, dryRun bool) error {
 	sp := spinner.New()
 	sp.Spinner = spinner.Points
 	sp.Style = styles.SkillName
@@ -359,7 +382,7 @@ func runInteractive(vault, root string, dryRun bool) error {
 	pg.ActiveDot = styles.SkillName.Render("•")
 	pg.InactiveDot = styles.Muted.Render("·")
 
-	m := model{
+	m := syncModel{
 		vault:     vault,
 		root:      root,
 		dryRun:    dryRun,
@@ -369,7 +392,6 @@ func runInteractive(vault, root string, dryRun bool) error {
 		paginator: pg,
 		help:      help.New(),
 	}
-
-	_, err := tea.NewProgram(m, tea.WithAltScreen()).Run()
+	_, err := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseAllMotion()).Run()
 	return err
 }

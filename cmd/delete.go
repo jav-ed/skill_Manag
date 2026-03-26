@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"skill_Manag/cmd/tui"
 	"skill_Manag/internal"
 	"skill_Manag/styles"
 )
@@ -58,7 +59,7 @@ func doDeleteInteractive(root string) error {
 	if root == "" {
 		return fmt.Errorf("scan root is required: use --root or set 'root' in ~/.config/skill_Manag/config.yaml")
 	}
-	return runInteractiveDelete(root, deleteDryRun)
+	return tui.RunDelete(root, deleteDryRun)
 }
 
 func runDelete(cmd *cobra.Command, args []string) error {

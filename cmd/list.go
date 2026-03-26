@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"skill_Manag/cmd/tui"
 )
 
 var listCmd = &cobra.Command{
@@ -38,5 +39,5 @@ func doList(vault, root string) error {
 	if root == "" {
 		return fmt.Errorf("scan root is required: use --root or set 'root' in ~/.config/skill_Manag/config.yaml")
 	}
-	return runInteractiveList(vault, root)
+	return tui.RunList(vault, root)
 }

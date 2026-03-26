@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"skill_Manag/cmd/tui"
 	"skill_Manag/internal"
 	"skill_Manag/styles"
 )
@@ -21,7 +22,7 @@ func runMenu(cmd *cobra.Command, args []string) error {
 	// First-time setup if config is missing
 	if vault == "" || root == "" {
 		var err error
-		vault, root, err = runSetup(vault, root)
+		vault, root, err = tui.RunSetup(vault, root)
 		if err != nil {
 			return err
 		}
@@ -37,7 +38,7 @@ func runMenu(cmd *cobra.Command, args []string) error {
 
 	// Main menu loop — Setup returns here with updated paths
 	for {
-		choice, err := showMenu()
+		choice, err := tui.ShowMenu()
 		if err != nil || choice == -1 {
 			return err
 		}
@@ -56,7 +57,7 @@ func runMenu(cmd *cobra.Command, args []string) error {
 				return err
 			}
 		case 3: // Setup
-			vault, root, err = runSetup(vault, root)
+			vault, root, err = tui.RunSetup(vault, root)
 			if err != nil {
 				return err
 			}
@@ -67,7 +68,7 @@ func runMenu(cmd *cobra.Command, args []string) error {
 // doSync reads the vault, finds targets, and either runs the TUI or dry-run output
 func doSync(vault, root string, dryRun bool) error {
 	if !dryRun {
-		return runInteractive(vault, root, false)
+		return tui.RunSync(vault, root, false)
 	}
 
 	// --dry-run: scan synchronously and print results without a TUI

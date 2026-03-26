@@ -1,4 +1,4 @@
-package cmd
+package tui
 
 import (
 	"strings"
@@ -20,9 +20,11 @@ func (i menuItem) Description() string { return i.desc }
 func (i menuItem) FilterValue() string { return i.title }
 
 type menuModel struct {
-	list   list.Model
-	width  int
-	chosen int
+	list        list.Model
+	width       int
+	chosen      int
+	linkHovered bool
+	backHovered bool
 }
 
 func newMenuModel() menuModel {
@@ -93,8 +95,34 @@ func (m menuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.list.SetWidth(msg.Width)
-		m.list.SetHeight(msg.Height - 11) // header (4) + detail panel (5) + breathing room (2)
+		m.list.SetHeight(msg.Height - 11)
 		return m, nil
+	case tea.MouseMsg:
+		var openURL bool
+		m.linkHovered, m.backHovered, openURL, _ = handleHeaderMouse(msg, m.linkHovered, m.backHovered, false)
+		if openURL {
+			openBrowser("https://javedab.com")
+		}
+		var cmd tea.Cmd
+		m.list, cmd = m.list.Update(msg)
+		// The bubbles list has no mouse handling — we drive it ourselves.
+		// View layout: "\n" + AppHeader + "\n" + tagline + "\n\n" → list starts at row 4.
+		// DefaultDelegate: Height=2 (title+desc) + Spacing=1 → 3 terminal rows per item.
+		// On every motion: call Select() so the visual cursor follows the mouse.
+		// On press: confirm whatever Select() pointed at.
+		const listTop = 4
+		const rowsPerItem = 3
+		if msg.Y >= listTop {
+			idx := (msg.Y - listTop) / rowsPerItem
+			if idx >= 0 && idx < len(m.list.Items()) {
+				m.list.Select(idx)
+				if msg.Action == tea.MouseActionPress && msg.Button == tea.MouseButtonLeft {
+					m.chosen = idx
+					return m, tea.Quit
+				}
+			}
+		}
+		return m, cmd
 	}
 
 	var cmd tea.Cmd
@@ -104,24 +132,9 @@ func (m menuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m menuModel) View() string {
 	pad := lipgloss.NewStyle().PaddingLeft(2)
-
-	// Element 1 — tool name + website
-	name := lipgloss.NewStyle().Bold(true).Render("skill_Manag")
-	website := styles.Muted.Render("javedab.com")
-
-	// Element 2 — tagline
 	tagline := styles.Muted.Render("Sync Claude Code skills across all your projects from a single vault.")
-
-	// Element 3 — menu list
-	menu := m.list.View()
-
-	// Element 4 — detail panel for the currently hovered item
-	detail := m.detailView()
-
-	header := pad.Render(name+"  ·  "+website) + "\n" +
-		pad.Render(tagline)
-
-	return "\n" + header + "\n\n" + menu + "\n" + detail
+	header := styles.AppHeader("", m.linkHovered, false) + "\n" + pad.Render(tagline)
+	return "\n" + header + "\n\n" + m.list.View() + "\n" + m.detailView()
 }
 
 func (m menuModel) detailView() string {
@@ -129,24 +142,19 @@ func (m menuModel) detailView() string {
 	if !ok {
 		return ""
 	}
-
 	w := m.width
 	if w < 10 {
-		w = 72 // fallback before first WindowSizeMsg
+		w = 72
 	}
-
 	pad := lipgloss.NewStyle().PaddingLeft(2)
 	divider := styles.Muted.Render(strings.Repeat("─", w-4))
-	text := styles.Muted.Render(
-		lipgloss.NewStyle().Width(w - 4).Render(item.detail),
-	)
-
+	text := styles.Muted.Render(lipgloss.NewStyle().Width(w - 4).Render(item.detail))
 	return pad.Render(divider) + "\n" + pad.Render(text)
 }
 
-// showMenu runs the menu TUI and returns the chosen index (-1 = quit)
-func showMenu() (int, error) {
-	final, err := tea.NewProgram(newMenuModel(), tea.WithAltScreen()).Run()
+// ShowMenu runs the menu TUI and returns the chosen index (-1 = quit).
+func ShowMenu() (int, error) {
+	final, err := tea.NewProgram(newMenuModel(), tea.WithAltScreen(), tea.WithMouseAllMotion()).Run()
 	if err != nil {
 		return -1, err
 	}

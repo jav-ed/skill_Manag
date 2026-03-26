@@ -45,11 +45,18 @@ projects/
 
 ## Interactive TUI
 
-Running `skill_Manag` with no arguments opens a full-screen TUI. Every screen supports keyboard navigation and a `?` key that toggles a keybinding reference.
+Running `skill_Manag` with no arguments opens a full-screen TUI. Every screen supports full mouse and keyboard navigation.
+
+### Navigation
+
+- **Mouse** — hover highlights items, click selects or toggles
+- **`alt+←`** or **`q`** — go back to the main menu from any screen
+- **`←`** in the header — clickable back button
+- **`?`** — toggles a keybinding reference on every screen
 
 ### Main menu
 
-Four actions available from the main menu:
+Four actions available from the main menu. Mouse hover moves the highlight; click or `enter` opens the screen.
 
 | Action | What it does |
 |--------|-------------|
@@ -62,20 +69,18 @@ Four actions available from the main menu:
 
 - Animated spinner while your project tree is scanned in the background
 - Checklist of every skill found — all pre-selected, deselect what you don't want
-- `space` toggles a single skill, `a` toggles all
+- Click a row or press `space` to toggle; `a` toggles all
 - Paginated with dot indicators when you have more than 10 skills (`• · · ·`)
 - Animated progress bar fills as each skill syncs (`Syncing 3 / 7`)
 - Results screen shows per-skill outcome with file counts and any errors
-- `?` toggles short ↔ full keybinding reference
 
 ### List screen
 
-- Table view with headers: checkbox · skill name · project path
+- Same checklist layout as Sync with an added project-path column
 - Live filter: press `/` and type to narrow by skill name, `esc` to clear
-- `space` to select rows, `a` to select all visible
+- Click a row or press `space` to toggle; `a` to select all visible
 - `s` syncs selected skills directly from the list (requires vault to be configured)
 - `d` deletes selected skills directly from the list
-- `?` toggles keybinding reference
 
 ### Delete screen
 

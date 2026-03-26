@@ -1,4 +1,4 @@
-package cmd
+package tui
 
 import (
 	"fmt"
@@ -6,10 +6,9 @@ import (
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
+	"github.com/charmbracelet/bubbles/paginator"
 	"github.com/charmbracelet/bubbles/spinner"
-	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"skill_Manag/internal"
 	"skill_Manag/styles"
 )
@@ -29,22 +28,23 @@ type listScanDoneMsg struct {
 	err          error
 }
 
-// listModel is the bubbletea model for the skill browser TUI
 type listModel struct {
-	vault    string
-	root     string
-	all      []internal.Target
-	filtered []int
-	selected map[int]bool
-	cursor   int
-	filter   string
-	phase    listPhase
-	spinner  spinner.Model
-	table    table.Model
-	master   map[string]string
-	messages []string
-	help     help.Model
-	showHelp bool
+	vault       string
+	root        string
+	all         []internal.Target
+	filtered    []int
+	selected    map[int]bool
+	cursor      int
+	filter      string
+	phase       listPhase
+	spinner     spinner.Model
+	paginator   paginator.Model
+	master      map[string]string
+	messages    []string
+	help        help.Model
+	showHelp    bool
+	linkHovered bool
+	backHovered bool
 }
 
 func (m listModel) Init() tea.Cmd {
@@ -85,7 +85,7 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.filtered = filtered
 		m.selected = make(map[int]bool)
 		m.master = msg.masterSkills
-		m.table = buildTable(msg.targets, filtered, m.selected)
+		m.paginator.SetTotalPages(max(1, len(filtered)))
 		m.phase = listPhaseBrowse
 		return m, nil
 
@@ -94,6 +94,41 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			var cmd tea.Cmd
 			m.spinner, cmd = m.spinner.Update(msg)
 			return m, cmd
+		}
+		return m, nil
+
+	case tea.MouseMsg:
+		var openURL, goBack bool
+		m.linkHovered, m.backHovered, openURL, goBack = handleHeaderMouse(msg, m.linkHovered, m.backHovered, true)
+		if openURL {
+			openBrowser("https://javedab.com")
+		}
+		if goBack {
+			return m, tea.Quit
+		}
+		// browseView layout: row 3=title, row 4=col header (no filter) / filter line (with filter),
+		// then col header, then divider → items at row 6 (no filter) or row 7 (with filter).
+		if m.phase == listPhaseBrowse {
+			itemsStart := 6
+			if m.filter != "" || m.phase == listPhaseFilter {
+				itemsStart = 7
+			}
+			if msg.Y >= itemsStart {
+				idx := msg.Y - itemsStart
+				start, end := m.paginator.GetSliceBounds(len(m.filtered))
+				if idx >= 0 && idx < end-start {
+					switch msg.Action {
+					case tea.MouseActionMotion:
+						m.cursor = idx
+					case tea.MouseActionPress:
+						if msg.Button == tea.MouseButtonLeft {
+							m.cursor = idx
+							filteredIdx := m.filtered[start+idx]
+							m.selected[filteredIdx] = !m.selected[filteredIdx]
+						}
+					}
+				}
+			}
 		}
 		return m, nil
 
@@ -112,7 +147,6 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m.updateBrowse(msg)
 	}
-
 	return m, nil
 }
 
@@ -122,12 +156,10 @@ func (m listModel) updateFilter(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.filter = ""
 		m.phase = listPhaseBrowse
 		m.rebuildFiltered()
-		m.cursor = 0
 	case "backspace":
 		if len(m.filter) > 0 {
 			m.filter = m.filter[:len(m.filter)-1]
 			m.rebuildFiltered()
-			m.clampCursor()
 		}
 	case "enter":
 		m.phase = listPhaseBrowse
@@ -137,7 +169,6 @@ func (m listModel) updateFilter(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if len(k.String()) == 1 {
 			m.filter += k.String()
 			m.rebuildFiltered()
-			m.clampCursor()
 		}
 	}
 	return m, nil
@@ -150,17 +181,25 @@ func (m listModel) updateBrowse(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case key.Matches(k, listKeys.Help):
 		m.showHelp = !m.showHelp
 	case key.Matches(k, listKeys.Up):
-		m.table.MoveUp(1)
-		m.cursor = m.table.Cursor()
+		if m.cursor > 0 {
+			m.cursor--
+		} else if !m.paginator.OnFirstPage() {
+			m.paginator.PrevPage()
+			m.cursor = pageSize - 1
+		}
 	case key.Matches(k, listKeys.Down):
-		m.table.MoveDown(1)
-		m.cursor = m.table.Cursor()
+		start, end := m.paginator.GetSliceBounds(len(m.filtered))
+		if m.cursor < end-start-1 {
+			m.cursor++
+		} else if !m.paginator.OnLastPage() {
+			m.paginator.NextPage()
+			m.cursor = 0
+		}
 	case key.Matches(k, listKeys.Toggle):
 		if len(m.filtered) > 0 {
-			idx := m.filtered[m.cursor]
+			start, _ := m.paginator.GetSliceBounds(len(m.filtered))
+			idx := m.filtered[start+m.cursor]
 			m.selected[idx] = !m.selected[idx]
-			m.table = buildTable(m.all, m.filtered, m.selected)
-			m.table.SetCursor(m.cursor)
 		}
 	case key.Matches(k, listKeys.All):
 		allSelected := true
@@ -173,14 +212,11 @@ func (m listModel) updateBrowse(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		for _, idx := range m.filtered {
 			m.selected[idx] = !allSelected
 		}
-		m.table = buildTable(m.all, m.filtered, m.selected)
-		m.table.SetCursor(m.cursor)
 	case key.Matches(k, listKeys.Filter):
 		m.phase = listPhaseFilter
 	case k.String() == "esc":
 		m.filter = ""
 		m.rebuildFiltered()
-		m.cursor = 0
 	case key.Matches(k, listKeys.Sync):
 		if m.master == nil {
 			m.messages = []string{styles.Error.Render("✗ vault not configured — run Setup to set a vault path")}
@@ -243,13 +279,14 @@ func (m *listModel) runDelete() {
 }
 
 func (m listModel) View() string {
+	header := styles.AppHeader("list", m.linkHovered, m.backHovered) + "\n\n"
 	switch m.phase {
 	case listPhaseLoading:
-		return "\n  " + m.spinner.View() + "  " + styles.Muted.Render("Scanning projects…") + "\n"
+		return "\n" + header + "  " + m.spinner.View() + "  " + styles.Muted.Render("Scanning projects…") + "\n"
 	case listPhaseDone:
-		return m.doneView()
+		return "\n" + header + m.doneView()
 	default:
-		return m.browseView()
+		return "\n" + header + m.browseView()
 	}
 }
 
@@ -261,22 +298,46 @@ func (m listModel) browseView() string {
 		}
 	}
 
-	header := fmt.Sprintf("Skills — %d installed", len(m.all))
+	title := fmt.Sprintf("Skills — %d installed", len(m.all))
 	if m.filter != "" {
-		header = fmt.Sprintf("Skills — %d matching %q", len(m.filtered), m.filter)
+		title = fmt.Sprintf("Skills — %d matching %q", len(m.filtered), m.filter)
 	}
-	if selectedCount > 0 {
-		header += fmt.Sprintf("  [%s]", styles.Success.Render(fmt.Sprintf("%d selected", selectedCount)))
-	}
-	s := styles.Header.Render(header) + "\n"
+	divider := styles.Muted.Render(strings.Repeat("─", 54))
+	colHdr := "  " + styles.Muted.Render("[·]") + " " +
+		styles.Muted.Render(fmt.Sprintf("%-22s  %s", "skill", "project"))
 
+	s := styles.Header.Render(title) + "   " +
+		styles.Muted.Render(fmt.Sprintf("%d / %d selected", selectedCount, len(m.filtered))) + "\n"
 	if m.phase == listPhaseFilter {
-		s += styles.Warning.Render("Filter: "+m.filter+"▌") + "\n"
+		s += styles.Warning.Render("filter: "+m.filter+"▌") + "\n"
 	} else if m.filter != "" {
-		s += styles.Muted.Render("Filter: "+m.filter+"  (esc to clear)") + "\n"
+		s += styles.Muted.Render("filter: "+m.filter+"  esc to clear") + "\n"
 	}
-	s += "\n"
-	s += m.table.View() + "\n"
+	s += colHdr + "\n"
+	s += "  " + divider + "\n"
+
+	start, end := m.paginator.GetSliceBounds(len(m.filtered))
+	for i, idx := range m.filtered[start:end] {
+		t := m.all[idx]
+		cursor := "  "
+		if i == m.cursor {
+			cursor = styles.SkillName.Render("> ")
+		}
+		checkbox := "[ ]"
+		if m.selected[idx] {
+			checkbox = styles.SkillName.Render("[✓]")
+		}
+		s += fmt.Sprintf("%s%s %-22s  %s\n",
+			cursor, checkbox,
+			styles.SkillName.Render(t.SkillName),
+			styles.Muted.Render(shortPath(t.ProjectPath)),
+		)
+	}
+
+	s += "  " + divider + "\n"
+	if m.paginator.TotalPages > 1 {
+		s += "\n" + styles.Muted.Render(m.paginator.View()) + "\n"
+	}
 	s += "\n" + m.helpView()
 	return s
 }
@@ -291,7 +352,7 @@ func (m listModel) helpView() string {
 func (m listModel) doneView() string {
 	s := styles.Header.Render("Results") + "\n\n"
 	s += strings.Join(m.messages, "\n") + "\n"
-	s += "\n" + styles.Muted.Render("Press any key to continue") + "\n"
+	s += "\n" + m.help.ShortHelpView([]key.Binding{listKeys.Quit})
 	return s
 }
 
@@ -302,67 +363,31 @@ func (m *listModel) rebuildFiltered() {
 			m.filtered = append(m.filtered, i)
 		}
 	}
-	m.table = buildTable(m.all, m.filtered, m.selected)
+	m.paginator.SetTotalPages(max(1, len(m.filtered)))
+	m.cursor = 0
+	m.paginator.Page = 0
 }
 
-func (m *listModel) clampCursor() {
-	if m.cursor >= len(m.filtered) {
-		m.cursor = max(0, len(m.filtered)-1)
-	}
-	m.table.SetCursor(m.cursor)
-}
-
-func buildTable(all []internal.Target, filtered []int, selected map[int]bool) table.Model {
-	cols := []table.Column{
-		{Title: "", Width: 3},   // checkbox
-		{Title: "Skill", Width: 26},
-		{Title: "Project", Width: 36},
-	}
-
-	rows := make([]table.Row, len(filtered))
-	for i, idx := range filtered {
-		t := all[idx]
-		check := "[ ]"
-		if selected[idx] {
-			check = "[✓]"
-		}
-		rows[i] = table.Row{check, t.SkillName, shortPath(t.ProjectPath)}
-	}
-
-	tableStyles := table.DefaultStyles()
-	tableStyles.Header = tableStyles.Header.
-		Foreground(lipgloss.Color("#626262")).
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("#333333")).
-		Bold(false)
-	tableStyles.Selected = tableStyles.Selected.
-		Foreground(lipgloss.Color("#87CEEB")).
-		Background(lipgloss.Color("#1a1a2e")).
-		Bold(false)
-
-	t := table.New(
-		table.WithColumns(cols),
-		table.WithRows(rows),
-		table.WithFocused(true),
-		table.WithHeight(15),
-		table.WithStyles(tableStyles),
-	)
-	return t
-}
-
-func runInteractiveList(vault, root string) error {
+// RunList opens the interactive skill browser TUI.
+func RunList(vault, root string) error {
 	sp := spinner.New()
 	sp.Spinner = spinner.Points
 	sp.Style = styles.SkillName
 
-	m := listModel{
-		vault:   vault,
-		root:    root,
-		phase:   listPhaseLoading,
-		spinner: sp,
-		help:    help.New(),
-	}
+	pg := paginator.New()
+	pg.Type = paginator.Dots
+	pg.PerPage = pageSize
+	pg.ActiveDot = styles.SkillName.Render("•")
+	pg.InactiveDot = styles.Muted.Render("·")
 
-	_, err := tea.NewProgram(m, tea.WithAltScreen()).Run()
+	m := listModel{
+		vault:     vault,
+		root:      root,
+		phase:     listPhaseLoading,
+		spinner:   sp,
+		paginator: pg,
+		help:      help.New(),
+	}
+	_, err := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseAllMotion()).Run()
 	return err
 }

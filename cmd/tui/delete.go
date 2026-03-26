@@ -1,8 +1,7 @@
-package cmd
+package tui
 
 import (
 	"fmt"
-	"path/filepath"
 	"sort"
 	"strings"
 
@@ -27,17 +26,19 @@ type deleteScanDoneMsg struct {
 }
 
 type deleteModel struct {
-	root      string
-	items     []deleteSkillItem
-	cursor    int
-	dryRun    bool
-	phase     phase
-	spinner   spinner.Model
-	paginator paginator.Model
-	results   []internal.DeleteResult
-	help      help.Model
-	showHelp  bool
-	err       error
+	root        string
+	items       []deleteSkillItem
+	cursor      int
+	dryRun      bool
+	phase       phase
+	spinner     spinner.Model
+	paginator   paginator.Model
+	results     []internal.DeleteResult
+	help        help.Model
+	showHelp    bool
+	err         error
+	linkHovered bool
+	backHovered bool
 }
 
 func (m deleteModel) Init() tea.Cmd {
@@ -99,6 +100,36 @@ func (m deleteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case tea.MouseMsg:
+		var openURL, goBack bool
+		m.linkHovered, m.backHovered, openURL, goBack = handleHeaderMouse(msg, m.linkHovered, m.backHovered, true)
+		if openURL {
+			openBrowser("https://javedab.com")
+		}
+		if goBack {
+			return m, tea.Quit
+		}
+		// selectView layout: row 3=title, row 4=col header, row 5=divider → items at row 6.
+		if m.phase == phaseSelect {
+			const itemsStart = 6
+			if msg.Y >= itemsStart {
+				idx := msg.Y - itemsStart
+				start, end := m.paginator.GetSliceBounds(len(m.items))
+				if idx >= 0 && idx < end-start {
+					switch msg.Action {
+					case tea.MouseActionMotion:
+						m.cursor = idx
+					case tea.MouseActionPress:
+						if msg.Button == tea.MouseButtonLeft {
+							m.cursor = idx
+							m.items[start+idx].selected = !m.items[start+idx].selected
+						}
+					}
+				}
+			}
+		}
+		return m, nil
+
 	case tea.KeyMsg:
 		if m.phase == phaseLoading {
 			if msg.String() == "ctrl+c" {
@@ -121,7 +152,6 @@ func (m deleteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		}
-
 		switch {
 		case key.Matches(msg, deleteKeys.Quit):
 			return m, tea.Quit
@@ -165,7 +195,6 @@ func (m deleteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 	}
-
 	return m, nil
 }
 
@@ -182,15 +211,16 @@ func (m *deleteModel) deleteSelected() {
 }
 
 func (m deleteModel) View() string {
+	header := styles.AppHeader("delete", m.linkHovered, m.backHovered) + "\n\n"
 	switch m.phase {
 	case phaseLoading:
-		return "\n  " + m.spinner.View() + "  " + styles.Muted.Render("Scanning projects…") + "\n"
+		return "\n" + header + "  " + m.spinner.View() + "  " + styles.Muted.Render("Scanning projects…") + "\n"
 	case phaseConfirm:
-		return m.confirmView()
+		return "\n" + header + m.confirmView()
 	case phaseDone:
-		return m.resultsView()
+		return "\n" + header + m.resultsView()
 	default:
-		return m.selectView()
+		return "\n" + header + m.selectView()
 	}
 }
 
@@ -209,7 +239,21 @@ func (m deleteModel) confirmView() string {
 }
 
 func (m deleteModel) selectView() string {
-	s := styles.Error.Render("Select skills to delete") + "\n"
+	selected := 0
+	for _, item := range m.items {
+		if item.selected {
+			selected++
+		}
+	}
+
+	divider := styles.Muted.Render(strings.Repeat("─", 52))
+	colHdr := "  " + styles.Muted.Render("[·]") + " " +
+		styles.Muted.Render(fmt.Sprintf("%-22s  %s", "skill", "projects"))
+
+	s := styles.Error.Render("Select skills to delete") + "   " +
+		styles.Muted.Render(fmt.Sprintf("%d / %d selected", selected, len(m.items))) + "\n"
+	s += colHdr + "\n"
+	s += "  " + divider + "\n"
 
 	start, end := m.paginator.GetSliceBounds(len(m.items))
 	for i, item := range m.items[start:end] {
@@ -225,35 +269,30 @@ func (m deleteModel) selectView() string {
 		if len(item.targets) != 1 {
 			projectCount += "s"
 		}
-		s += fmt.Sprintf("%s%s %-22s %s\n",
+		s += fmt.Sprintf("%s%s %-22s  %s\n",
 			cursor, checkbox,
 			styles.SkillName.Render(item.skillName),
 			styles.Muted.Render(projectCount),
 		)
 	}
 
-	selected := 0
-	for _, item := range m.items {
-		if item.selected {
-			selected++
-		}
-	}
-	s += fmt.Sprintf("\n%s", styles.Muted.Render(fmt.Sprintf("%d / %d selected", selected, len(m.items))))
+	s += "  " + divider + "\n"
 	if m.paginator.TotalPages > 1 {
-		s += "   " + styles.Muted.Render(m.paginator.View())
+		s += "\n" + styles.Muted.Render(m.paginator.View()) + "\n"
 	}
-	s += "\n\n" + m.helpView()
+	s += "\n" + m.helpView()
 	return s
 }
 
 func (m deleteModel) resultsView() string {
 	if m.err != nil {
-		return styles.Error.Render("✗ "+m.err.Error()) + "\n\n" + styles.Muted.Render("Press any key to continue") + "\n"
+		return styles.Error.Render("✗ "+m.err.Error()) + "\n\n" +
+			m.help.ShortHelpView([]key.Binding{deleteKeys.Quit}) + "\n"
 	}
 	if len(m.results) == 0 {
-		return styles.Muted.Render("No skills found in any project.") + "\n\n" + styles.Muted.Render("Press any key to continue") + "\n"
+		return styles.Muted.Render("No skills found in any project.") + "\n\n" +
+			m.help.ShortHelpView([]key.Binding{deleteKeys.Quit}) + "\n"
 	}
-
 	s := styles.Header.Render("Delete results") + "\n\n"
 	bySkill := make(map[string][]internal.DeleteResult)
 	order := []string{}
@@ -264,7 +303,6 @@ func (m deleteModel) resultsView() string {
 		}
 		bySkill[name] = append(bySkill[name], result)
 	}
-
 	for _, skillName := range order {
 		results := bySkill[skillName]
 		errCount, deleted := 0, 0
@@ -298,7 +336,7 @@ func (m deleteModel) resultsView() string {
 			styles.Muted.Render(verb+" "+summary),
 		)
 	}
-	s += "\n" + styles.Muted.Render("Press any key to continue") + "\n"
+	s += "\n" + m.help.ShortHelpView([]key.Binding{deleteKeys.Quit}) + "\n"
 	return s
 }
 
@@ -309,7 +347,8 @@ func (m deleteModel) helpView() string {
 	return m.help.ShortHelpView(deleteKeys.ShortHelp())
 }
 
-func runInteractiveDelete(root string, dryRun bool) error {
+// RunDelete opens the interactive delete TUI.
+func RunDelete(root string, dryRun bool) error {
 	sp := spinner.New()
 	sp.Spinner = spinner.Points
 	sp.Style = styles.SkillName
@@ -328,17 +367,6 @@ func runInteractiveDelete(root string, dryRun bool) error {
 		paginator: pg,
 		help:      help.New(),
 	}
-
-	_, err := tea.NewProgram(m, tea.WithAltScreen()).Run()
+	_, err := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseAllMotion()).Run()
 	return err
-}
-
-// shortPath returns the last 2 path components for compact display
-func shortPath(p string) string {
-	p = filepath.ToSlash(p)
-	parts := strings.Split(strings.TrimRight(p, "/"), "/")
-	if len(parts) >= 2 {
-		return parts[len(parts)-2] + "/" + parts[len(parts)-1]
-	}
-	return filepath.Base(p)
 }

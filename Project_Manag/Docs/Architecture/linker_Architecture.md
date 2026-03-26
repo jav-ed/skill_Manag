@@ -2,24 +2,51 @@
 
 Code structure for `skill_Manag` — two packages (`cmd/` and `internal/`) plus shared styles.
 
-## TUI — `cmd/`
-
-All interactive screens are bubbletea models. Each has a `phase` enum that drives `View()` and `Update()`.
+## CLI wiring — `cmd/`
 
 | File | What it owns |
 |------|-------------|
-| `interactive_Menu.go` | Main menu — 4 items, detail panel updates on hover, routes to all screens |
-| `interactive_Sync.go` | Sync screen — phases: loading → select → syncing → done; spinner, paginator, progress bar |
-| `interactive_List.go` | List browser — table view, live `/` filter, select rows, sync or delete in place |
-| `interactive_Delete.go` | Delete screen — phases: loading → select → confirm → done; nothing pre-selected |
-| `interactive_Setup.go` | Setup screen — filepicker for vault and root, saves `~/.config/skill_Manag/config.yaml` |
-| `keys.go` | Shared keybinding maps — `syncKeyMap`, `deleteKeyMap`, `listKeyMap`; `?` toggles help |
 | `root.go` | Cobra root command, config init (`~/.config/skill_Manag/config.yaml`), menu loop |
 | `sync.go` | Root command handler, `doSync`, `syncAll` (dry-run path) |
 | `list.go` | `list` subcommand wiring |
 | `delete.go` | `delete` subcommand — CLI mode (by name, by name+project, interactive) |
 
-**Pattern:** every TUI screen uses `tea.WithAltScreen()`. Ctrl+C is handled in every phase. Shared `phase` type lives in `interactive_Sync.go` and is reused by `interactive_Delete.go`.
+## TUI — `cmd/tui/`
+
+All interactive screens are bubbletea models. Each has a `phase` enum that drives `View()` and `Update()`. Every screen uses `tea.WithAltScreen()` and `tea.WithMouseAllMotion()`.
+
+| File | What it owns |
+|------|-------------|
+| `menu.go` | Main menu — 4 items, detail panel, mouse hover drives cursor via `list.Select()`, click navigates |
+| `sync.go` | Sync screen — phases: loading → select → syncing → done; spinner, paginator, progress bar |
+| `list.go` | List browser — same checkbox renderer as sync/delete with project path column, live `/` filter, paginator, sync or delete in place |
+| `delete.go` | Delete screen — phases: loading → select → confirm → done; nothing pre-selected |
+| `setup.go` | Setup wizard — filepicker for vault and root, `✓ / →` step progression, saves config |
+| `keys.go` | Keybinding maps — `syncKeyMap`, `deleteKeyMap`, `listKeyMap`; all include `alt+left` for back navigation |
+| `header.go` | `handleHeaderMouse` — shared mouse handler for the `←` back button and javedab.com link |
+| `shared.go` | Shared types: `phase`, `pageSize`, `shortPath` |
+| `browser.go` | `openBrowser` helper |
+
+**Unified screen structure** — all four action screens share the same visual layout:
+```
+← skill_Manag  ·  javedab.com  ·  [screen]
+
+Title                          N / M selected
+  [·] skill                    projects / path
+  ────────────────────────────────────────────
+  [✓] skill-name               N projects
+> [ ] skill-name               N projects
+  ────────────────────────────────────────────
+
+space toggle  a all  enter confirm  q/alt+← back
+```
+
+**Mouse wiring** — bubbles list and table have no mouse support; all mouse handling is manual:
+- Menu: `list.Select(idx)` called on every `MouseActionMotion` to drive visual cursor; `MouseActionPress` confirms
+- Sync/Delete/List: `MouseActionMotion` updates cursor, `MouseActionPress + ButtonLeft` toggles selection
+- Row index formula: `idx = msg.Y - itemsStart` where `itemsStart` is a constant per screen based on header line count
+
+**Back navigation** — `← ` in the header (col 0–1) replaces the leading spaces when `screen != ""`. Click or `alt+left` calls `tea.Quit`, returning control to `cmd/root.go`'s menu loop.
 
 ## Core logic — `internal/`
 
@@ -34,4 +61,6 @@ All interactive screens are bubbletea models. Each has a `phase` enum that drive
 
 ## Styles — `styles/`
 
-Shared lipgloss styles (`Header`, `Muted`, `Success`, `Warning`, `Error`, `SkillName`) used across all TUI files.
+Shared lipgloss styles (`Header`, `Muted`, `Success`, `Warning`, `Error`, `SkillName`) plus hit-test constants for the header:
+- `HeaderLinkRow/Col/Len` — position of the javedab.com link
+- `HeaderBackRow/Col/Len` — position of the `←` back arrow (col 1, only present when `screen != ""`)
