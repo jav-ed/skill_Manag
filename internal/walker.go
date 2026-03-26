@@ -97,6 +97,58 @@ func FindTargetsByName(root, skillName string) ([]Target, error) {
 	return FindTargets(root, map[string]string{skillName: ""})
 }
 
+// FindPushTargets finds all projects that have any skill installed,
+// then creates a target for each push skill in those projects — bypassing the opt-in rule.
+func FindPushTargets(root string, pushSkills map[string]string) ([]Target, error) {
+	var targets []Target
+
+	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+
+		if d.IsDir() && skipDirs[d.Name()] {
+			return filepath.SkipDir
+		}
+
+		if !d.IsDir() || d.Name() != "skills" {
+			return nil
+		}
+		if filepath.Base(filepath.Dir(path)) != ".agents" {
+			return nil
+		}
+
+		// Project must have at least one skill already installed (opted in to skill_Manag)
+		entries, err := os.ReadDir(path)
+		if err != nil {
+			return nil
+		}
+		hasSkill := false
+		for _, e := range entries {
+			if e.IsDir() {
+				hasSkill = true
+				break
+			}
+		}
+		if !hasSkill {
+			return filepath.SkipDir
+		}
+
+		projectPath := filepath.Dir(filepath.Dir(path))
+		for skillName := range pushSkills {
+			targets = append(targets, Target{
+				ProjectPath: projectPath,
+				SkillName:   skillName,
+				SkillPath:   filepath.Join(path, skillName),
+			})
+		}
+
+		return filepath.SkipDir
+	})
+
+	return targets, err
+}
+
 // FindAllSkillTargets returns every installed skill across all projects,
 // with no filtering against a master collection — used by interactive delete
 func FindAllSkillTargets(root string) ([]Target, error) {

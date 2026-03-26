@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -21,9 +22,8 @@ skill_Manag solves this by reading from a single Vault (your skill collection)
 and propagating changes to every project that has a matching skill installed.
 Files are copied (not symlinked), so they stay git-tracked and work over SSH.
 
-Config file (optional): ~/.config/skill_Manag/config.yaml
-  vault: /path/to/your/skill/vault
-  root:  /path/to/projects
+Config: vault path stored in ~/.config/skill_Manag/vault
+        root and mandatory stored in <vault>/config.yaml
 
 Running without arguments opens the interactive TUI.
 Pass --dry-run for a non-interactive preview of all changes.
@@ -55,21 +55,30 @@ func init() {
 	viper.BindPFlag("root", rootCmd.PersistentFlags().Lookup("root"))
 }
 
-// initConfig loads the optional config file before any command runs
+// initConfig loads config before any command runs.
+// Vault path comes from: --vault flag > SKILL_MANAG_VAULT env > ~/.config/skill_Manag/vault pointer file.
+// Root and mandatory come from: --root flag > SKILL_MANAG_ROOT env > <vault>/config.yaml.
 func initConfig() {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return
-	}
-
-	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
-	viper.AddConfigPath(filepath.Join(home, ".config", "skill_Manag"))
-
-	// Silently ignore a missing config file — flags are the fallback
-	viper.ReadInConfig()
-
 	// Env vars: SKILL_MANAG_VAULT, SKILL_MANAG_ROOT
 	viper.SetEnvPrefix("SKILL_MANAG")
 	viper.AutomaticEnv()
+
+	// Resolve vault path — flag/env take precedence over pointer file
+	vault := viper.GetString("vault")
+	if vault == "" {
+		home, err := os.UserHomeDir()
+		if err == nil {
+			data, err := os.ReadFile(filepath.Join(home, ".config", "skill_Manag", "vault"))
+			if err == nil {
+				vault = strings.TrimSpace(string(data))
+				viper.Set("vault", vault)
+			}
+		}
+	}
+
+	// Read vault config (root, mandatory) if vault path is known
+	if vault != "" {
+		viper.SetConfigFile(filepath.Join(vault, "config.yaml"))
+		viper.ReadInConfig() // silently ignore missing file
+	}
 }

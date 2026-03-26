@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -56,10 +57,18 @@ func runMenu(cmd *cobra.Command, args []string) error {
 			if err := doDeleteInteractive(root); err != nil {
 				return err
 			}
-		case 3: // Setup
+		case 3: // Push
+			if err := doPush(vault, root); err != nil {
+				return err
+			}
+		case 4: // Setup
 			vault, root, err = tui.RunSetup(vault, root)
 			if err != nil {
 				return err
+			}
+			// Update viper config file path in case vault changed, so doPush reads fresh mandatory
+			if vault != "" {
+				viper.SetConfigFile(filepath.Join(vault, "config.yaml"))
 			}
 		}
 	}

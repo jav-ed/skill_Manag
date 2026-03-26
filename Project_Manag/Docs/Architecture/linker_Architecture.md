@@ -6,8 +6,9 @@ Code structure for `skill_Manag` — two packages (`cmd/` and `internal/`) plus 
 
 | File | What it owns |
 |------|-------------|
-| `root.go` | Cobra root command, config init (`~/.config/skill_Manag/config.yaml`), menu loop |
+| `root.go` | Cobra root command, config init (vault pointer → vault config), menu loop |
 | `sync.go` | Root command handler, `doSync`, `syncAll` (dry-run path) |
+| `push.go` | `doPush` — reads `mandatory` from viper, delegates to `tui.RunPush` |
 | `list.go` | `list` subcommand wiring |
 | `delete.go` | `delete` subcommand — CLI mode (by name, by name+project, interactive) |
 
@@ -17,11 +18,12 @@ All interactive screens are bubbletea models. Each has a `phase` enum that drive
 
 | File | What it owns |
 |------|-------------|
-| `menu.go` | Main menu — 4 items, detail panel, mouse hover drives cursor via `list.Select()`, click navigates |
+| `menu.go` | Main menu — 5 items, detail panel, mouse hover drives cursor via `list.Select()`, click navigates |
 | `sync.go` | Sync screen — phases: loading → select → syncing → done; spinner, paginator, progress bar |
+| `push.go` | Push screen — same phase lifecycle as sync; uses Warning color; reads mandatory from vault config |
 | `list.go` | List browser — same checkbox renderer as sync/delete with project path column, live `/` filter, paginator, sync or delete in place |
 | `delete.go` | Delete screen — phases: loading → select → confirm → done; nothing pre-selected |
-| `setup.go` | Setup wizard — filepicker for vault and root, `✓ / →` step progression, saves config |
+| `setup.go` | Setup wizard — filepicker for vault and root, `✓ / →` step progression, saves vault pointer + vault config |
 | `keys.go` | Keybinding maps — `syncKeyMap`, `deleteKeyMap`, `listKeyMap`; all include `alt+left` for back navigation |
 | `header.go` | `handleHeaderMouse` — shared mouse handler for the `←` back button and javedab.com link |
 | `shared.go` | Shared types: `phase`, `pageSize`, `shortPath` |
@@ -52,7 +54,7 @@ space toggle  a all  enter confirm  q/alt+← back
 
 | File | What it owns |
 |------|-------------|
-| `walker.go` | `ReadMasterSkills` (vault → map), `FindTargets` (opt-in filter), `FindAllSkillTargets`, `FindTargetsByName` |
+| `walker.go` | `ReadMasterSkills` (vault → map), `FindTargets` (opt-in filter), `FindPushTargets` (mandatory, bypasses opt-in), `FindAllSkillTargets`, `FindTargetsByName` |
 | `copier.go` | `SyncSkill` — walks vault skill dir, copies files into project skill dir; dry-run aware |
 | `deleter.go` | `DeleteSkill` — removes skill dir from a project |
 | `config.go` | Unused — `LoadConfig()` defined here but never called; config is loaded by `cmd/root.go` via viper directly |

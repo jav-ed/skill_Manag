@@ -52,6 +52,13 @@ func newMenuModel() menuModel {
 				"from all matching projects at once.",
 		},
 		menuItem{
+			title: "Push",
+			desc:  "Force-installs mandatory skills to every opted-in project",
+			detail: "Reads the mandatory list from your vault config and pushes those skills " +
+				"to every project that already has .agents/skills/ — bypassing the opt-in rule. " +
+				"Configure mandatory skills by adding 'mandatory: [skill-name]' to <vault>/config.yaml.",
+		},
+		menuItem{
 			title: "Setup",
 			desc:  "Filesystem picker for vault and root — auto-runs on first launch",
 			detail: "Configure your vault (the folder holding your master skill files) and " +

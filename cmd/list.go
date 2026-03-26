@@ -37,7 +37,7 @@ func runList(cmd *cobra.Command, args []string) error {
 
 func doList(vault, root string) error {
 	if root == "" {
-		return fmt.Errorf("scan root is required: use --root or set 'root' in ~/.config/skill_Manag/config.yaml")
+		return fmt.Errorf("scan root is required: use --root or configure via Setup")
 	}
 	return tui.RunList(vault, root)
 }

@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/filepicker"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/spf13/viper"
+	"skill_Manag/internal"
 	"skill_Manag/styles"
 )
 
@@ -16,19 +19,23 @@ type setupPhase int
 const (
 	setupVault setupPhase = iota
 	setupRoot
+	setupMandatory
 	setupSave
 	setupDone
 )
 
 type setupModel struct {
-	fp          filepicker.Model
-	phase       setupPhase
-	vault       string
-	root        string
-	save        bool
-	errMsg      string
-	linkHovered bool
-	backHovered bool
+	fp                filepicker.Model
+	phase             setupPhase
+	vault             string
+	root              string
+	vaultSkills       []string
+	mandatorySelected map[string]bool
+	mandatoryCursor   int
+	save              bool
+	errMsg            string
+	linkHovered       bool
+	backHovered       bool
 }
 
 func newSetupModel(existingVault, existingRoot string) setupModel {
@@ -66,13 +73,38 @@ func (m setupModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if goBack {
 			return m, tea.Quit
 		}
+		// Mandatory checklist — mouse support for items.
+		// setupMandatory layout: row 0=empty, row 1=header, row 2=divider, row 3=empty,
+		// row 4=vault, row 5=root, row 6=empty, row 7=→Mandatory, row 8=desc, row 9=empty → items at row 10.
+		if m.phase == setupMandatory {
+			const itemsStart = 10
+			if msg.Y >= itemsStart {
+				idx := msg.Y - itemsStart
+				if idx >= 0 && idx < len(m.vaultSkills) {
+					switch msg.Action {
+					case tea.MouseActionMotion:
+						m.mandatoryCursor = idx
+					case tea.MouseActionPress:
+						if msg.Button == tea.MouseButtonLeft {
+							m.mandatoryCursor = idx
+							name := m.vaultSkills[idx]
+							m.mandatorySelected[name] = !m.mandatorySelected[name]
+						}
+					}
+				}
+			}
+			return m, nil
+		}
+		if m.phase == setupSave || m.phase == setupDone {
+			return m, nil
+		}
 		var cmd tea.Cmd
 		m.fp, cmd = m.fp.Update(msg)
 		return m, cmd
 
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c", "alt+left":
+		case "ctrl+c", "alt+left", "q":
 			return m, tea.Quit
 		case "y", "Y":
 			if m.phase == setupSave {
@@ -87,9 +119,30 @@ func (m setupModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Quit
 			}
 		}
+		// Mandatory step — handle checklist navigation, don't pass to filepicker
+		if m.phase == setupMandatory {
+			switch msg.String() {
+			case "up", "k":
+				if m.mandatoryCursor > 0 {
+					m.mandatoryCursor--
+				}
+			case "down", "j":
+				if m.mandatoryCursor < len(m.vaultSkills)-1 {
+					m.mandatoryCursor++
+				}
+			case " ":
+				if len(m.vaultSkills) > 0 {
+					name := m.vaultSkills[m.mandatoryCursor]
+					m.mandatorySelected[name] = !m.mandatorySelected[name]
+				}
+			case "enter":
+				m.phase = setupSave
+			}
+			return m, nil
+		}
 	}
 
-	if m.phase == setupSave || m.phase == setupDone {
+	if m.phase == setupSave || m.phase == setupDone || m.phase == setupMandatory {
 		return m, nil
 	}
 
@@ -109,7 +162,12 @@ func (m setupModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.fp.Init()
 		case setupRoot:
 			m.root = path
-			m.phase = setupSave
+			m.vaultSkills = readVaultSkillNames(m.vault)
+			m.mandatorySelected = make(map[string]bool)
+			for _, name := range viper.GetStringSlice("mandatory") {
+				m.mandatorySelected[name] = true
+			}
+			m.phase = setupMandatory
 		}
 	}
 
@@ -134,18 +192,45 @@ func (m setupModel) View() string {
 		s += styles.Muted.Render("     The folder that contains all your projects.") + "\n"
 		s += styles.Muted.Render("     skill_Manag walks it to find installed skills:") + "\n\n"
 		s += m.fp.View() + "\n"
-	case setupSave:
+	case setupMandatory:
 		s += styles.Success.Render("  ✓ Vault  ") + styles.Muted.Render(m.vault) + "\n"
 		s += styles.Success.Render("  ✓ Root   ") + styles.Muted.Render(m.root) + "\n\n"
+		s += styles.SkillName.Render("  → Mandatory") + "\n"
+		s += styles.Muted.Render("     Skills pushed to every opted-in project:") + "\n\n"
+		if len(m.vaultSkills) == 0 {
+			s += styles.Muted.Render("  (no skills found in vault)") + "\n"
+		} else {
+			for i, name := range m.vaultSkills {
+				cursor := "  "
+				if i == m.mandatoryCursor {
+					cursor = styles.Warning.Render("> ")
+				}
+				checkbox := "[ ]"
+				if m.mandatorySelected[name] {
+					checkbox = styles.Warning.Render("[✓]")
+				}
+				s += fmt.Sprintf("  %s%s %s\n", cursor, checkbox, styles.SkillName.Render(name))
+			}
+		}
+		s += "\n" + styles.Muted.Render("  ↑/↓ navigate  space toggle  enter confirm") + "\n"
+	case setupSave:
+		mandatory := mandatoryList(m.vaultSkills, m.mandatorySelected)
+		mandatoryStr := "(none)"
+		if len(mandatory) > 0 {
+			mandatoryStr = strings.Join(mandatory, ", ")
+		}
+		s += styles.Success.Render("  ✓ Vault      ") + styles.Muted.Render(m.vault) + "\n"
+		s += styles.Success.Render("  ✓ Root       ") + styles.Muted.Render(m.root) + "\n"
+		s += styles.Success.Render("  ✓ Mandatory  ") + styles.Muted.Render(mandatoryStr) + "\n\n"
 		s += divider + "\n"
-		s += "  " + styles.Warning.Render("Save to ~/.config/skill_Manag/config.yaml?") +
-			"  " + styles.Muted.Render("(y / n)") + "\n"
+		s += "  " + styles.Warning.Render("Save config?") + "  " +
+			styles.Muted.Render("vault pointer → ~/.config/skill_Manag/vault   root → <vault>/config.yaml   (y / n)") + "\n"
 	}
 
 	if m.errMsg != "" {
 		s += "\n  " + styles.Error.Render("✗ "+m.errMsg) + "\n"
 	}
-	s += "\n" + styles.Muted.Render("  alt+←  ·  ctrl+c   back")
+	s += "\n" + styles.Muted.Render("  q  ·  alt+←  ·  ctrl+c   back")
 	return s
 }
 
@@ -160,22 +245,69 @@ func RunSetup(existingVault, existingRoot string) (vault, root string, err error
 	vault = result.vault
 	root = result.root
 	if result.save {
-		if saveErr := saveConfig(vault, root); saveErr != nil {
+		mandatory := mandatoryList(result.vaultSkills, result.mandatorySelected)
+		if saveErr := saveConfig(vault, root, mandatory); saveErr != nil {
 			fmt.Fprintf(os.Stderr, "warning: could not save config: %v\n", saveErr)
 		}
 	}
 	return vault, root, nil
 }
 
-func saveConfig(vault, root string) error {
+func saveConfig(vault, root string, mandatory []string) error {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return err
 	}
+	// Write vault path pointer
 	dir := filepath.Join(home, ".config", "skill_Manag")
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
-	content := fmt.Sprintf("vault: %s\nroot: %s\n", vault, root)
-	return os.WriteFile(filepath.Join(dir, "config.yaml"), []byte(content), 0644)
+	if err := os.WriteFile(filepath.Join(dir, "vault"), []byte(vault+"\n"), 0644); err != nil {
+		return err
+	}
+	// Write vault config — preserve any existing keys, then set root and mandatory
+	vaultConfigPath := filepath.Join(vault, "config.yaml")
+	v := viper.New()
+	v.SetConfigFile(vaultConfigPath)
+	v.ReadInConfig() // ignore error — file may not exist yet
+	v.Set("root", root)
+	v.Set("mandatory", mandatory)
+	return v.WriteConfigAs(vaultConfigPath)
+}
+
+// SaveVaultMandatory updates only the mandatory list in the vault config,
+// preserving all other keys. Used by the Push screen's edit mode.
+func SaveVaultMandatory(vault string, mandatory []string) error {
+	vaultConfigPath := filepath.Join(vault, "config.yaml")
+	v := viper.New()
+	v.SetConfigFile(vaultConfigPath)
+	v.ReadInConfig()
+	v.Set("mandatory", mandatory)
+	return v.WriteConfigAs(vaultConfigPath)
+}
+
+// readVaultSkillNames returns all skill names from the vault, sorted.
+func readVaultSkillNames(vault string) []string {
+	master, err := internal.ReadMasterSkills(vault)
+	if err != nil {
+		return nil
+	}
+	names := make([]string, 0, len(master))
+	for name := range master {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
+}
+
+// mandatoryList returns the selected mandatory skills in vault order.
+func mandatoryList(vaultSkills []string, selected map[string]bool) []string {
+	result := make([]string, 0)
+	for _, name := range vaultSkills {
+		if selected[name] {
+			result = append(result, name)
+		}
+	}
+	return result
 }

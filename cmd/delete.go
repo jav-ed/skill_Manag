@@ -57,7 +57,7 @@ func init() {
 
 func doDeleteInteractive(root string) error {
 	if root == "" {
-		return fmt.Errorf("scan root is required: use --root or set 'root' in ~/.config/skill_Manag/config.yaml")
+		return fmt.Errorf("scan root is required: use --root or configure via Setup")
 	}
 	return tui.RunDelete(root, deleteDryRun)
 }
@@ -84,7 +84,7 @@ func runDelete(cmd *cobra.Command, args []string) error {
 	// Skill name only: delete from all projects that have it
 	root := viper.GetString("root")
 	if root == "" {
-		return fmt.Errorf("scan root is required: use --root or set 'root' in ~/.config/skill_Manag/config.yaml")
+		return fmt.Errorf("scan root is required: use --root or configure via Setup")
 	}
 
 	targets, err := internal.FindTargetsByName(root, skillName)

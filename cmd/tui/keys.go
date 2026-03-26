@@ -56,6 +56,35 @@ var deleteKeys = deleteKeyMap{
 	Quit:    key.NewBinding(key.WithKeys("q", "ctrl+c", "alt+left"), key.WithHelp("q/alt+←", "back")),
 }
 
+type pushKeyMap struct {
+	Up      key.Binding
+	Down    key.Binding
+	Toggle  key.Binding
+	All     key.Binding
+	Confirm key.Binding
+	Edit    key.Binding
+	Help    key.Binding
+	Quit    key.Binding
+}
+
+func (k pushKeyMap) ShortHelp() []key.Binding {
+	return []key.Binding{k.Toggle, k.All, k.Confirm, k.Edit, k.Help, k.Quit}
+}
+func (k pushKeyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{{k.Up, k.Down}, {k.Toggle, k.All}, {k.Confirm, k.Edit, k.Quit}}
+}
+
+var pushKeys = pushKeyMap{
+	Up:      key.NewBinding(key.WithKeys("up", "k"), key.WithHelp("↑/k", "up")),
+	Down:    key.NewBinding(key.WithKeys("down", "j"), key.WithHelp("↓/j", "down")),
+	Toggle:  key.NewBinding(key.WithKeys(" "), key.WithHelp("space", "toggle")),
+	All:     key.NewBinding(key.WithKeys("a"), key.WithHelp("a", "all")),
+	Confirm: key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "push")),
+	Edit:    key.NewBinding(key.WithKeys("e"), key.WithHelp("e", "edit mandatory")),
+	Help:    key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "help")),
+	Quit:    key.NewBinding(key.WithKeys("q", "ctrl+c", "alt+left"), key.WithHelp("q/alt+←", "back")),
+}
+
 type listKeyMap struct {
 	Up     key.Binding
 	Down   key.Binding

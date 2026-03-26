@@ -45,3 +45,21 @@ projects/
 ## Where this is implemented
 
 The opt-in filter lives in `internal/walker.go` — `FindTargets()` only appends a `Target` when the project's skill name is present in the vault map. `internal/copier.go` — `SyncSkill()` — receives an already-filtered target and just executes the copy.
+
+## Push — bypassing the opt-in rule
+
+Some skills should reach every project regardless of opt-in. Declare them in `<vault>/config.yaml`:
+
+```yaml
+root: /path/to/projects
+mandatory:
+  - coding
+  - doc-start
+```
+
+Push reads this list, finds every project that has `.agents/skills/` with at least one skill installed, and copies the mandatory skills there — creating the skill dir if it doesn't exist yet. This is implemented in `internal/walker.go` — `FindPushTargets()`.
+
+## Config structure
+
+- `~/.config/skill_Manag/vault` — plain text file, one line: the vault path
+- `<vault>/config.yaml` — `root` and `mandatory` keys; owned by the vault, travels with it

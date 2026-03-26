@@ -56,13 +56,14 @@ Running `skill_Manag` with no arguments opens a full-screen TUI. Every screen su
 
 ### Main menu
 
-Four actions available from the main menu. Mouse hover moves the highlight; click or `enter` opens the screen.
+Five actions available from the main menu. Mouse hover moves the highlight; click or `enter` opens the screen.
 
 | Action | What it does |
 |--------|-------------|
 | **Sync** | Refresh each project's installed skills from vault |
 | **List** | Browse all skills installed across all projects |
 | **Delete** | Remove selected skills from projects |
+| **Push** | Force-install mandatory skills to every opted-in project |
 | **Setup** | Reconfigure vault and root paths |
 
 ### Sync screen
@@ -89,11 +90,20 @@ Four actions available from the main menu. Mouse hover moves the highlight; clic
 - `y` or `enter` to confirm, `n` or `esc` to go back
 - Results screen shows what was deleted and any errors
 
+### Push screen
+
+- Shows only the skills listed under `mandatory` in your vault config
+- All pre-selected by default — deselect what you don't want this run
+- Pushes to every project that has `.agents/skills/` with any skill installed — creates the skill dir if it doesn't exist yet
+- Press `e` to open the mandatory edit overlay — toggle which vault skills are mandatory, `enter` saves and re-scans, `esc/q` cancels
+- Results screen shows per-skill outcome with file counts and any errors
+
 ### Setup screen
 
-- Filesystem picker for both vault and root — no manual path typing
-- Walks your actual directory tree, navigate with arrow keys, `enter` to select
-- Confirmation prompt before saving to `~/.config/skill_Manag/config.yaml`
+- Three-step wizard: vault → root → mandatory skills
+- Filesystem picker for vault and root — no manual path typing; navigate with arrow keys, `enter` to select
+- Mandatory step shows all vault skills as a checklist — toggle with `space`, confirm with `enter`
+- Confirmation prompt before saving — writes vault pointer to `~/.config/skill_Manag/vault` and config to `<vault>/config.yaml`
 - Runs automatically on first launch if no config is found
 
 ---
@@ -142,17 +152,22 @@ skill_Manag delete coding --dry-run
 
 ## Configuration
 
-Set your defaults once so you never need to pass flags:
+Config is split across two files so the vault is fully self-contained and portable:
 
-```yaml
-# ~/.config/skill_Manag/config.yaml
-vault: /path/to/your/skill/vault
-root:  /path/to/your/projects
+```
+~/.config/skill_Manag/vault   ← one line: path to your vault
+<vault>/config.yaml           ← root and mandatory skills
 ```
 
-`--vault` and `--root` flags override the config for any single run. Environment variables `SKILL_MANAG_VAULT` and `SKILL_MANAG_ROOT` also work.
+```yaml
+# <vault>/config.yaml
+root: /path/to/your/projects
+mandatory:
+  - coding
+  - doc-start
+```
 
-The Setup screen in the TUI writes this file for you.
+`mandatory` is optional — omit it if you don't use Push. The Setup screen writes both files for you. `--vault` and `--root` flags override config for any single run. Environment variables `SKILL_MANAG_VAULT` and `SKILL_MANAG_ROOT` also work.
 
 ---
 
@@ -171,3 +186,11 @@ The binary lands in `~/go/bin/skill_Manag`. Make sure that's on your `$PATH`:
 ```bash
 export PATH="$PATH:$HOME/go/bin"
 ```
+
+---
+
+## License
+
+[![Hippocratic License HL3-BDS-CL-ECO-EXTR-MEDIA-MIL-SV-XUAR](https://img.shields.io/static/v1?label=Hippocratic%20License&message=HL3-BDS-CL-ECO-EXTR-MEDIA-MIL-SV-XUAR&labelColor=5e2751&color=bc8c3d)](https://firstdonoharm.dev/version/3/0/bds-cl-eco-extr-media-mil-sv-xuar.html)
+
+See [LICENSE](./LICENSE) for the full terms.
