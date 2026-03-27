@@ -7,12 +7,31 @@ import (
 
 // Directories that are never worth descending into
 var skipDirs = map[string]bool{
-	".venv":        true,
+	// version control
+	".git": true,
+
+	// dependency trees
 	"node_modules": true,
-	".git":         true,
-	"__pycache__":  true,
 	"vendor":       true,
-	".cache":       true,
+
+	// build output
+	"dist":   true,
+	"build":  true,
+	"out":    true,
+	"target": true,
+	".next":  true,
+	".nuxt":  true,
+
+	// python
+	".venv":         true,
+	"__pycache__":   true,
+	".tox":          true,
+	".pytest_cache": true,
+
+	// caches
+	".cache":        true,
+	".turbo":        true,
+	".parcel-cache": true,
 }
 
 // Target is a skill directory inside a project that matches a master skill

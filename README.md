@@ -18,7 +18,7 @@ Symlinks would solve this — but they break over SSH and won't be tracked prope
 
 `skill_Manag` knows two things: your **vault** (one folder where you write and maintain your skills) and your **root** (the folder that contains all your projects).
 
-It walks every project under that root, finds every `.agents/skills/<SkillName>/` directory, and for any skill that also exists in the vault — copies the vault version in, overriding whatever is there.
+It walks every project under that root, finds every `.agents/skills/<SkillName>/` directory, and for any skill that also exists in the vault — replaces it entirely with the vault version. This is a mirror, not an overlay: the skill directory is deleted first, then copied fresh, so no stale files from older versions survive.
 
 **Key rule: it only updates skills a project already has. It never installs a skill into a project that hasn't opted in.** Each project controls its own skill set by what it has in its `.agents/skills/` directory.
 

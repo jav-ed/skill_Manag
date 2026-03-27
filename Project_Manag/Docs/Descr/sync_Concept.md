@@ -15,11 +15,15 @@ The vault is the source of truth for **content**. Each project controls its own 
 ```
 1. Read all skill names from the vault directory
 2. Walk all subdirectories under the scan root
-3. Skip noise dirs (.git, node_modules, .venv, vendor, …)
+3. Skip noise dirs (.git, node_modules, vendor, dist, build, out, target,
+   .next, .nuxt, .venv, __pycache__, .tox, .pytest_cache,
+   .cache, .turbo, .parcel-cache)
 4. For each .agents/skills/<SkillName>/ found:
-     if <SkillName> exists in vault → copy vault → project (overwrite)
+     if <SkillName> exists in vault → delete skill dir, copy vault fresh
      if <SkillName> not in vault    → skip entirely
 ```
+
+Sync is a **mirror**, not an overlay. Deleting the skill dir before copying ensures no stale files from older skill versions survive in the project.
 
 ## Example
 
