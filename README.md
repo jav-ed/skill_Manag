@@ -169,6 +169,10 @@ mandatory:
 
 `mandatory` is optional — omit it if you don't use Push. The Setup screen writes both files for you. `--vault` and `--root` flags override config for any single run. Environment variables `SKILL_MANAG_VAULT` and `SKILL_MANAG_ROOT` also work.
 
+### Controlling what syncs from the vault
+
+`skill_Manag` uses your vault's `.gitignore` to decide which files travel with a skill. Anything gitignored in the vault — virtual environments, build output, local tooling — is automatically excluded. If the vault is not a git repo, a built-in skip list (`node_modules`, `.venv`, `dist`, etc.) is used as a fallback.
+
 ---
 
 ## Install

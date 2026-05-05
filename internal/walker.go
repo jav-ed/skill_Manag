@@ -116,7 +116,7 @@ func FindTargetsByName(root, skillName string) ([]Target, error) {
 	return FindTargets(root, map[string]string{skillName: ""})
 }
 
-// FindPushTargets finds all projects that have any skill installed,
+// FindPushTargets finds all projects that have a .agents/skills/ directory (even empty),
 // then creates a target for each push skill in those projects — bypassing the opt-in rule.
 func FindPushTargets(root string, pushSkills map[string]string) ([]Target, error) {
 	var targets []Target
@@ -135,22 +135,6 @@ func FindPushTargets(root string, pushSkills map[string]string) ([]Target, error
 		}
 		if filepath.Base(filepath.Dir(path)) != ".agents" {
 			return nil
-		}
-
-		// Project must have at least one skill already installed (opted in to skill_Manag)
-		entries, err := os.ReadDir(path)
-		if err != nil {
-			return nil
-		}
-		hasSkill := false
-		for _, e := range entries {
-			if e.IsDir() {
-				hasSkill = true
-				break
-			}
-		}
-		if !hasSkill {
-			return filepath.SkipDir
 		}
 
 		projectPath := filepath.Dir(filepath.Dir(path))

@@ -25,6 +25,16 @@ The vault is the source of truth for **content**. Each project controls its own 
 
 Sync is a **mirror**, not an overlay. Deleting the skill dir before copying ensures no stale files from older skill versions survive in the project.
 
+## What files get copied from the vault
+
+When copying a skill from the vault, `SyncSkill` uses a git-aware file selection strategy:
+
+**Primary — git repo detected:**
+`git ls-files --cached --others --exclude-standard .` is run scoped to the vault skill directory. This returns all tracked files plus any untracked files not excluded by `.gitignore`. The vault's `.gitignore` is the canonical way to keep build artifacts, virtual environments, and other noise out of synced skills.
+
+**Fallback — no git repo:**
+A filtered directory walk is used instead. Directories in the skip list above are skipped, and symlinks are excluded (they are machine-specific and not portable).
+
 ## Example
 
 ```
@@ -61,7 +71,7 @@ mandatory:
   - doc-start
 ```
 
-Push reads this list, finds every project that has `.agents/skills/` with at least one skill installed, and copies the mandatory skills there — creating the skill dir if it doesn't exist yet. This is implemented in `internal/walker.go` — `FindPushTargets()`.
+Push reads this list, finds every project that has a `.agents/skills/` directory (even if empty), and copies the mandatory skills there — creating each skill dir if it doesn't exist yet. This is implemented in `internal/walker.go` — `FindPushTargets()`.
 
 ## Config structure
 

@@ -2,8 +2,11 @@ package internal
 
 import (
 	"io"
+	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 // SyncResult holds the outcome of syncing one skill to one project
@@ -22,22 +25,17 @@ func SyncSkill(masterSkills map[string]string, target Target, dryRun bool) SyncR
 	srcDir := masterSkills[target.SkillName]
 	result := SyncResult{Target: target}
 
-	// Collect vault files
-	err := filepath.WalkDir(srcDir, func(path string, d os.DirEntry, err error) error {
-		if err != nil || d.IsDir() {
-			return err
-		}
-		rel, err := filepath.Rel(srcDir, path)
+	// Prefer git-aware file list; fall back to filtered walk if vault isn't a git repo
+	files, ok := gitListFiles(srcDir)
+	if !ok {
+		var err error
+		files, err = walkVaultFiles(srcDir)
 		if err != nil {
-			return err
+			result.Err = err
+			return result
 		}
-		result.Files = append(result.Files, rel)
-		return nil
-	})
-	if err != nil {
-		result.Err = err
-		return result
 	}
+	result.Files = files
 
 	// Always record what is/would be removed before touching the destination
 	result.Removed = staleFiles(target.SkillPath, result.Files)
@@ -63,6 +61,47 @@ func SyncSkill(masterSkills map[string]string, target Target, dryRun bool) SyncR
 	}
 
 	return result
+}
+
+// gitListFiles returns all files under dir that git would include:
+// tracked files plus untracked files not excluded by .gitignore.
+// Returns false if git is unavailable or dir is not inside a git repo.
+func gitListFiles(dir string) ([]string, bool) {
+	out, err := exec.Command("git", "-C", dir, "ls-files", "--cached", "--others", "--exclude-standard", ".").Output()
+	if err != nil {
+		return nil, false
+	}
+	var files []string
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		if line != "" {
+			files = append(files, filepath.FromSlash(line))
+		}
+	}
+	return files, true
+}
+
+// walkVaultFiles collects regular, non-symlink files under dir, skipping skipDirs.
+// Used as a fallback when the vault is not a git repo.
+func walkVaultFiles(dir string) ([]string, error) {
+	var files []string
+	err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() && skipDirs[d.Name()] {
+			return filepath.SkipDir
+		}
+		if d.Type()&fs.ModeSymlink != 0 || d.IsDir() {
+			return nil
+		}
+		rel, err := filepath.Rel(dir, path)
+		if err != nil {
+			return err
+		}
+		files = append(files, rel)
+		return nil
+	})
+	return files, err
 }
 
 // staleFiles returns relative paths present in dstDir that are not in vaultFiles.
