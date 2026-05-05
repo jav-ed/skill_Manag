@@ -5,9 +5,9 @@ description: Use when a developer wants to run the `refac` CLI to move or rename
 
 # Use Refac CLI
 
-`refac` moves or renames source files and directories, updating all affected import/reference paths.
+`refac` moves or renames source files and directories, updating all affected import/reference paths automatically.
 
-## What is supported per language
+## Supported languages
 
 | Language | Files | Directories |
 |---|---|---|
@@ -16,65 +16,45 @@ description: Use when a developer wants to run the `refac` CLI to move or rename
 | Rust | ✅ | ❌ |
 | Go | ✅ | ❌ |
 | Dart | ✅ | ❌ |
+| Markdown | ✅ | ❌ |
 
-**If you pass a directory for a non-TS language, the call will fail.** There is no silent skip — you get an error from the TypeScript driver because it can't find TS source files in that directory.
+Passing a directory for any non-TS/JS language will fail with a clear error.
 
-## Hard constraints — read before running
+## Hard constraints
 
-- `--project-path` must point to the **package root** (the folder that contains `tsconfig.json`, `Cargo.toml`, `pyproject.toml`, etc.), not the monorepo root.
-- Paths passed to `--source-path` and `--target-path` may be absolute or relative to `--project-path`.
-- Source and target counts must match 1:1. If you have 3 `--source-path` flags you need exactly 3 `--target-path` flags.
-- Mixed languages in one call is fine — the tool groups them internally.
-
-## Directory moves (TypeScript/JS only)
-
-Pass the folder path the same way you would a file. ts-morph moves all files inside and rewrites every import that pointed into that folder — including from files **outside** the moved folder.
-
-```bash
-refac move \
-  --project-path /path/to/package \
-  --source-path src/old/feature \
-  --target-path src/new/feature
-```
-
-Directory moves **always load the full project** regardless of size, because finding external importers requires the full context. This may be slow for very large codebases.
-
-## Large TypeScript/JS projects — file moves only
-
-For individual **file** moves in projects with more than ~500 TS/JS files, `refac` skips loading the full project and only moves the specific files. **Cross-project import updates are skipped in this case.** The file is moved; imports in other files that pointed to it are not updated.
+- `--project-path` must be the **package root** (the folder containing `tsconfig.json`, `Cargo.toml`, `go.mod`, etc.) — not the monorepo root.
+- `--source-path` and `--target-path` must match 1:1. Three sources require three targets.
+- Paths may be absolute or relative to `--project-path`.
+- Mixed languages in one call are fine — the tool groups them internally.
 
 ## Usage
 
-Pass the project root once via env var:
-
 ```bash
-export REFAC_PROJECT_PATH=/absolute/path/to/package
+# single file
 refac move \
-  --source-path src/old_name.ts \
-  --target-path src/new_name.ts
-```
+  --project-path /path/to/package \
+  --source-path src/old.ts \
+  --target-path src/new.ts
 
-Or pass it inline:
+# set project path once via env var
+export REFAC_PROJECT_PATH=/path/to/package
+refac move --source-path src/old.ts --target-path src/new.ts
 
-```bash
+# batch move (flags in matching order)
 refac move \
-  --project-path /absolute/path/to/package \
-  --source-path src/old_name.ts \
-  --target-path src/new_name.ts
-```
-
-Batch move (repeat flags in matching order):
-
-```bash
-refac move \
-  --project-path /absolute/path/to/package \
+  --project-path /path/to/package \
   --source-path src/a.ts --source-path src/b.ts \
   --target-path src/x.ts --target-path src/y.ts
+
+# structured output for agent parsing
+refac move --json --project-path /path/to/package \
+  --source-path src/old.go --target-path pkg/new/old.go
 ```
 
-## Help
+Exit codes: `0` = all succeeded, `1` = one or more failed.
 
-```bash
-refac --help
-refac move --help
-```
+## References
+
+- [Language-specific behaviour](references/language_behaviour.md) — Go whole-package moves, Rust shim strategy, Dart package config, TS large-project threshold, Python re-export limits
+- [Install & prerequisites](references/install.md) — build from source, PATH setup, required tooling per language
+- [Agent integration](references/agent_integration.md) — how to wire this skill into Claude Code or other agent harnesses via symlink

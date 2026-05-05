@@ -21,7 +21,17 @@ second_code
 
 ## Naming Conventions
 
-Follow the native conventions of the language you are working in. For languages where the community is split or conventions are ambiguous, see the language guides:
+**Step 1 — check if the codebase already has an established convention.** If it does, follow it exactly. Do not introduce a different style, even if it looks better.
+
+**Step 2 — if no convention exists, ask the operator:**
+
+> "Which naming style should I use?
+> - **Standard** — the default community norms for this language (camelCase/kebab-case for JS, snake_case for Python). Good when an AI agent is writing the code autonomously.
+> - **Improved** — a more readable hybrid that keeps underscores for separation but uses capitalization to signal nouns and significant concepts. Better when the developer is reading the code themselves."
+
+For the improved version, see: [Improved_Camel_Snake convention](languages/improved_Version.md)
+
+For standard language conventions, see the language guides:
 
 - [JS / TS](languages/js_Ts.md)
 - [Markdown & non-code files](languages/markdown.md)

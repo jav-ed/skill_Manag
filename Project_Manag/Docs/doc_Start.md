@@ -10,6 +10,12 @@ Entry points: `main.go` → `cmd/root.go` (cobra setup + menu loop) → `cmd/tui
 - [Sync concept and opt-in rule](Descr/sync_Concept.md) — what sync does and doesn't do, vault/project relationship, 4-step flow; read before changing sync behaviour
 - [README — user-facing install, commands, config](../../README.md) — how users install and run the tool
 
+## Config
+
+- **Vault:** `/home/jav/Schreibtisch/Javed/0_Right_Sirat/1_Code/07_Coding_Env/05_Skill_Collec`
+- **Vault pointer:** `~/.config/skill_Manag/vault` (one line, set by setup wizard)
+- **Vault config:** `<vault>/config.yaml` — `root` (scan root) and `mandatory` (push skills)
+
 ## Local dependency sources
 
 - [Repos/bubbles/](../../Repos/bubbles/) — charmbracelet/bubbles source + docs; start here when working with any TUI component (filepicker, progress, spinner, paginator, etc.). Note: the bubbles `list` and `table` components have no mouse support — mouse is wired manually via `msg.Y` + component APIs.
