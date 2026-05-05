@@ -63,11 +63,13 @@ func SyncSkill(masterSkills map[string]string, target Target, dryRun bool) SyncR
 	return result
 }
 
-// gitListFiles returns all files under dir that git would include:
-// tracked files plus untracked files not excluded by .gitignore.
+// gitListFiles returns all files tracked by git under dir, relative to dir.
+// Only staged/committed files are included — untracked files are intentionally
+// excluded so mid-transition vault state (partial renames, unstaged adds) cannot
+// produce duplicate or ghost entries.
 // Returns false if git is unavailable or dir is not inside a git repo.
 func gitListFiles(dir string) ([]string, bool) {
-	out, err := exec.Command("git", "-C", dir, "ls-files", "--cached", "--others", "--exclude-standard", ".").Output()
+	out, err := exec.Command("git", "-C", dir, "ls-files", "--cached", ".").Output()
 	if err != nil {
 		return nil, false
 	}

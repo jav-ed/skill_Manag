@@ -30,7 +30,7 @@ Sync is a **mirror**, not an overlay. Deleting the skill dir before copying ensu
 When copying a skill from the vault, `SyncSkill` uses a git-aware file selection strategy:
 
 **Primary — git repo detected:**
-`git ls-files --cached --others --exclude-standard .` is run scoped to the vault skill directory. This returns all tracked files plus any untracked files not excluded by `.gitignore`. The vault's `.gitignore` is the canonical way to keep build artifacts, virtual environments, and other noise out of synced skills.
+`git ls-files --cached .` is run scoped to the vault skill directory. Only staged/committed files are returned. Untracked files are intentionally excluded — if the vault is mid-rename or has unstaged additions, they are invisible to sync until the vault author stages them. This prevents mid-transition vault state (partial renames, unstaged adds) from producing duplicate or ghost entries in projects.
 
 **Fallback — no git repo:**
 A filtered directory walk is used instead. Directories in the skip list above are skipped, and symlinks are excluded (they are machine-specific and not portable).
