@@ -20,6 +20,7 @@ All interactive screens are bubbletea models. Each has a `phase` enum that drive
 |------|-------------|
 | `menu.go` | Main menu — 5 items, detail panel, mouse hover drives cursor via `list.Select()`, click navigates |
 | `sync.go` | Sync screen — phases: loading → select → syncing → done; spinner, paginator, progress bar |
+| `sync_view.go` | Sync screen rendering — selection view, result summary, and per-project updated-path lines |
 | `push.go` | Push screen — same phase lifecycle as sync; uses Warning color; reads mandatory from vault config |
 | `list.go` | List browser — same checkbox renderer as sync/delete with project path column, live `/` filter, paginator, sync or delete in place |
 | `delete.go` | Delete screen — phases: loading → select → confirm → done; nothing pre-selected |

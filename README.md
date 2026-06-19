@@ -73,7 +73,7 @@ Five actions available from the main menu. Mouse hover moves the highlight; clic
 - Click a row or press `space` to toggle; `a` toggles all
 - Paginated with dot indicators when you have more than 10 skills (`• · · ·`)
 - Animated progress bar fills as each skill syncs (`Syncing 3 / 7`)
-- Results screen shows per-skill outcome with file counts and any errors
+- Results screen shows per-skill outcome, file counts, errors, and the project paths that were updated
 
 ### List screen
 
