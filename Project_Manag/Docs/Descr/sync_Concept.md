@@ -36,6 +36,8 @@ When copying a skill from the vault, `SyncSkill` uses a git-aware file selection
 **Fallback — no git repo:**
 A filtered directory walk is used instead. Directories in the skip list above are skipped, and symlinks are excluded (they are machine-specific and not portable).
 
+Copied files keep the source file permission bits from the vault. Executable helper scripts, read-only files, and similar file-mode details should survive the mirror into project skill folders.
+
 ## Example
 
 ```

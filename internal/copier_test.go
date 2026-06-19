@@ -80,6 +80,42 @@ func TestSyncSkill_RemovesStaleFiles(t *testing.T) {
 	}
 }
 
+func TestSyncSkill_PreservesFilePermissions(t *testing.T) {
+	vault := copyFixtures(t, fixtureVault)
+	projects := copyFixtures(t, fixtureProjects)
+
+	src := filepath.Join(vault, "coding/SKILL.md")
+	if err := os.Chmod(src, 0750); err != nil {
+		t.Fatalf("chmod source fixture: %v", err)
+	}
+
+	masterSkills, err := ReadMasterSkills(vault)
+	if err != nil {
+		t.Fatalf("ReadMasterSkills: %v", err)
+	}
+
+	skillPath := filepath.Join(projects, "org/team/project-a/.agents/skills/coding")
+	target := Target{
+		ProjectPath: filepath.Join(projects, "org/team/project-a"),
+		SkillName:   "coding",
+		SkillPath:   skillPath,
+	}
+
+	result := SyncSkill(masterSkills, target, false)
+	if result.Err != nil {
+		t.Fatalf("SyncSkill: %v", result.Err)
+	}
+
+	dst := filepath.Join(skillPath, "SKILL.md")
+	dstInfo, err := os.Stat(dst)
+	if err != nil {
+		t.Fatalf("stat copied file: %v", err)
+	}
+	if got := dstInfo.Mode().Perm(); got != 0750 {
+		t.Fatalf("copied file mode = %v, want %v", got, os.FileMode(0750))
+	}
+}
+
 func TestSyncSkill_DryRunTouchesNothing(t *testing.T) {
 	vault := copyFixtures(t, fixtureVault)
 	projects := copyFixtures(t, fixtureProjects)

@@ -55,7 +55,7 @@ space toggle  a all  enter confirm  q/alt+← back
 | File | What it owns |
 |------|-------------|
 | `walker.go` | `ReadMasterSkills` (vault → map), `ScanOptions` (`exclude_dirs` / `exclude_paths`), `FindTargets` (opt-in filter), `FindPushTargets` (mandatory, bypasses opt-in), `FindAllSkillTargets`, `FindTargetsByName` |
-| `copier.go` | `SyncSkill` — selects vault files via `gitListFiles` (git-aware, respects `.gitignore`) or `walkVaultFiles` fallback, copies into project skill dir; dry-run aware |
+| `copier.go` | `SyncSkill` — selects vault files via `gitListFiles` (git-aware, respects `.gitignore`) or `walkVaultFiles` fallback, copies into project skill dir while preserving file permissions; dry-run aware |
 | `deleter.go` | `DeleteSkill` — removes skill dir from a project |
 | `config.go` | Unused — `LoadConfig()` defined here but never called; config is loaded by `cmd/root.go` via viper directly |
 
