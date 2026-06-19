@@ -12,6 +12,11 @@ Entry point(s): the key files an agent would need to know to orient in the code 
 - [Area name](Area/linker_Area.md): same
 - [Specific doc if area is small](Area/doc.md): same
 
+## Repo References
+
+- [Internal repo paths](Setup/internal_Repo_Paths.md): first-party repo shortcut names and host-scoped checkout paths. Use this for repos the project owns or operates across machines.
+- [External reference repos](Setup/repos_List.md): third-party or external shallow clones that belong under the gitignored `/Repos/` folder. Use this for upstream source/docs clones used as references.
+
 Note: this file lives at `Project_Manag/Docs/doc_Start.md`, so all link paths above are relative to `Project_Manag/Docs/`. Do not prepend `Project_Manag/Docs/` to them.
 
 The italicized paragraph at the top is the navigation-first preamble. Copy it verbatim into every `doc_Start.md` (rule 1 in `writing_Rules.md`); only the summary, entry points, and link list change per repo.

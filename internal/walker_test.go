@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 )
@@ -82,6 +83,45 @@ func TestFindTargets_SkipsNoiseDirs(t *testing.T) {
 			for path != filepath.Dir(path) {
 				if filepath.Base(path) == seg {
 					t.Errorf("target path passes through noise dir %q: %s", seg, tgt.SkillPath)
+				}
+				path = filepath.Dir(path)
+			}
+		}
+	}
+}
+
+func TestFindTargets_RespectsScanOptions(t *testing.T) {
+	vault := copyFixtures(t, fixtureVault)
+	projects := copyFixtures(t, fixtureProjects)
+
+	masterSkills, err := ReadMasterSkills(vault)
+	if err != nil {
+		t.Fatalf("ReadMasterSkills: %v", err)
+	}
+
+	testdataSkill := filepath.Join(projects, "testdata/fake-project/.agents/skills/coding")
+	if err := os.MkdirAll(testdataSkill, 0755); err != nil {
+		t.Fatalf("create testdata skill fixture: %v", err)
+	}
+	excludedPathSkill := filepath.Join(projects, "excluded-path/fake-project/.agents/skills/coding")
+	if err := os.MkdirAll(excludedPathSkill, 0755); err != nil {
+		t.Fatalf("create excluded path skill fixture: %v", err)
+	}
+
+	targets, err := FindTargetsWithOptions(projects, masterSkills, ScanOptions{
+		ExcludeDirs:  []string{"testdata"},
+		ExcludePaths: []string{"excluded-path"},
+	})
+	if err != nil {
+		t.Fatalf("FindTargetsWithOptions: %v", err)
+	}
+
+	for _, tgt := range targets {
+		for _, excluded := range []string{"testdata", "excluded-path"} {
+			path := tgt.SkillPath
+			for path != filepath.Dir(path) {
+				if filepath.Base(path) == excluded {
+					t.Errorf("target path passes through configured exclusion %q: %s", excluded, tgt.SkillPath)
 				}
 				path = filepath.Dir(path)
 			}

@@ -31,6 +31,7 @@ type listScanDoneMsg struct {
 type listModel struct {
 	vault       string
 	root        string
+	scanOptions internal.ScanOptions
 	all         []internal.Target
 	filtered    []int
 	selected    map[int]bool
@@ -48,10 +49,10 @@ type listModel struct {
 }
 
 func (m listModel) Init() tea.Cmd {
-	return tea.Batch(m.spinner.Tick, listScanCmd(m.vault, m.root))
+	return tea.Batch(m.spinner.Tick, listScanCmd(m.vault, m.root, m.scanOptions))
 }
 
-func listScanCmd(vault, root string) tea.Cmd {
+func listScanCmd(vault, root string, scanOptions internal.ScanOptions) tea.Cmd {
 	return func() tea.Msg {
 		var masterSkills map[string]string
 		if vault != "" {
@@ -61,7 +62,7 @@ func listScanCmd(vault, root string) tea.Cmd {
 				return listScanDoneMsg{err: err}
 			}
 		}
-		targets, err := internal.FindAllSkillTargets(root)
+		targets, err := internal.FindAllSkillTargetsWithOptions(root, scanOptions)
 		if err != nil {
 			return listScanDoneMsg{err: err}
 		}
@@ -369,7 +370,7 @@ func (m *listModel) rebuildFiltered() {
 }
 
 // RunList opens the interactive skill browser TUI.
-func RunList(vault, root string) error {
+func RunList(vault, root string, scanOptions internal.ScanOptions) error {
 	sp := spinner.New()
 	sp.Spinner = spinner.Points
 	sp.Style = styles.SkillName
@@ -381,12 +382,13 @@ func RunList(vault, root string) error {
 	pg.InactiveDot = styles.Muted.Render("·")
 
 	m := listModel{
-		vault:     vault,
-		root:      root,
-		phase:     listPhaseLoading,
-		spinner:   sp,
-		paginator: pg,
-		help:      help.New(),
+		vault:       vault,
+		root:        root,
+		scanOptions: scanOptions,
+		phase:       listPhaseLoading,
+		spinner:     sp,
+		paginator:   pg,
+		help:        help.New(),
 	}
 	_, err := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseAllMotion()).Run()
 	return err

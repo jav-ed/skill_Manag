@@ -165,9 +165,26 @@ root: /path/to/your/projects
 mandatory:
   - coding
   - doc-start
+exclude_paths:
+  - /absolute/path/to/project/internal/testdata
 ```
 
 `mandatory` is optional — omit it if you don't use Push. The Setup screen writes both files for you. `--vault` and `--root` flags override config for any single run. Environment variables `SKILL_MANAG_VAULT` and `SKILL_MANAG_ROOT` also work.
+
+### Excluding scan paths
+
+Use `exclude_paths` for precise workspace exceptions and `exclude_dirs` for broad directory-name exclusions:
+
+```yaml
+exclude_paths:
+  - /home/jav/Schreibtisch/Javed/0_Right_Sirat/1_Code/07_Coding_Env/03_CLIs/02_Skill_Manager/internal/testdata
+
+# Optional broad directory-name exclusions:
+# exclude_dirs:
+#   - testdata
+```
+
+Absolute `exclude_paths` are safest for one-off project exceptions. Relative paths are also supported and resolve against `root`. Built-in technical skips like `.git`, `node_modules`, `.venv`, `dist`, and `.cache` still apply automatically.
 
 ### Controlling what syncs from the vault
 

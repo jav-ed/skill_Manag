@@ -77,7 +77,7 @@ func runMenu(cmd *cobra.Command, args []string) error {
 // doSync reads the vault, finds targets, and either runs the TUI or dry-run output
 func doSync(vault, root string, dryRun bool) error {
 	if !dryRun {
-		return tui.RunSync(vault, root, false)
+		return tui.RunSync(vault, root, false, scanOptionsFromConfig())
 	}
 
 	// --dry-run: scan synchronously and print results without a TUI
@@ -89,7 +89,7 @@ func doSync(vault, root string, dryRun bool) error {
 		fmt.Println(styles.Warning.Render("No skills found in vault."))
 		return nil
 	}
-	targets, err := internal.FindTargets(root, masterSkills)
+	targets, err := internal.FindTargetsWithOptions(root, masterSkills, scanOptionsFromConfig())
 	if err != nil {
 		return fmt.Errorf("scanning projects: %w", err)
 	}
@@ -98,6 +98,13 @@ func doSync(vault, root string, dryRun bool) error {
 		return nil
 	}
 	return syncAll(targets, masterSkills, true)
+}
+
+func scanOptionsFromConfig() internal.ScanOptions {
+	return internal.ScanOptions{
+		ExcludeDirs:  viper.GetStringSlice("exclude_dirs"),
+		ExcludePaths: viper.GetStringSlice("exclude_paths"),
+	}
 }
 
 // syncAll syncs every target and prints a per-project summary (used by --dry-run)

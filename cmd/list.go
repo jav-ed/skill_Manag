@@ -39,5 +39,5 @@ func doList(vault, root string) error {
 	if root == "" {
 		return fmt.Errorf("scan root is required: use --root or configure via Setup")
 	}
-	return tui.RunList(vault, root)
+	return tui.RunList(vault, root, scanOptionsFromConfig())
 }

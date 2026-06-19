@@ -36,6 +36,7 @@ type syncScanDoneMsg struct {
 type syncModel struct {
 	vault       string
 	root        string
+	scanOptions internal.ScanOptions
 	items       []skillItem
 	master      map[string]string
 	cursor      int
@@ -54,16 +55,16 @@ type syncModel struct {
 }
 
 func (m syncModel) Init() tea.Cmd {
-	return tea.Batch(m.spinner.Tick, syncScanCmd(m.vault, m.root))
+	return tea.Batch(m.spinner.Tick, syncScanCmd(m.vault, m.root, m.scanOptions))
 }
 
-func syncScanCmd(vault, root string) tea.Cmd {
+func syncScanCmd(vault, root string, scanOptions internal.ScanOptions) tea.Cmd {
 	return func() tea.Msg {
 		master, err := internal.ReadMasterSkills(vault)
 		if err != nil {
 			return syncScanDoneMsg{err: err}
 		}
-		targets, err := internal.FindTargets(root, master)
+		targets, err := internal.FindTargetsWithOptions(root, master, scanOptions)
 		if err != nil {
 			return syncScanDoneMsg{err: err}
 		}
@@ -365,7 +366,7 @@ func (m syncModel) helpView() string {
 }
 
 // RunSync opens the interactive sync TUI.
-func RunSync(vault, root string, dryRun bool) error {
+func RunSync(vault, root string, dryRun bool, scanOptions internal.ScanOptions) error {
 	sp := spinner.New()
 	sp.Spinner = spinner.Points
 	sp.Style = styles.SkillName
@@ -383,14 +384,15 @@ func RunSync(vault, root string, dryRun bool) error {
 	pg.InactiveDot = styles.Muted.Render("·")
 
 	m := syncModel{
-		vault:     vault,
-		root:      root,
-		dryRun:    dryRun,
-		phase:     phaseLoading,
-		spinner:   sp,
-		progress:  prog,
-		paginator: pg,
-		help:      help.New(),
+		vault:       vault,
+		root:        root,
+		scanOptions: scanOptions,
+		dryRun:      dryRun,
+		phase:       phaseLoading,
+		spinner:     sp,
+		progress:    prog,
+		paginator:   pg,
+		help:        help.New(),
 	}
 	_, err := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseAllMotion()).Run()
 	return err

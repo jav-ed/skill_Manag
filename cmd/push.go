@@ -8,5 +8,5 @@ import (
 func doPush(vault, root string) error {
 	viper.ReadInConfig() // ensure latest mandatory — may have been edited from push screen or setup
 	mandatory := viper.GetStringSlice("mandatory")
-	return tui.RunPush(vault, root, mandatory)
+	return tui.RunPush(vault, root, mandatory, scanOptionsFromConfig())
 }

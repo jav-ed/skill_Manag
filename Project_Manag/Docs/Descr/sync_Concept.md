@@ -18,6 +18,7 @@ The vault is the source of truth for **content**. Each project controls its own 
 3. Skip noise dirs (.git, node_modules, vendor, dist, build, out, target,
    .next, .nuxt, .venv, __pycache__, .tox, .pytest_cache,
    .cache, .turbo, .parcel-cache)
+   plus any configured `exclude_dirs` or `exclude_paths`
 4. For each .agents/skills/<SkillName>/ found:
      if <SkillName> exists in vault → delete skill dir, copy vault fresh
      if <SkillName> not in vault    → skip entirely
@@ -59,6 +60,21 @@ projects/
 ## Where this is implemented
 
 The opt-in filter lives in `internal/walker.go` — `FindTargets()` only appends a `Target` when the project's skill name is present in the vault map. `internal/copier.go` — `SyncSkill()` — receives an already-filtered target and just executes the copy.
+
+## Configurable scan exclusions
+
+`config.yaml` can add workspace-specific scan exclusions without changing the code defaults:
+
+```yaml
+exclude_paths:
+  - /home/jav/Schreibtisch/Javed/0_Right_Sirat/1_Code/07_Coding_Env/03_CLIs/02_Skill_Manager/internal/testdata
+
+# Optional broad directory-name exclusions:
+# exclude_dirs:
+#   - testdata
+```
+
+`exclude_dirs` skips every directory with that exact name anywhere below `root`. `exclude_paths` skips only specific absolute paths or paths relative to `root`. Prefer `exclude_paths` when one fixture or scratch tree is the problem; use `exclude_dirs` only when that directory name should never be scanned anywhere.
 
 ## Push — bypassing the opt-in rule
 

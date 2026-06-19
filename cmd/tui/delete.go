@@ -27,6 +27,7 @@ type deleteScanDoneMsg struct {
 
 type deleteModel struct {
 	root        string
+	scanOptions internal.ScanOptions
 	items       []deleteSkillItem
 	cursor      int
 	dryRun      bool
@@ -42,12 +43,12 @@ type deleteModel struct {
 }
 
 func (m deleteModel) Init() tea.Cmd {
-	return tea.Batch(m.spinner.Tick, deleteScanCmd(m.root))
+	return tea.Batch(m.spinner.Tick, deleteScanCmd(m.root, m.scanOptions))
 }
 
-func deleteScanCmd(root string) tea.Cmd {
+func deleteScanCmd(root string, scanOptions internal.ScanOptions) tea.Cmd {
 	return func() tea.Msg {
-		targets, err := internal.FindAllSkillTargets(root)
+		targets, err := internal.FindAllSkillTargetsWithOptions(root, scanOptions)
 		if err != nil {
 			return deleteScanDoneMsg{err: err}
 		}
@@ -348,7 +349,7 @@ func (m deleteModel) helpView() string {
 }
 
 // RunDelete opens the interactive delete TUI.
-func RunDelete(root string, dryRun bool) error {
+func RunDelete(root string, dryRun bool, scanOptions internal.ScanOptions) error {
 	sp := spinner.New()
 	sp.Spinner = spinner.Points
 	sp.Style = styles.SkillName
@@ -360,12 +361,13 @@ func RunDelete(root string, dryRun bool) error {
 	pg.InactiveDot = styles.Muted.Render("·")
 
 	m := deleteModel{
-		root:      root,
-		dryRun:    dryRun,
-		phase:     phaseLoading,
-		spinner:   sp,
-		paginator: pg,
-		help:      help.New(),
+		root:        root,
+		scanOptions: scanOptions,
+		dryRun:      dryRun,
+		phase:       phaseLoading,
+		spinner:     sp,
+		paginator:   pg,
+		help:        help.New(),
 	}
 	_, err := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseAllMotion()).Run()
 	return err

@@ -69,7 +69,12 @@ Entry point(s): the key files an agent would need to know to orient in the code 
 - [Decisions](Decisions/linker_Decisions.md): important decisions, tradeoffs, ADR-like notes
 - [Descr](Descr/linker_Descr.md): what the repo or product does, domain model, conceptual descriptions
 - [Research](Research/linker_Research.md): research, comparisons, external analysis
-- [Setup](Setup/linker_Setup.md): local setup, environment bootstrap, install steps, and the `/Repos/` clone manifest
+- [Setup](Setup/linker_Setup.md): local setup, environment bootstrap, install steps, internal repo path shortcuts, and external reference clone manifests
+
+## Repo References
+
+- [Internal repo paths](Setup/internal_Repo_Paths.md): first-party repo shortcut names and host-scoped checkout paths. Use this for repos the project owns or operates across machines.
+- [External reference repos](Setup/repos_List.md): third-party or external shallow clones that belong under the gitignored `/Repos/` folder. Use this for upstream source/docs clones used as references.
 EOF
 )"
 
@@ -88,15 +93,34 @@ EOF
 )"
 done
 
-# Specialised linker_Setup.md — already references repos_List.md as a sibling
+# Specialised linker_Setup.md — already references internal_Repo_Paths.md and repos_List.md as siblings
 create_file "Project_Manag/Docs/Setup/linker_Setup.md" "$(cat <<'EOF'
 # linker_Setup
 
-Local setup, environment bootstrap, install steps, and the manifest of third-party repos that get cloned into `/Repos/` for source-code or documentation reference. Anything an engineer (or agent) needs to bring this project up on a fresh machine belongs here.
+Local setup, environment bootstrap, install steps, first-party repo shortcuts, and the manifest of external repos that get cloned into `/Repos/` for source-code or documentation reference. Anything an engineer (or agent) needs to bring this project up on a fresh machine belongs here.
 
 ## Docs
 
-- [repos_List](repos_List.md): manifest of third-party repos cloned into `/Repos/` (gitignored at repo root). Lists what should be present and gives the `git clone --depth 1` command for each, so the folder can be repopulated on a fresh machine.
+- [Internal repo paths](internal_Repo_Paths.md): maps first-party repo shortcut names to host-scoped checkout paths. Docs should use the shortcut name in prose and link here when the absolute path matters.
+- [External reference repos](repos_List.md): manifest of third-party or external repos cloned into `/Repos/` (gitignored at repo root). Lists what should be present and gives the `git clone --depth 1` command for each, so the folder can be repopulated on a fresh machine.
+EOF
+)"
+
+# First-party repo path manifest under Project_Manag/Docs/Setup/
+create_file "Project_Manag/Docs/Setup/internal_Repo_Paths.md" "$(cat <<'EOF'
+# Setup: Internal Repo Paths
+
+This file records first-party repo shortcut names and host-scoped full checkout paths. Use shortcut names in docs first, then resolve them here only when an absolute path matters.
+
+Full paths can differ between hosts and clones. Before relying on a full path, verify which host you are on. If this repo has a host-detection skill such as `remote-helper`, use that convention first.
+
+External or third-party reference clones do not belong here. Track those in `repos_List.md`.
+
+## Repo Shortcuts
+
+| Shortcut | Full path on `<hostname>` | Use |
+|---|---|---|
+| `repo_Shortcut` | `/absolute/path/to/repo` | One-line reason this first-party repo is part of this working set. |
 EOF
 )"
 
@@ -111,9 +135,11 @@ EOF
 # Repos folder at repo root (fully gitignored) + manifest under Project_Manag/Docs/Setup/
 create_dir "Repos"
 create_file "Project_Manag/Docs/Setup/repos_List.md" "$(cat <<'EOF'
-# repos_List
+# Setup: External Reference Repos
 
-Third-party repos cloned locally for source-code or documentation reference. The clones live in `/Repos/` at the repo root, which is fully gitignored. This file lives under `Project_Manag/Docs/Setup/` so it stays under git, and is the source of truth for what should be present in `/Repos/`. To repopulate on a fresh machine, run the clone commands below.
+Third-party or external repos cloned locally for source-code or documentation reference. The clones live in `/Repos/` at the repo root, which is fully gitignored. This file lives under `Project_Manag/Docs/Setup/` so it stays under git, and is the source of truth for what should be present in `/Repos/`. To repopulate on a fresh machine, run the clone commands below.
+
+First-party repos do not belong here. Track those in [Internal repo paths](internal_Repo_Paths.md).
 
 Convention: every clone uses `git clone --depth 1` and lands inside `/Repos/`. See `.agents/skills/doc-start/References/repos_Convention.md` (if available) for the full rules.
 

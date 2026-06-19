@@ -59,7 +59,7 @@ func doDeleteInteractive(root string) error {
 	if root == "" {
 		return fmt.Errorf("scan root is required: use --root or configure via Setup")
 	}
-	return tui.RunDelete(root, deleteDryRun)
+	return tui.RunDelete(root, deleteDryRun, scanOptionsFromConfig())
 }
 
 func runDelete(cmd *cobra.Command, args []string) error {
@@ -87,7 +87,7 @@ func runDelete(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("scan root is required: use --root or configure via Setup")
 	}
 
-	targets, err := internal.FindTargetsByName(root, skillName)
+	targets, err := internal.FindTargetsByNameWithOptions(root, skillName, scanOptionsFromConfig())
 	if err != nil {
 		return fmt.Errorf("scanning projects: %w", err)
 	}

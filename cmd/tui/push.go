@@ -37,6 +37,7 @@ type pushModel struct {
 	vault       string
 	root        string
 	mandatory   []string
+	scanOptions internal.ScanOptions
 	items       []skillItem
 	master      map[string]string
 	allSkills   []string
@@ -58,10 +59,10 @@ type pushModel struct {
 }
 
 func (m pushModel) Init() tea.Cmd {
-	return tea.Batch(m.spinner.Tick, pushScanCmd(m.vault, m.root, m.mandatory))
+	return tea.Batch(m.spinner.Tick, pushScanCmd(m.vault, m.root, m.mandatory, m.scanOptions))
 }
 
-func pushScanCmd(vault, root string, mandatory []string) tea.Cmd {
+func pushScanCmd(vault, root string, mandatory []string, scanOptions internal.ScanOptions) tea.Cmd {
 	return func() tea.Msg {
 		master, err := internal.ReadMasterSkills(vault)
 		if err != nil {
@@ -84,7 +85,7 @@ func pushScanCmd(vault, root string, mandatory []string) tea.Cmd {
 		if len(pushSkills) == 0 {
 			return pushScanDoneMsg{allSkills: allSkills}
 		}
-		targets, err := internal.FindPushTargets(root, pushSkills)
+		targets, err := internal.FindPushTargetsWithOptions(root, pushSkills, scanOptions)
 		if err != nil {
 			return pushScanDoneMsg{err: err}
 		}
@@ -253,7 +254,7 @@ func (m pushModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.syncIdx = 0
 				m.master = nil
 				m.phase = phaseLoading
-				return m, tea.Batch(m.spinner.Tick, pushScanCmd(m.vault, m.root, m.mandatory))
+				return m, tea.Batch(m.spinner.Tick, pushScanCmd(m.vault, m.root, m.mandatory, m.scanOptions))
 			}
 			return m, nil
 		}
@@ -474,7 +475,7 @@ func (m pushModel) helpView() string {
 }
 
 // RunPush opens the interactive push TUI.
-func RunPush(vault, root string, mandatory []string) error {
+func RunPush(vault, root string, mandatory []string, scanOptions internal.ScanOptions) error {
 	sp := spinner.New()
 	sp.Spinner = spinner.Points
 	sp.Style = styles.SkillName
@@ -492,14 +493,15 @@ func RunPush(vault, root string, mandatory []string) error {
 	pg.InactiveDot = styles.Muted.Render("·")
 
 	m := pushModel{
-		vault:     vault,
-		root:      root,
-		mandatory: mandatory,
-		phase:     phaseLoading,
-		spinner:   sp,
-		progress:  prog,
-		paginator: pg,
-		help:      help.New(),
+		vault:       vault,
+		root:        root,
+		mandatory:   mandatory,
+		scanOptions: scanOptions,
+		phase:       phaseLoading,
+		spinner:     sp,
+		progress:    prog,
+		paginator:   pg,
+		help:        help.New(),
 	}
 	_, err := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseAllMotion()).Run()
 	return err

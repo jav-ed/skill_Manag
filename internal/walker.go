@@ -3,6 +3,7 @@ package internal
 import (
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // Directories that are never worth descending into
@@ -41,6 +42,49 @@ type Target struct {
 	SkillPath   string // full path to the skill dir inside the project
 }
 
+// ScanOptions carries project-specific exclusions from config.yaml.
+// Technical noise stays in skipDirs; workspace policy belongs here.
+type ScanOptions struct {
+	ExcludeDirs  []string
+	ExcludePaths []string
+}
+
+func (o ScanOptions) shouldSkipDir(root, path string, d os.DirEntry) bool {
+	if !d.IsDir() {
+		return false
+	}
+	if skipDirs[d.Name()] {
+		return true
+	}
+	for _, dir := range o.ExcludeDirs {
+		if dir == d.Name() {
+			return true
+		}
+	}
+	for _, excluded := range o.ExcludePaths {
+		if pathWithinExcludedRoot(root, path, excluded) {
+			return true
+		}
+	}
+	return false
+}
+
+func pathWithinExcludedRoot(root, path, excluded string) bool {
+	if excluded == "" {
+		return false
+	}
+	excludedPath := filepath.Clean(excluded)
+	if !filepath.IsAbs(excludedPath) {
+		excludedPath = filepath.Join(root, excludedPath)
+	}
+
+	rel, err := filepath.Rel(excludedPath, path)
+	if err != nil {
+		return false
+	}
+	return rel == "." || (rel != ".." && !strings.HasPrefix(rel, ".."+string(os.PathSeparator)))
+}
+
 // ReadMasterSkills returns a map of skillName → full path for every dir in sourceDir
 func ReadMasterSkills(sourceDir string) (map[string]string, error) {
 	entries, err := os.ReadDir(sourceDir)
@@ -61,6 +105,11 @@ func ReadMasterSkills(sourceDir string) (map[string]string, error) {
 // FindTargets walks root and returns every .agents/skills/<Name> dir
 // whose name matches a key in masterSkills
 func FindTargets(root string, masterSkills map[string]string) ([]Target, error) {
+	return FindTargetsWithOptions(root, masterSkills, ScanOptions{})
+}
+
+// FindTargetsWithOptions walks root with additional caller-provided exclusions.
+func FindTargetsWithOptions(root string, masterSkills map[string]string, options ScanOptions) ([]Target, error) {
 	var targets []Target
 
 	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
@@ -70,7 +119,7 @@ func FindTargets(root string, masterSkills map[string]string) ([]Target, error) 
 		}
 
 		// Skip noisy dirs early
-		if d.IsDir() && skipDirs[d.Name()] {
+		if options.shouldSkipDir(root, path, d) {
 			return filepath.SkipDir
 		}
 
@@ -113,12 +162,22 @@ func FindTargets(root string, masterSkills map[string]string) ([]Target, error) 
 // FindTargetsByName finds all projects that have a specific skill installed,
 // regardless of whether it exists in the master collection
 func FindTargetsByName(root, skillName string) ([]Target, error) {
-	return FindTargets(root, map[string]string{skillName: ""})
+	return FindTargetsByNameWithOptions(root, skillName, ScanOptions{})
+}
+
+// FindTargetsByNameWithOptions finds one installed skill with scan exclusions.
+func FindTargetsByNameWithOptions(root, skillName string, options ScanOptions) ([]Target, error) {
+	return FindTargetsWithOptions(root, map[string]string{skillName: ""}, options)
 }
 
 // FindPushTargets finds all projects that have a .agents/skills/ directory (even empty),
 // then creates a target for each push skill in those projects — bypassing the opt-in rule.
 func FindPushTargets(root string, pushSkills map[string]string) ([]Target, error) {
+	return FindPushTargetsWithOptions(root, pushSkills, ScanOptions{})
+}
+
+// FindPushTargetsWithOptions finds push targets with scan exclusions.
+func FindPushTargetsWithOptions(root string, pushSkills map[string]string, options ScanOptions) ([]Target, error) {
 	var targets []Target
 
 	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
@@ -126,7 +185,7 @@ func FindPushTargets(root string, pushSkills map[string]string) ([]Target, error
 			return nil
 		}
 
-		if d.IsDir() && skipDirs[d.Name()] {
+		if options.shouldSkipDir(root, path, d) {
 			return filepath.SkipDir
 		}
 
@@ -155,6 +214,11 @@ func FindPushTargets(root string, pushSkills map[string]string) ([]Target, error
 // FindAllSkillTargets returns every installed skill across all projects,
 // with no filtering against a master collection — used by interactive delete
 func FindAllSkillTargets(root string) ([]Target, error) {
+	return FindAllSkillTargetsWithOptions(root, ScanOptions{})
+}
+
+// FindAllSkillTargetsWithOptions returns every installed skill with scan exclusions.
+func FindAllSkillTargetsWithOptions(root string, options ScanOptions) ([]Target, error) {
 	var targets []Target
 
 	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
@@ -162,7 +226,7 @@ func FindAllSkillTargets(root string) ([]Target, error) {
 			return nil
 		}
 
-		if d.IsDir() && skipDirs[d.Name()] {
+		if options.shouldSkipDir(root, path, d) {
 			return filepath.SkipDir
 		}
 

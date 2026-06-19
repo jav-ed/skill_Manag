@@ -1,17 +1,43 @@
-# Repos Convention
+# Repo Reference Convention
 
-Rules for the `/Repos/` folder at the repo root, the shallow clones it holds, and the `repos_List.md` manifest that tracks them.
+Rules for first-party repo shortcuts in `internal_Repo_Paths.md`, external/reference clones in `/Repos/`, and the `repos_List.md` manifest that tracks those clones.
 
-## Why the folder exists
+## Ownership split
+
+There are two different repo-reference classes:
+
+| Class | File or folder | Use |
+|---|---|---|
+| First-party/internal repos | `Project_Manag/Docs/Setup/internal_Repo_Paths.md` | Repos we own or operate across machines. Record stable shortcut names and host-scoped checkout paths. |
+| External/reference repos | `/Repos/` plus `Project_Manag/Docs/Setup/repos_List.md` | Third-party or external source/docs clones used for reference. Clone shallowly and keep the clone folder gitignored. |
+
+Do not mix the two. A first-party repo such as `Installations` or `10_Web_Runtime` belongs in `internal_Repo_Paths.md`, not `/Repos/`. An upstream project such as `shlinkio/shlink` belongs in `/Repos/` and `repos_List.md`, not `internal_Repo_Paths.md`.
+
+## Why /Repos exists
 
 Agents often need to read the source code or documentation of a third-party project: to look up an exact API surface, to confirm version-specific behavior, or to read docs that are only complete in the project's repo (not on its website). Cloning the relevant repos locally with `git clone --depth 1` makes that material directly readable without network calls and without pulling full git history. `gh` is also installed, so the clone URL is easy to find with `gh repo view <owner>/<repo>` and docs-only sibling repos can be discovered with `gh search repos`.
 
 ## Where things live
 
-- `/Repos/` (repo root) — the clones. Fully gitignored: nothing inside this folder is ever committed.
-- `Project_Manag/Docs/Setup/repos_List.md` — the manifest. Lives under `Docs/Setup/` so it stays under git. This file is the source of truth for what should be present in `/Repos/` on a working machine.
+- `Project_Manag/Docs/Setup/internal_Repo_Paths.md`: first-party repo shortcuts and host-scoped full paths. Lives under `Docs/Setup/` so it stays under git.
+- `/Repos/` (repo root): external/reference clones. Fully gitignored: nothing inside this folder is ever committed.
+- `Project_Manag/Docs/Setup/repos_List.md`: external/reference clone manifest. Lives under `Docs/Setup/` so it stays under git. This file is the source of truth for what should be present in `/Repos/` on a working machine.
 
 The split exists because the clones are large and not source-of-truth (they can always be re-cloned), but the *list* of which clones the project depends on is small, important, and must travel with the project.
+
+## Internal repo paths
+
+`internal_Repo_Paths.md` opens with a short summary explaining that full paths are host-scoped. It should tell agents to verify the host before relying on a path. If the repo has a host-detection skill, such as `remote-helper`, point to that skill and its concrete command.
+
+The expected entry shape:
+
+```markdown
+| Shortcut | Full path on `<hostname>` | Use |
+|---|---|---|
+| `repo_Shortcut` | `/absolute/path/to/repo` | One-line reason this repo is part of the first-party working set. |
+```
+
+Use stable shortcut names in docs and commands first. Link to `internal_Repo_Paths.md` when the absolute checkout path matters. If a repo has different paths on different hosts, add another host-scoped table instead of overwriting the existing one.
 
 ## Gitignore
 

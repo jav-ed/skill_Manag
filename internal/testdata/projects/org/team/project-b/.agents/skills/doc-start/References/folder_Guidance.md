@@ -15,7 +15,7 @@ Two more folders sit at the repo root: `/Repos/` for shallow clones of third-par
 | `Decisions` | required | Important decisions, tradeoffs, ADR-like notes |
 | `Descr` | required | What the repo or product does, domain model, conceptual descriptions |
 | `Research` | required | Quick lookups, online finds, lightweight external content gathered for context |
-| `Setup` | required | Local setup, environment bootstrap, install steps. Also home to `repos_List.md`, the manifest for the gitignored `/Repos/` folder at the repo root |
+| `Setup` | required | Local setup, environment bootstrap, install steps. Also home to `internal_Repo_Paths.md` for first-party repo shortcuts and `repos_List.md` for external clones in gitignored `/Repos/` |
 | `Brand` | optional | Brand assets, voice, visual identity |
 | `Investigation` | optional | In-depth study of a tool, system, or topic. Sustained work that can grow its own subfolder structure |
 
@@ -31,9 +31,15 @@ The five required folders exist on every repo from bootstrap. Optional folders a
 
 Add other files in `Live_Working/` as the project's active-work needs grow (task pools, sprint plans, etc.).
 
+## Internal repo paths
+
+`Project_Manag/Docs/Setup/internal_Repo_Paths.md` records first-party repo shortcut names and host-scoped full checkout paths. Use it for repos we own or operate across machines, such as `Installations` or `10_Web_Runtime`. Docs should use the shortcut name in prose and link to this file when an absolute path matters.
+
+Before relying on a full path from this file, use the repo's host-detection convention if one exists. In repos that use `remote-helper`, run `hostname` and match the observed host before using host-specific commands.
+
 ## Repos/ at the repo root
 
-`/Repos/` lives at the repo root (sibling of `Project_Manag/`), not under `Docs/`. It holds shallow `git clone --depth 1` clones of third-party repos used as source-code or documentation reference. The folder is fully gitignored, so the clones never enter git history. The manifest describing what should be present and how to re-clone it lives separately, under git, at `Project_Manag/Docs/Setup/repos_List.md`. For the full convention, see `repos_Convention.md`.
+`/Repos/` lives at the repo root (sibling of `Project_Manag/`), not under `Docs/`. It holds shallow `git clone --depth 1` clones of external or third-party repos used as source-code or documentation reference. The folder is fully gitignored, so the clones never enter git history. The manifest describing what should be present and how to re-clone it lives separately, under git, at `Project_Manag/Docs/Setup/repos_List.md`. First-party repos do not belong in `/Repos/`; track them in `internal_Repo_Paths.md`. For the full convention, see `repos_Convention.md`.
 
 ## Scratch/ at the repo root
 
