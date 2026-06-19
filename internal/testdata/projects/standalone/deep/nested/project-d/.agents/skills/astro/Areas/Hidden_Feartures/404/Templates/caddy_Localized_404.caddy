@@ -1,0 +1,32 @@
+# Localized Astro 404 handling for Caddy.
+# Copy this inside a site block that already sets:
+#   root * <path-to-current-dist>
+#   file_server
+#
+# Replace the language blocks with the project's supported language codes.
+# The fallback /404.html should stay even for multilingual sites.
+
+handle_errors 404 {
+    @de path /de /de/*
+    handle @de {
+        rewrite * /de/404/
+        file_server
+    }
+
+    @en path /en /en/*
+    handle @en {
+        rewrite * /en/404/
+        file_server
+    }
+
+    @es path /es /es/*
+    handle @es {
+        rewrite * /es/404/
+        file_server
+    }
+
+    handle {
+        rewrite * /404.html
+        file_server
+    }
+}
