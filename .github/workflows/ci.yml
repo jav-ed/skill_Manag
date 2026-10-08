@@ -1,0 +1,189 @@
+# CI for the Rust workspace. Linux only (ubuntu-latest). Every job runs the same just recipe
+# that a developer runs locally, so a red job reproduces with `just <recipe>`.
+#
+# Pins (supply chain):
+# - Actions are pinned to the full commit SHA of a release tag (tag in the trailing comment);
+#   a tag can be moved, a SHA cannot. Verified against the repositories on 2026-10-07.
+# - Tools are pinned to exact versions: just 1.54.0 and cargo-nextest 0.9.146 (the versions the
+#   repo documents), cargo-deny 0.20.2 (the version deny.toml was written against), tokei 15.0.0
+#   (the version loc_gate.sh was written against). taiki-e/install-action downloads prebuilt
+#   binaries and verifies their checksums; `fallback: none` makes a missing version a hard error
+#   instead of a silent source build.
+# - Swatinem/rust-cache is LGPL-3.0 but is only run as a CI action, never linked or shipped.
+#
+# Not here yet: release job (cargo-dist generates its own release.yml later), the Go-oracle
+# parity job, and the frozen-Go-tree guard.
+name: ci
+
+on:
+  push:
+    branches: [main, rust-rewrite]
+  pull_request:
+
+permissions:
+  contents: read
+
+# A newer push to the same ref makes the older run pointless.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+  RUST_BACKTRACE: "1"
+
+jobs:
+  fmt:
+    name: fmt
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Rust toolchain
+        run: |
+          # rustup 1.28+ does not install the toolchain named in rust-toolchain.toml by itself.
+          # Once that file is committed the else branch is dead and can go.
+          if [ -f rust-toolchain.toml ]; then
+            rustup toolchain install
+          else
+            rustup toolchain install stable --profile minimal --component clippy --component rustfmt
+            rustup default stable
+          fi
+          cargo --version
+      - uses: taiki-e/install-action@f7e5d7c961414b23f5b25b2da9294395d08513ad # v2.87.26
+        with:
+          tool: just@1.54.0
+          fallback: none
+      - run: just fmt-check
+
+  clippy:
+    name: clippy
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Rust toolchain
+        run: |
+          if [ -f rust-toolchain.toml ]; then
+            rustup toolchain install
+          else
+            rustup toolchain install stable --profile minimal --component clippy --component rustfmt
+            rustup default stable
+          fi
+          cargo --version
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - uses: taiki-e/install-action@f7e5d7c961414b23f5b25b2da9294395d08513ad # v2.87.26
+        with:
+          tool: just@1.54.0
+          fallback: none
+      - run: just clippy
+
+  nextest:
+    name: nextest
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Rust toolchain
+        run: |
+          if [ -f rust-toolchain.toml ]; then
+            rustup toolchain install
+          else
+            rustup toolchain install stable --profile minimal --component clippy --component rustfmt
+            rustup default stable
+          fi
+          cargo --version
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - uses: taiki-e/install-action@f7e5d7c961414b23f5b25b2da9294395d08513ad # v2.87.26
+        with:
+          tool: just@1.54.0,cargo-nextest@0.9.146
+          fallback: none
+      # nextest, then the doc tests (nextest does not run those).
+      - run: just test
+
+  deny:
+    name: deny
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Rust toolchain
+        run: |
+          if [ -f rust-toolchain.toml ]; then
+            rustup toolchain install
+          else
+            rustup toolchain install stable --profile minimal
+            rustup default stable
+          fi
+          cargo --version
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - uses: taiki-e/install-action@f7e5d7c961414b23f5b25b2da9294395d08513ad # v2.87.26
+        with:
+          tool: just@1.54.0,cargo-deny@0.20.2
+          fallback: none
+      # Fetches the RustSec advisory database, so a new advisory can turn this job red on an
+      # unchanged commit. That is intended.
+      - run: just deny
+
+  loc-gate:
+    name: loc-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Rust toolchain
+        run: |
+          if [ -f rust-toolchain.toml ]; then
+            rustup toolchain install
+          else
+            rustup toolchain install stable --profile minimal
+            rustup default stable
+          fi
+          cargo --version
+      # rust-cache keeps ~/.cargo/bin, so tokei is compiled once and restored afterwards.
+      # tokei publishes no GitHub release binaries (0 assets on v14.0.0 and v15.0.0), hence
+      # cargo install; the crate is MSRV 1.71. `--locked` uses the lockfile shipped in the crate.
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - uses: taiki-e/install-action@f7e5d7c961414b23f5b25b2da9294395d08513ad # v2.87.26
+        with:
+          tool: just@1.54.0
+          fallback: none
+      - run: cargo install tokei --version 15.0.0 --locked
+      # jq comes preinstalled on ubuntu-latest.
+      - run: just loc-gate
+
+  check-deps:
+    name: check-deps
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Rust toolchain
+        run: |
+          if [ -f rust-toolchain.toml ]; then
+            rustup toolchain install
+          else
+            rustup toolchain install stable --profile minimal
+            rustup default stable
+          fi
+          cargo --version
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - uses: taiki-e/install-action@f7e5d7c961414b23f5b25b2da9294395d08513ad # v2.87.26
+        with:
+          tool: just@1.54.0
+          fallback: none
+      # skillmirror-core must stay synchronous: no tokio in its normal dependencies.
+      - run: just check-deps

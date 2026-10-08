@@ -1,0 +1,13 @@
+# linker_Rust_Stack
+
+Evidence for the Go to Rust rewrite, one leaf per research stream. Each report opens with its decision, then lists options with versions, licences, sizes and measurements, ends with a verdict table, and names the repositories it cloned (all listed in the external repos manifest). The decisions drawn from all six are in the decision file; these reports hold the proof.
+
+## Docs
+
+- [Rewrite requirements](rewrite_Requirements.md): what the rewrite must do, the Go baseline (13 s cold, 1.5 s warm), constraints (Linux only, Hippocratic licence, 300 lines per file), and the questions each stream had to answer. Read it to judge any report against its brief.
+- [Engine stack](engine_Stack.md): directory walking benchmarks, reading the git index without a subprocess, comparison and hashing, atomic apply with `RENAME_EXCHANGE`, backups, symlink bridges, diff, YAML reading and comment-preserving editing, frontmatter, config paths, event channels. Open it for anything about scan speed, file safety or config parsing.
+- [CLI and quality stack](cli_Stack.md): argument parsing, completions, error reporting, colour and progress output, JSON output, tests, benchmarks, lints, the 300-line gate, build profiles, MSRV, supply-chain checks, and the licence census of tools. Open it for command-line design, test setup or build settings.
+- [TUI stack](tui_Stack.md): ratatui and its ecosystem, the crossterm input stall and the termina backend, mouse hit-testing, event loop and threading, large lists, fuzzy filter, directory picker, snapshot and PTY tests, and a map from the Go bubbles components to Rust. Open it for any terminal-UI design question.
+- [Web view](web_View.md): static report versus local server versus SPA versus WASM, server framework and template choices with build costs, embedded assets, live updates, and the security model for a local tool that can delete files. Open it before touching the report command or the web crate.
+- [Prior art](prior_Art.md): existing skill and agent-config managers, the SKILL.md format and per-agent directory conventions, what users of those tools ask for, the proposed config shapes for groups, profiles and targets, drift and lock design, and the feature verdicts. Open it for feature scope and for how other agents read skill folders.
+- [Name and distribution](name_And_Distribution.md): candidate names checked against registries, workspace layout options with measured rebuild costs, release tooling, install channels, the effect of the Hippocratic licence on distribution, and config migration from the old name. Open it for renames, packaging and release work.

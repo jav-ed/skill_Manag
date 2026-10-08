@@ -1,0 +1,28 @@
+---
+source: Crates/Tui/src/tests/render.rs
+expression: without_times(&ui.screen())
+---
+ ← skillmirror  ·  javedab.com  ·  history
+
+ Undo results: the sync of YYYY-MM-DD hh:mm:ss UTC
+
+  ✓ restored astro in projects/one
+  ✓ restored coding in projects/one
+  ✓ restored coding in projects/two
+
+  Saved what was replaced as run [RUN]
+  (undo it again to redo this undo)
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ↑/↓ scroll • q/alt+← back • ctrl+c quit

@@ -1,0 +1,12 @@
+---
+import Shell from '../layouts/Shell.astro';
+
+// One page per address the server may be asked for. They are all the same shell: the Solid app reads the
+// address and shows the right view, so a reload or a pasted link lands where it should.
+export function getStaticPaths() {
+  return ['', 'skills', 'sync', 'push', 'history', 'doctor', 'settings'].map((route) => ({
+    params: { route: route || undefined },
+  }));
+}
+---
+<Shell title="skillmirror" />

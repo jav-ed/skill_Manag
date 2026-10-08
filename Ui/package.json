@@ -1,0 +1,20 @@
+{
+  "name": "skillmirror-ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The web interface of `skillmirror web`: an Astro shell and Solid views, built to static files that the Rust server embeds.",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@astrojs/solid-js": "7.0.2",
+    "astro": "7.3.7",
+    "lucide-solid": "1.53.0",
+    "motion": "14.0.0",
+    "solid-js": "1.9.17",
+    "typescript": "7.0.2"
+  }
+}

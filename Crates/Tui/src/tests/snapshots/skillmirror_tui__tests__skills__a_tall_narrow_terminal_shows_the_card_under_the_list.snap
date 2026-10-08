@@ -1,0 +1,28 @@
+---
+source: Crates/Tui/src/tests/skills.rs
+expression: ui.screen()
+---
+ ← skillmirror  ·  javedab.com  ·  skills
+
+ Vault — 1 matching "tmux"
+ filter: tmux  (esc to clear)
+      skill               group
+>     tmux                          mandatory, 3 to change
+
+
+
+
+
+
+ rows 1–1 of 1
+────────────────────────────────────────────────────────────────────────────────
+ tmux  (mandatory)
+ top level of the vault
+ header: SKILL.md does not start with a --- header
+ files (1): SKILL.md
+
+ Projects
+ projects/one  mandatory, not installed
+ projects/three  mandatory, not installed
+ projects/two  mandatory, not installed
+ ↑/k up • ↓/j down • / filter • ? help • q/alt+← back

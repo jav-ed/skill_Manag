@@ -1,0 +1,39 @@
+[package]
+name = "skillmirror"
+description = "Mirror agent skills from one vault into every project that uses them."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license-file.workspace = true
+publish.workspace = true
+
+[features]
+# The local web server (`skillmirror web`). It brings an async runtime; `--no-default-features` leaves it out.
+default = ["web"]
+web = ["skillmirror-web/server"]
+
+[dependencies]
+anstream = "1"
+anstyle = "1"
+clap = { version = "4", features = ["derive", "wrap_help"] }
+clap_complete = "4"
+fs-err.workspace = true
+indicatif = { version = "0.18", default-features = false }
+serde.workspace = true
+serde_json.workspace = true
+skillmirror-core.workspace = true
+skillmirror-tui.workspace = true
+skillmirror-web.workspace = true
+tempfile.workspace = true
+thiserror.workspace = true
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+assert_cmd = "2"
+assert_fs = "1"
+portable-pty.workspace = true
+predicates = "3"
+skillmirror-testkit.workspace = true
+vt100.workspace = true

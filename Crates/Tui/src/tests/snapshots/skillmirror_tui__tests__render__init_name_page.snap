@@ -1,0 +1,28 @@
+---
+source: Crates/Tui/src/tests/render.rs
+expression: plain(ui.screen())
+---
+ ← skillmirror  ·  javedab.com  ·  init
+
+ ✓ Where     [ROOT]
+ → Name
+   The name of the new project folder:
+
+   > fresh
+
+   Makes [ROOT]/fresh
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ enter continue • esc back

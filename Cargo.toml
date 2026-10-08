@@ -1,0 +1,64 @@
+# Virtual workspace.
+[workspace]
+resolver = "3"
+members = ["Crates/*"]
+default-members = ["Crates/Cli"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.89"      # real floor: serde-saphyr 1.3 needs 1.89 (checked with `just msrv`); ignore 0.4.33 and globset 0.4.20 need 1.88
+license-file = "LICENSE"   # Hippocratic License 3.0 variant, no SPDX id
+publish = false
+
+[workspace.dependencies]
+fs-err = "3"
+portable-pty = "0.9"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+similar = "2"
+skillmirror-core = { path = "Crates/Core" }
+skillmirror-testkit = { path = "Crates/Testkit" }
+skillmirror-tui = { path = "Crates/Tui" }
+skillmirror-web = { path = "Crates/Web" }
+tempfile = "3"
+thiserror = "2"
+vt100 = "0.16"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+unreachable_pub = "warn"
+unused_must_use = "deny"
+
+[workspace.lints.clippy]
+all = { level = "deny", priority = -2 }
+pedantic = { level = "warn", priority = -1 }
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+module_name_repetitions = "allow"
+unwrap_used = "deny"
+expect_used = "deny"
+indexing_slicing = "deny"
+let_underscore_must_use = "deny"
+print_stdout = "deny"      # only Crates/Cli/src/output re-allows it
+
+# Lean by default: a Rust build is the heaviest thing this repository does (see
+# Project_Manag/Docs/Setup/build_Resources.md). Debug information and the incremental cache are what
+# fill the disk (about 12 GB of a 13 GB target/ folder) and they are only worth it when stepping
+# through code in a debugger. Opt in per shell: CARGO_PROFILE_DEV_DEBUG=true CARGO_INCREMENTAL=1.
+[profile.dev]
+debug = false
+incremental = false
+
+# `release` stays the quick profile (hyperfine loops); packaging uses `cargo build --profile dist`.
+[profile.dist]
+inherits = "release"
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
+
+[profile.profiling]
+inherits = "release"
+debug = "line-tables-only"
+strip = "none"

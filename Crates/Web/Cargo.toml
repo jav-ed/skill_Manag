@@ -1,0 +1,38 @@
+[package]
+name = "skillmirror-web"
+description = "The views of skillmirror that open in a browser: the static HTML report and the local server."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license-file.workspace = true
+publish.workspace = true
+
+[features]
+# The local server (`skillmirror web`). Off, the crate is the synchronous report renderer alone and no
+# async runtime is compiled.
+server = [
+    "dep:axum",
+    "dep:getrandom",
+    "dep:serde",
+    "dep:serde_json",
+    "dep:thiserror",
+    "dep:tokio",
+]
+
+[dependencies]
+axum = { version = "0.8", optional = true, default-features = false, features = ["http1", "json", "tokio"] }
+getrandom = { version = "0.4", optional = true }
+maud = "0.27"
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+skillmirror-core.workspace = true
+thiserror = { workspace = true, optional = true }
+tokio = { version = "1", optional = true, default-features = false, features = ["macros", "net", "rt-multi-thread", "signal", "sync", "time"] }
+
+[dev-dependencies]
+http-body-util = "0.1"
+skillmirror-testkit.workspace = true
+tower = { version = "0.5", features = ["util"] }
+
+[lints]
+workspace = true

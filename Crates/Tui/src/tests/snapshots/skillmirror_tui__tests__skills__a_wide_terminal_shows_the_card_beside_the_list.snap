@@ -1,0 +1,34 @@
+---
+source: Crates/Tui/src/tests/skills.rs
+expression: ui.screen()
+---
+ ← skillmirror  ·  javedab.com  ·  skills
+
+ Vault — 1 matching "astro"                                             │ astro
+ filter: astro  (esc to clear)                                          │ group web
+      skill               group                                         │ header: SKILL.md does not start with a ---
+>     astro               web       1 to change                         │ header
+                                                                        │ files (2): SKILL.md, ref.md
+                                                                        │
+                                                                        │ Projects
+                                                                        │ projects/one  outdated (2 files)
+                                                                        │
+                                                                        │
+                                                                        │
+                                                                        │
+                                                                        │
+                                                                        │
+                                                                        │
+                                                                        │
+                                                                        │
+                                                                        │
+                                                                        │
+                                                                        │
+                                                                        │
+                                                                        │
+                                                                        │
+                                                                        │
+                                                                        │
+                                                                        │
+ rows 1–1 of 1                                                          │
+ ↑/k up • ↓/j down • / filter • ? help • q/alt+← back

@@ -1,0 +1,28 @@
+---
+source: Crates/Tui/src/tests/render.rs
+expression: ui.screen()
+---
+   skillmirror  ·  javedab.com
+
+  Sync agent skills across all your projects from a single vault.
+
+  │ Sync     Refresh the skills each project already has; never adds one
+    List     Every installed skill; filter, then sync or delete in place
+    Skills   Browse the vault: what each skill is and where it is installed
+    Delete   Nothing pre-selected; you pick, then confirm
+    Push     Install the mandatory skills into every opted-in project
+    Add      Install chosen vault skills into one project
+    Init     Make a new project folder with your skills in it
+    History  Undo a sync, push or delete from the backups
+    Setup    Choose the vault, the scan root and the mandatory skills
+  ────────────────────────────────────────────────────────────────────────────
+  Walks every project under your root and updates skills they already have
+  installed, pulling the latest from your vault. The opt-in rule: if a project
+  doesn't have a skill, it will inshallah never be added. Only what's already
+  there gets refreshed.
+
+
+
+
+
+ ↑/k up • ↓/j down • enter open • ? help • q quit

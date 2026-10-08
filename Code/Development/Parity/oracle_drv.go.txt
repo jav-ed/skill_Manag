@@ -1,0 +1,195 @@
+// oracle_drv: a TTY-free stand-in for the two TUI-only write flows of the Go
+// skill_Manag tool frozen at commit c7310f9 (sync apply, push).
+//
+// The real binary applies sync/push only inside a Bubble Tea program that needs a
+// terminal (cmd/tui/sync.go, cmd/tui/push.go). This driver calls the same
+// internal.* functions with the same sequencing the TUI Update loops use, with
+// every item selected (the TUI default), and prints a stable, sorted report.
+// It is NOT the shipped binary: the config resolution below is a copy of
+// cmd/root.go initConfig, and the grouping is a copy of tui.groupSyncTargets.
+//
+// Usage: oracle_drv sync|push [--vault V] [--root R] [--dry-run]
+package main
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
+
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
+	"skill_Manag/internal"
+)
+
+type skillItem struct {
+	skillName string
+	targets   []internal.Target
+}
+
+func main() {
+	if len(os.Args) < 2 || (os.Args[1] != "sync" && os.Args[1] != "push") {
+		fmt.Fprintln(os.Stderr, "usage: oracle_drv sync|push [--vault V] [--root R] [--dry-run]")
+		os.Exit(2)
+	}
+	mode := os.Args[1]
+
+	fs := pflag.NewFlagSet("oracle_drv", pflag.ContinueOnError)
+	fs.String("vault", "", "")
+	fs.String("root", "", "")
+	dry := fs.Bool("dry-run", false, "")
+	if err := fs.Parse(os.Args[2:]); err != nil {
+		fmt.Fprintln(os.Stderr, "Error:", err)
+		os.Exit(2)
+	}
+	viper.BindPFlag("vault", fs.Lookup("vault"))
+	viper.BindPFlag("root", fs.Lookup("root"))
+	initConfig()
+
+	vault := viper.GetString("vault")
+	root := viper.GetString("root")
+	if vault == "" || root == "" {
+		// the real tool opens the Setup TUI here; there is no TTY-free equivalent
+		fmt.Fprintln(os.Stderr, "oracle_drv: vault and root are required (real tool would open the Setup TUI)")
+		os.Exit(2)
+	}
+
+	opts := internal.ScanOptions{
+		ExcludeDirs:  viper.GetStringSlice("exclude_dirs"),
+		ExcludePaths: viper.GetStringSlice("exclude_paths"),
+	}
+
+	switch mode {
+	case "sync":
+		runSync(vault, root, *dry, opts)
+	case "push":
+		// cmd/push.go: re-read the vault config, then take "mandatory"
+		viper.ReadInConfig()
+		runPush(vault, root, viper.GetStringSlice("mandatory"), opts)
+	}
+}
+
+// initConfig is a verbatim copy of cmd/root.go initConfig (c7310f9).
+func initConfig() {
+	viper.SetEnvPrefix("SKILL_MANAG")
+	viper.AutomaticEnv()
+
+	vault := viper.GetString("vault")
+	if vault == "" {
+		home, err := os.UserHomeDir()
+		if err == nil {
+			data, err := os.ReadFile(filepath.Join(home, ".config", "skill_Manag", "vault"))
+			if err == nil {
+				vault = strings.TrimSpace(string(data))
+				viper.Set("vault", vault)
+			}
+		}
+	}
+
+	if vault != "" {
+		viper.SetConfigFile(filepath.Join(vault, "config.yaml"))
+		viper.ReadInConfig()
+	}
+}
+
+// groupSyncTargets is a copy of tui.groupSyncTargets: group by skill name, names sorted,
+// targets inside a group keep the order the directory walk produced them in.
+func groupSyncTargets(targets []internal.Target) []skillItem {
+	grouped := make(map[string]*skillItem)
+	for _, t := range targets {
+		if _, ok := grouped[t.SkillName]; !ok {
+			grouped[t.SkillName] = &skillItem{skillName: t.SkillName}
+		}
+		grouped[t.SkillName].targets = append(grouped[t.SkillName].targets, t)
+	}
+	names := make([]string, 0, len(grouped))
+	for name := range grouped {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	items := make([]skillItem, len(names))
+	for i, name := range names {
+		items[i] = *grouped[name]
+	}
+	return items
+}
+
+// runSync mirrors syncScanCmd + the syncTickMsg loop of cmd/tui/sync.go.
+func runSync(vault, root string, dryRun bool, opts internal.ScanOptions) {
+	master, err := internal.ReadMasterSkills(vault)
+	if err != nil {
+		fmt.Printf("SCAN-ERROR %v\n", err)
+		os.Exit(1)
+	}
+	targets, err := internal.FindTargetsWithOptions(root, master, opts)
+	if err != nil {
+		fmt.Printf("SCAN-ERROR %v\n", err)
+		os.Exit(1)
+	}
+	applyAll(master, groupSyncTargets(targets), dryRun)
+}
+
+// runPush mirrors pushScanCmd + the pushTickMsg loop of cmd/tui/push.go.
+func runPush(vault, root string, mandatory []string, opts internal.ScanOptions) {
+	master, err := internal.ReadMasterSkills(vault)
+	if err != nil {
+		fmt.Printf("SCAN-ERROR %v\n", err)
+		os.Exit(1)
+	}
+	pushSkills := make(map[string]string)
+	for _, name := range mandatory {
+		if path, ok := master[name]; ok {
+			pushSkills[name] = path
+		}
+	}
+	if len(pushSkills) == 0 {
+		fmt.Println("NOTHING-TO-PUSH (no mandatory skill exists in the vault)")
+		return
+	}
+	targets, err := internal.FindPushTargetsWithOptions(root, pushSkills, opts)
+	if err != nil {
+		fmt.Printf("SCAN-ERROR %v\n", err)
+		os.Exit(1)
+	}
+	applyAll(pushSkills, groupSyncTargets(targets), false)
+}
+
+// applyAll syncs every item (all selected) and prints one line per target,
+// sorted by project then skill. Files/Removed keep the order SyncSkill returned.
+func applyAll(master map[string]string, items []skillItem, dryRun bool) {
+	if len(items) == 0 {
+		fmt.Println("NOTHING-TO-DO (no matching targets)")
+		return
+	}
+	var results []internal.SyncResult
+	for _, item := range items {
+		for _, target := range item.targets {
+			results = append(results, internal.SyncSkill(master, target, dryRun))
+		}
+	}
+	sort.SliceStable(results, func(i, j int) bool {
+		a, b := results[i].Target, results[j].Target
+		if a.ProjectPath != b.ProjectPath {
+			return a.ProjectPath < b.ProjectPath
+		}
+		return a.SkillName < b.SkillName
+	})
+
+	okCount, errCount := 0, 0
+	for _, r := range results {
+		status := "ok"
+		errText := "-"
+		if r.Err != nil {
+			status = "ERR"
+			errText = r.Err.Error()
+			errCount++
+		} else {
+			okCount++
+		}
+		fmt.Printf("%s\t%s\t%s\tfiles=%d %v\tstale=%d %v\terr=%s\n",
+			status, r.Target.ProjectPath, r.Target.SkillName,
+			len(r.Files), r.Files, len(r.Removed), r.Removed, errText)
+	}
+	fmt.Printf("SUMMARY ok=%d err=%d dry_run=%v\n", okCount, errCount, dryRun)
+}

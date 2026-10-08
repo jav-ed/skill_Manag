@@ -20,24 +20,20 @@ pnpm-debug.log*
 .DS_Store
 
 
-.astro
 .venv
 .vscode
 
 **/*.pyc
 
-# build webpage: 
-# pnpm astro build
-# pnpm astro preview
-dist
-dist*
+# build output at the repository root only: an unanchored `dist*` or `fast*` would hide any future
+# file or folder whose name starts with these words
+/dist*
+/fast*
 
-stats.html
-
-fast*
-
-# no npm lock file
+# no npm lock file, except the one that pins the web interface build
 package-lock.json
+!/Ui/package-lock.json
+/Ui/.astro/
 
 # cursor working files
 Cursor
@@ -47,14 +43,10 @@ Cursor
 
 Repos/
 
-# Go binary
-skill_Manag
-skill_Manag.exe
+# Scratch: disposable agent outputs (doc-start convention).
+# Anchored to the repo root: an unanchored "Scratch/" would also ignore the
+# tracked cleanup helper in Code/Development/Scratch/.
+/Scratch/
 
-# Go test / coverage
-*.test
-*.out
-
-# Go workspace
-go.work
-go.work.sum
+# Rust build output
+target/

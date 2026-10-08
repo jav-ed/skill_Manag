@@ -10,17 +10,22 @@ Same-directory renames (file rename with no directory change) are a filesystem-o
 
 Requires `go.mod` at the project root for any cross-directory move. Without it the move will error.
 
-## Rust — cross-directory moves use a shim
+## Rust — semantic module moves
 
-Moving a Rust file to a different directory does **not** rewrite caller imports. Instead it:
-1. Adds a `#[path = "..."]` attribute in the declaring file pointing to the new location.
-2. Adds a `pub use crate::...` alias so existing callers continue to compile.
+Use logical module paths for any structural move:
 
-These are permanent code changes that will appear in your diff. Caller files are not migrated — they keep working through the alias. To fully migrate callers you must update them manually or run a follow-up rename.
+```bash
+refac move-module --project-path /path/to/cargo-workspace \
+  crate::engine::matching crate::domain::matching
+```
 
-Same-directory renames (file rename within the same directory) do fully rewrite all `use` paths via rust-analyzer.
+The command resolves the source with embedded rust-analyzer HIR, moves its complete file or `mod.rs` subtree, rewrites resolved references across the Cargo workspace, adjusts affected `super::` paths, creates conventional missing parent modules, and runs `cargo check --workspace --all-targets`. It never creates `#[path]` or compatibility re-export shims. A failed check rolls the planned source changes back.
 
-Single crate only — cross-crate reference updates are not supported.
+Source and target must be in the same crate. A `crate::...` source that is ambiguous across workspace crates is rejected with the matching declaration locations. Workspace dependants of the selected crate are updated.
+
+Strict v1 rejections include inline source modules, `#[path]`, attributed module declarations such as `#[cfg]`, visibility other than private/`pub`/`pub(crate)`, syntax errors, complex paths the rewriter cannot preserve, and grouped imports that would need restructuring.
+
+Use ordinary `refac move` for same-directory `.rs` filename renames; rust-analyzer LSP rewrites the module symbol. Cross-directory `.rs` paths through `move` are rejected and direct you to `move-module`.
 
 ## Dart — package URI rewriting requires package config
 
@@ -28,15 +33,19 @@ Single crate only — cross-crate reference updates are not supported.
 
 Run `dart pub get` in the project root to generate it before calling `refac`.
 
-## TypeScript / JavaScript — large project threshold
+## TypeScript / JavaScript — tsconfig coverage
 
-For individual file moves in projects with more than ~500 TS/JS source files, `refac` skips loading the full project. Only the moved file's own imports are rewritten — files that import it are not updated.
+Point `--project-path` at the package containing the authoritative `tsconfig.json`. Its `include` or `files` configuration must cover all local TS/JS sources that participate in imports. External packages in `node_modules` do not need to be included.
 
-The 500-file threshold excludes `node_modules`, `dist`, `build`, `.next`, and `.git`.
+Refac loads the complete tsconfig source set for file and directory moves while skipping recursive dependency discovery. There is no project-size path that silently omits external callers. Without tsconfig, Refac globs local source files but alias and module resolution is weaker.
 
-To stay under the threshold, point `--project-path` at the sub-package root rather than the monorepo root.
+### Batch safety
 
-Directory moves always load the full project regardless of size and may be slow on large codebases.
+Each invocation has a hard limit of 30 TypeScript/JavaScript source files. Directory contents count toward the limit, and successful output reports the measured source-file count. Stop duplicate dev/build watchers first; after each batch, inspect the diff and run the build.
+
+### Reference-update gaps
+
+Aliases declared through `compilerOptions.paths`, including `~/*`, are rewritten for file and directory moves and checked for stale module specifiers. Aliases missing from tsconfig and arbitrary path strings, such as catalog ownership labels, cannot be mapped safely; search for old path strings and run the project build.
 
 ## Python — re-export limits
 

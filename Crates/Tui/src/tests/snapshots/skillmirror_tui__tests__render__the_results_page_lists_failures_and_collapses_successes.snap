@@ -1,0 +1,28 @@
+---
+source: Crates/Tui/src/tests/render.rs
+expression: without_run_id(&ui.screen())
+---
+ ← skillmirror  ·  javedab.com  ·  list
+
+ Sync results
+
+  ✓ astro               synced to 1 project (2 files)
+  ✓ coding              synced to 2 projects (2 files)
+  ✗ local-only            1 failed
+    ✗ projects/one  skill "local-only" is not in the vault
+
+  Backup: run [RUN] (undo with: skillmirror undo)
+  1 project failed; nothing was left half written.
+
+
+
+
+
+
+
+
+
+
+
+
+ ↑/↓ scroll • d details • q/alt+← back • ctrl+c quit
