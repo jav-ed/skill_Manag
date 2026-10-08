@@ -27,6 +27,8 @@ pub use workspace::Workspace;
 #[cfg(test)]
 mod diff_tests;
 #[cfg(test)]
+mod doctor_machine_tests;
+#[cfg(test)]
 mod doctor_tests;
 #[cfg(test)]
 mod profile_tests;

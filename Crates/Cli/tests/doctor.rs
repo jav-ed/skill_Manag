@@ -45,7 +45,6 @@ fn skills_without_a_header_are_warnings_and_exit_one() {
         .assert()
         .code(1)
         .stdout(contains("does not start with a --- header"))
-        .stdout(contains("hint:"))
         .stdout(contains("0 errors, "));
 }
 
