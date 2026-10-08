@@ -30,7 +30,7 @@ pub(super) fn draw(
     }
 }
 
-fn done(label: &str, value: &str) -> Line<'static> {
+pub(super) fn done(label: &str, value: &str) -> Line<'static> {
     Line::from(vec![
         Span::styled(" ✓ ", Style::new().fg(theme::SUCCESS)),
         Span::styled(format!("{label:<10}"), theme::bold()),
@@ -38,14 +38,14 @@ fn done(label: &str, value: &str) -> Line<'static> {
     ])
 }
 
-fn current(label: &str) -> Line<'static> {
+pub(super) fn current(label: &str) -> Line<'static> {
     Line::from(Span::styled(
         format!(" → {label}"),
         theme::accent().add_modifier(Modifier::BOLD),
     ))
 }
 
-fn text(line: &str) -> Line<'static> {
+pub(super) fn text(line: &str) -> Line<'static> {
     Line::from(Span::raw(format!("   {line}")))
 }
 

@@ -213,3 +213,28 @@ fn the_history_page_the_undo_question_and_the_results() {
     });
     insta::assert_snapshot!("history_results", without_times(&ui.screen()));
 }
+
+#[test]
+fn the_pages_of_add_and_init() {
+    let mut ui = Harness::new(world());
+    let root = ui.world.root().display().to_string();
+    let plain = |screen: String| screen.replace(&root, "[ROOT]");
+
+    ui.open("Add");
+    insta::assert_snapshot!("add_folder_page", plain(ui.screen()));
+    ui.press('j')
+        .press('j')
+        .press('j')
+        .press('l')
+        .code(Code::Enter);
+    ui.wait_select();
+    insta::assert_snapshot!("add_selection_page", plain(ui.screen()));
+    ui.press('q');
+
+    ui.open("Init");
+    ui.code(Code::Enter).type_text("fresh");
+    insta::assert_snapshot!("init_name_page", plain(ui.screen()));
+    ui.code(Code::Enter).wait_select();
+    ui.press('g').code(Code::Enter).wait_confirm();
+    insta::assert_snapshot!("init_question", plain(ui.screen()));
+}

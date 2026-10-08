@@ -37,7 +37,7 @@ Left: a third review round with fresh eyes (no High, no Medium is the bar), and 
 
 ## 4. [ ] TUI completion
 
-Add/init screens (use `ops::plan_install` and `ops::resolve`), a history and undo screen, show scan issues and leftover warnings, wizard polish after real use, review-before-apply with the file list (M1 first). Keep the architecture: pure `App::handle(Event) -> Effects`, background jobs over the channel, tests with synthetic events and snapshots, one PTY test per new screen.
+Done on 2026-10-08: scan problems (`i`, Q46), History page with undo (Q47), Add and Init pages with the links (Q48), each with flow tests, snapshots, mutation checks and a real-terminal test in `Crates/Cli/tests/interface_screens.rs`. Left: a diff view for the confirmation dialog, wizard polish after real use. Keep the architecture: pure `App::handle(Event)`, background jobs over the channel with job ids, tests with synthetic events and snapshots, one real-terminal test per new screen.
 
 ## 5. [ ] Phase 6: UX pass and web view
 

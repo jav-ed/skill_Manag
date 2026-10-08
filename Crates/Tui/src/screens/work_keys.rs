@@ -4,8 +4,8 @@ use ratatui::layout::Position;
 
 use super::work::{Action, Phase, Work};
 use crate::binding::{
-    ALL, BACK, CANCEL, CONFIRM, DELETE, DOWN, FILTER, ISSUES, PAGE_DOWN, PAGE_UP, SYNC, TOGGLE, UP,
-    YES,
+    ALL, BACK, CANCEL, CONFIRM, DELETE, DOWN, FILTER, GIT, ISSUES, PAGE_DOWN, PAGE_UP, SYNC,
+    TOGGLE, UP, YES,
 };
 use crate::hit::{HitMap, Target};
 use crate::input::{self, Button, Code, Key, KeyKind, Mouse, MouseKind};
@@ -59,6 +59,10 @@ impl Work {
             self.refilter();
         } else if CONFIRM.matches(key) {
             return self.confirm_selection();
+        } else if self.mode == Mode::Init && GIT.matches(key) {
+            if let Some(project) = &mut self.project {
+                project.git = !project.git;
+            }
         } else if self.mode == Mode::List && SYNC.matches(key) {
             return self.plan(Kind::Sync);
         } else if self.mode == Mode::List && DELETE.matches(key) {
@@ -74,6 +78,8 @@ impl Work {
             Mode::Sync => self.plan(Kind::Sync),
             Mode::Push => self.plan(Kind::Push),
             Mode::Delete => self.ask(Kind::Delete),
+            Mode::Add => self.plan(Kind::Add),
+            Mode::Init => self.plan(Kind::Init),
             Mode::List => Action::None,
         }
     }

@@ -11,7 +11,7 @@ use ratatui::widgets::Paragraph;
 use super::boxed;
 use crate::hit::{HitMap, Target};
 use crate::num::plural;
-use crate::results::Kind;
+use crate::results::{Kind, short_path};
 use crate::screens::Pending;
 use crate::theme;
 
@@ -30,13 +30,26 @@ pub(super) fn draw(
         Kind::Delete => ("Delete", theme::ERROR),
         Kind::Sync => ("Sync", theme::ACCENT),
         Kind::Push => ("Push", theme::ACCENT),
+        Kind::Add => ("Add", theme::ACCENT),
+        Kind::Init => ("Create", theme::SUCCESS),
     };
     let projects: HashSet<_> = pending.targets.iter().map(|t| &t.project).collect();
-    let title = format!(
-        "{verb} {} in {}?",
-        plural(pending.skills, "skill"),
-        plural(projects.len(), "project")
-    );
+    let skills = plural(pending.skills, "skill");
+    let title = match &pending.install {
+        Some(install) if pending.kind == Kind::Init => {
+            format!(
+                "Create {} with {skills}?",
+                short_path(&install.project.to_string_lossy())
+            )
+        }
+        Some(install) => {
+            format!(
+                "Add {skills} to {}?",
+                short_path(&install.project.to_string_lossy())
+            )
+        }
+        None => format!("{verb} {skills} in {}?", plural(projects.len(), "project")),
+    };
     let buttons = boxed::draw(frame, hits, area, &title, color, body(pending), 1);
     let [yes, no] = Layout::horizontal([Constraint::Length(18), Constraint::Length(18)])
         .flex(Flex::Center)
@@ -67,13 +80,23 @@ fn body(pending: &Pending) -> Vec<Line<'static>> {
             plural(preview.updated, "skill folder")
         ));
     }
-    let mut lines = vec![Line::raw(format!(
+    let mut lines = Vec::new();
+    if let Some(install) = pending.install.as_ref().filter(|i| i.create) {
+        lines.push(Line::raw(format!(
+            "Makes the folder {}.",
+            install.project.display()
+        )));
+        if install.git {
+            lines.push(Line::raw("It becomes a git repository."));
+        }
+    }
+    lines.push(Line::raw(format!(
         "{}: {} added, {} changed, {} removed.",
         capitalized(&doing.join(" and ")),
         plural(preview.files_added, "file"),
         plural(preview.files_changed, "file"),
         plural(preview.removals.len(), "file"),
-    ))];
+    )));
     for removal in preview.removals.iter().take(REMOVALS_SHOWN) {
         lines.push(Line::from(Span::styled(
             format!(

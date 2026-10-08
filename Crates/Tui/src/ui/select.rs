@@ -21,7 +21,7 @@ const DETAIL_MAX: usize = 40;
 /// The colour that marks selection on this screen, as in the Go tool.
 fn mode_style(mode: Mode) -> Style {
     match mode {
-        Mode::Sync => Style::new().fg(theme::SUCCESS),
+        Mode::Sync | Mode::Add | Mode::Init => Style::new().fg(theme::SUCCESS),
         Mode::Push => theme::warning(),
         Mode::Delete => Style::new().fg(theme::ERROR),
         Mode::List => theme::accent(),
@@ -33,6 +33,16 @@ fn title(work: &Work) -> String {
         Mode::Sync => "Select skills to sync".to_string(),
         Mode::Push => "Select skills to push".to_string(),
         Mode::Delete => "Select skills to delete".to_string(),
+        Mode::Add => format!("Select skills to add to {}", project_label(work)),
+        Mode::Init => format!(
+            "Select skills for {}{}",
+            project_label(work),
+            if work.project.as_ref().is_some_and(|p| p.git) {
+                "  (git repository)"
+            } else {
+                ""
+            }
+        ),
         Mode::List if work.filter.value().is_empty() => {
             format!("Skills — {} installed", work.items.len())
         }
@@ -42,6 +52,14 @@ fn title(work: &Work) -> String {
             work.filter.value()
         ),
     }
+}
+
+/// The project of an add or init page, as `parent/project`.
+fn project_label(work: &Work) -> String {
+    work.project
+        .as_ref()
+        .map(|p| crate::results::short_path(&p.path.to_string_lossy()))
+        .unwrap_or_default()
 }
 
 pub(super) fn draw(frame: &mut Frame, hits: &mut HitMap, work: &mut Work, area: Rect) {
@@ -78,10 +96,10 @@ pub(super) fn draw(frame: &mut Frame, hits: &mut HitMap, work: &mut Work, area: 
     draw_filter(frame, work, filter);
     let (name_w, detail_w) = widths(&work.items);
     let heading = format!("      {:<name_w$}  {:<detail_w$}", "skill", "projects");
-    let heading = if work.mode == Mode::List {
-        heading.replace("projects", "project ")
-    } else {
-        heading
+    let heading = match work.mode {
+        Mode::List => heading.replace("projects", "project "),
+        Mode::Add | Mode::Init => heading.replace("projects", "group   "),
+        _ => heading,
     };
     frame.render_widget(
         Paragraph::new(Span::styled(heading, theme::muted())),

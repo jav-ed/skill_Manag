@@ -8,6 +8,7 @@ mod filter;
 mod hit;
 mod items;
 mod jobs;
+mod jobs_install;
 mod num;
 mod preview;
 mod results;

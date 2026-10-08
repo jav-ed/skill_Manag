@@ -1,6 +1,7 @@
 //! State of the selection screens (sync, push, delete, list): phases, selection and filter.
 
 use std::collections::HashSet;
+use std::path::PathBuf;
 
 use skillmirror_core::plan::Plan;
 use skillmirror_core::scan::Target;
@@ -8,10 +9,20 @@ use tui_input::Input as TextInput;
 
 use super::list_view::ListView;
 use crate::filter::Fuzzy;
-use crate::items::{self, Item, Mode};
+use crate::items::{self, Item, Mode, Project};
 use crate::preview::Preview;
 use crate::results::{Kind, Results};
 use crate::session::{Issue, Session};
+
+/// Where add and init write, and what init makes first.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct Install {
+    pub(crate) project: PathBuf,
+    /// The project folder does not exist yet (init): it is made right before the first write.
+    pub(crate) create: bool,
+    /// Make the new project a git repository.
+    pub(crate) git: bool,
+}
 
 /// A run waiting for a go-ahead or already started.
 #[derive(Debug)]
@@ -26,6 +37,8 @@ pub(crate) struct Pending {
     /// The numbers and names the confirmation page shows, worked out with the plan so that drawing
     /// never has to look at the disk.
     pub(crate) preview: Option<Preview>,
+    /// Set for add and init.
+    pub(crate) install: Option<Install>,
 }
 
 // The plan is a large value without equality; it only matters whether there is one.
@@ -34,6 +47,7 @@ impl PartialEq for Pending {
         self.kind == other.kind
             && self.targets == other.targets
             && self.skills == other.skills
+            && self.install == other.install
             && self.plan.is_some() == other.plan.is_some()
     }
 }
@@ -80,6 +94,8 @@ pub(crate) struct Work {
     /// What the scan could not read, and whether the list of it is open.
     pub(crate) issues: Vec<Issue>,
     pub(crate) issues_open: bool,
+    /// The project that add and init write to.
+    pub(crate) project: Option<Project>,
     pub(super) fuzzy: Fuzzy,
 }
 
@@ -97,6 +113,7 @@ impl Work {
             details: false,
             issues: Vec::new(),
             issues_open: false,
+            project: None,
             fuzzy: Fuzzy::default(),
         }
     }
@@ -104,7 +121,13 @@ impl Work {
     /// Builds the rows from a finished scan.
     pub(crate) fn populate(&mut self, session: &Session) {
         self.issues.clone_from(&session.issues);
-        match items::build(self.mode, session) {
+        let built = match (self.mode, &self.project) {
+            (Mode::Add | Mode::Init, Some(project)) => {
+                Ok(items::for_install(self.mode, session, project))
+            }
+            _ => items::build(self.mode, session),
+        };
+        match built {
             Ok(items) => {
                 self.selected = items
                     .iter()
@@ -168,12 +191,18 @@ impl Work {
             .flat_map(|r| r.targets.iter().cloned())
             .collect();
         let skills = rows.len();
+        let install = self.project.as_ref().map(|project| Install {
+            project: project.path.clone(),
+            create: self.mode == Mode::Init,
+            git: project.git,
+        });
         (!targets.is_empty()).then_some(Pending {
             kind,
             targets,
             skills,
             plan: None,
             preview: None,
+            install,
         })
     }
 
@@ -191,6 +220,7 @@ impl Work {
                 "No mandatory skills configured in vault config, or no opted-in projects found."
             }
             Mode::Delete | Mode::List => "No skills found in any project.",
+            Mode::Add | Mode::Init => "The vault has no skills.",
         }
     }
 }

@@ -8,6 +8,7 @@ fn phase_name(app: &crate::app::App) -> &'static str {
         Screen::Menu(_) => "menu",
         Screen::Setup(_) => "setup",
         Screen::History(_) => "history",
+        Screen::Place(_) => "place",
         Screen::Work(w) => match w.phase {
             Phase::Loading => "loading",
             Phase::Failed(_) => "failed",

@@ -65,6 +65,12 @@ pub(super) fn lines(results: &Results, details: bool) -> Vec<Line<'static>> {
         }
     }
     out.push(Line::raw(""));
+    for note in &results.notes {
+        out.push(Line::from(Span::styled(
+            format!("  {note}"),
+            theme::muted(),
+        )));
+    }
     for warning in &results.warnings {
         out.push(Line::from(Span::styled(
             format!("  ! {warning}"),

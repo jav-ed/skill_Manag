@@ -7,14 +7,14 @@ use ratatui::widgets::{Block, Borders, Clear, Paragraph};
 
 use crate::app::Screen;
 use crate::binding::{
-    ALL, BACK, BACK_HELP, Binding, CONFIRM_HELP, DELETE, DOWN, FILTER, HELP, ISSUES, MENU_HELP,
-    MENU_QUIT, OPEN, QUIT, RESULTS_HELP, RUN_DELETE, RUN_PUSH, RUN_SYNC, SCROLL, SELECT_COMMON,
-    SYNC, TOGGLE, UP,
+    ALL, BACK, BACK_HELP, Binding, CONFIRM_HELP, DELETE, DOWN, FILTER, GIT, HELP, ISSUES,
+    MENU_HELP, MENU_QUIT, OPEN, QUIT, RESULTS_HELP, RUN_ADD, RUN_DELETE, RUN_INIT, RUN_PUSH,
+    RUN_SYNC, SCROLL, SELECT_COMMON, SYNC, TOGGLE, UP,
 };
 use crate::hit::{HitMap, Target};
 use crate::items::Mode;
 use crate::num::to_u16;
-use crate::screens::{History, HistoryPhase, Phase, Setup, Step, Work};
+use crate::screens::{History, HistoryPhase, Phase, Place, Setup, Stage, Step, Work};
 use crate::theme;
 
 /// A key as written, and what it does.
@@ -31,6 +31,8 @@ fn mode_keys(mode: Mode) -> Vec<&'static Binding> {
         Mode::Push => vec![&RUN_PUSH],
         Mode::Delete => vec![&RUN_DELETE],
         Mode::List => vec![&SYNC, &DELETE],
+        Mode::Add => vec![&RUN_ADD],
+        Mode::Init => vec![&GIT, &RUN_INIT],
     }
 }
 
@@ -40,6 +42,7 @@ fn short(screen: &Screen) -> Vec<Hint> {
         Screen::Menu(_) => hints(&[&UP, &DOWN, &OPEN, &HELP, &MENU_QUIT]),
         Screen::Setup(setup) => setup_hints(setup),
         Screen::History(history) => history_hints(history),
+        Screen::Place(place) => place_hints(place),
         Screen::Work(work) => match &work.phase {
             Phase::Select => {
                 let mut keys: Vec<&Binding> = vec![&TOGGLE, &ALL, &FILTER];
@@ -56,6 +59,21 @@ fn short(screen: &Screen) -> Vec<Hint> {
                 hints(BACK_HELP)
             }
         },
+    }
+}
+
+fn place_hints(place: &Place) -> Vec<Hint> {
+    match place.stage {
+        Stage::Folder => vec![
+            ("↑/↓", "move"),
+            ("l", "open"),
+            ("h", "parent"),
+            ("enter", "choose this folder"),
+            (".", "hidden"),
+            ("esc", "back"),
+            ("q", "leave"),
+        ],
+        Stage::Name => vec![("enter", "continue"), ("esc", "back")],
     }
 }
 
@@ -110,6 +128,11 @@ fn full(screen: &Screen) -> Vec<Hint> {
         }
         Screen::History(history) => {
             let mut keys = history_hints(history);
+            keys.push(("ctrl+c", "quit"));
+            keys
+        }
+        Screen::Place(place) => {
+            let mut keys = place_hints(place);
             keys.push(("ctrl+c", "quit"));
             keys
         }

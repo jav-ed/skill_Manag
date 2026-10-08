@@ -14,6 +14,10 @@ pub(crate) enum Kind {
     Sync,
     Push,
     Delete,
+    /// Skills chosen from the vault, installed into a project that exists.
+    Add,
+    /// A new project with skills installed in it.
+    Init,
 }
 
 impl Kind {
@@ -22,6 +26,8 @@ impl Kind {
             Self::Sync => "Sync results",
             Self::Push => "Push results",
             Self::Delete => "Delete results",
+            Self::Add => "Add results",
+            Self::Init => "Init results",
         }
     }
 
@@ -30,6 +36,8 @@ impl Kind {
             Self::Sync => "synced to",
             Self::Push => "pushed to",
             Self::Delete => "deleted from",
+            Self::Add => "added to",
+            Self::Init => "installed in",
         }
     }
 }
@@ -70,6 +78,8 @@ pub(crate) struct Results {
     pub(crate) warnings: Vec<String>,
     /// The backup run that holds what this job replaced or removed.
     pub(crate) backup: Option<String>,
+    /// What the job did besides the skills, such as the links it made.
+    pub(crate) notes: Vec<String>,
 }
 
 impl Results {
@@ -126,6 +136,7 @@ impl Results {
             skills: by_skill.into_values().collect(),
             warnings,
             backup: None,
+            notes: Vec::new(),
         }
     }
 
@@ -150,6 +161,7 @@ impl Results {
             skills: by_skill.into_values().collect(),
             warnings: Vec::new(),
             backup: None,
+            notes: Vec::new(),
         }
     }
 }

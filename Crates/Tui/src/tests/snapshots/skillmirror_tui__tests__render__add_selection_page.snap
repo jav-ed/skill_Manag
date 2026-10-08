@@ -1,0 +1,28 @@
+---
+source: Crates/Tui/src/tests/render.rs
+expression: plain(ui.screen())
+---
+ ← skillmirror  ·  javedab.com  ·  add
+
+ Select skills to add to projects/two   0 / 3 selected
+ / to filter
+      skill               group
+> [ ] astro               web
+  [ ] coding                        already in the project
+  [ ] tmux                          mandatory
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ rows 1–3 of 3
+ space toggle • a all • / filter • enter add • ? help • q/alt+← back

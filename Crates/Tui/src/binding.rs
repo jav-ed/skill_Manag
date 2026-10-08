@@ -133,6 +133,21 @@ pub(crate) const RUN_DELETE: Binding = Binding {
     label: "enter",
     help: "delete",
 };
+pub(crate) const RUN_ADD: Binding = Binding {
+    keys: &[(Code::Enter, N)],
+    label: "enter",
+    help: "add",
+};
+pub(crate) const RUN_INIT: Binding = Binding {
+    keys: &[(Code::Enter, N)],
+    label: "enter",
+    help: "create",
+};
+pub(crate) const GIT: Binding = Binding {
+    keys: &[(Code::Char('g'), N)],
+    label: "g",
+    help: "git repository",
+};
 pub(crate) const SCROLL: Binding = Binding {
     keys: &[(Code::Up, N), (Code::Down, N)],
     label: "↑/↓",

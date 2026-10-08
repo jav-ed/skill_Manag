@@ -1,0 +1,28 @@
+---
+source: Crates/Tui/src/tests/render.rs
+expression: plain(ui.screen())
+---
+ ← skillmirror  ·  javedab.com  ·  add
+
+ → Project
+   The project that gets the skills.
+   Walk to it, then press enter inside it:
+
+ ⬑  [ROOT]
+> one/
+  plain/
+  three/
+  two/
+
+
+
+
+
+
+
+
+
+
+
+ [ ] hidden (.)   [ choose this folder: enter ]
+ ↑/↓ move • l open • h parent • enter choose this folder • . hidden • esc back •

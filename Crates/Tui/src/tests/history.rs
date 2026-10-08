@@ -25,6 +25,7 @@ fn phase(ui: &Harness) -> &'static str {
         },
         Screen::Menu(_) => "menu",
         Screen::Work(_) => "work",
+        Screen::Place(_) => "place",
         Screen::Setup(_) => "setup",
     }
 }

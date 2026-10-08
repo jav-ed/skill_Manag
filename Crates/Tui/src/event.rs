@@ -8,6 +8,7 @@ use std::time::Duration;
 
 use crate::backend::InputSource;
 use crate::input::Input;
+use crate::jobs_install::Placed;
 use crate::results::Results;
 use crate::screens::{Pending, VaultCheck};
 use crate::session::Session;
@@ -25,6 +26,8 @@ pub(crate) enum Job {
     Planned(Box<Pending>),
     /// The setup wizard looked at the chosen vault folder.
     Checked(Box<Result<VaultCheck, String>>),
+    /// Add or init looked at the folder it was given.
+    Placed(Box<Result<Placed, String>>),
     /// The runs in the backup store.
     Runs(Box<Result<Vec<RunRow>, String>>),
     /// What undoing a run would do, checked against the disk.

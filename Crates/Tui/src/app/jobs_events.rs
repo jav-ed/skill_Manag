@@ -4,10 +4,12 @@ use std::sync::Arc;
 
 use super::{App, Screen};
 use crate::event::{Job, JobId};
+use crate::items::Mode;
 use crate::jobs;
+use crate::jobs_install::{self, Placed};
 use crate::preview::Preview;
 use crate::results::Kind;
-use crate::screens::{History, HistoryPhase, Pending, Phase, Work};
+use crate::screens::{History, HistoryPhase, Pending, Phase, Purpose, Work};
 
 impl App {
     /// A report counts only while the screen still waits for that job. Anything else is the late word of
@@ -19,6 +21,17 @@ impl App {
                 self.checking = None;
                 if let Screen::Setup(setup) = &mut self.screen {
                     setup.checked(*result);
+                }
+            }
+            Job::Placed(result) if self.checking == Some(id) => {
+                self.checking = None;
+                match *result {
+                    Ok(placed) => self.on_placed(placed),
+                    Err(message) => {
+                        if let Screen::Place(place) = &mut self.screen {
+                            place.refused(message);
+                        }
+                    }
                 }
             }
             Job::Planned(pending) if self.running == Some(id) => self.on_planned(*pending),
@@ -134,7 +147,7 @@ impl App {
         }
     }
 
-    pub(super) fn start(&mut self, pending: Pending) {
+    pub(super) fn start(&mut self, mut pending: Pending) {
         let id = self.new_job();
         let total = pending.targets.len();
         let kind = pending.kind;
@@ -149,9 +162,21 @@ impl App {
         self.running = Some(id);
         let tx = self.tx.clone();
         let dirs = self.dirs.clone();
-        match pending.plan {
-            Some(plan) if kind != Kind::Delete => jobs::spawn_apply(tx, id, dirs, kind, plan),
-            _ if kind == Kind::Delete => jobs::spawn_delete(tx, id, dirs, pending),
+        let bridges = self
+            .session
+            .as_ref()
+            .map(|session| session.workspace.settings.config().targets.clone())
+            .unwrap_or_default();
+        let plan = pending.plan.take();
+        let install = pending.install.take();
+        match (kind, plan, install) {
+            (Kind::Delete, _, _) => jobs::spawn_delete(tx, id, dirs, pending),
+            (_, Some(plan), Some(install)) => {
+                jobs_install::spawn_install(tx, id, dirs, kind, plan, install, bridges);
+            }
+            (Kind::Sync | Kind::Push, Some(plan), None) => {
+                jobs::spawn_apply(tx, id, dirs, kind, plan);
+            }
             _ => {
                 self.running = None;
                 if let Some(work) = self.work_mut() {
@@ -161,17 +186,28 @@ impl App {
         }
     }
 
+    /// The folder add or init asked for suits: the selection page of its skills opens.
+    fn on_placed(&mut self, placed: Placed) {
+        let mode = match placed.purpose {
+            Purpose::Add => Mode::Add,
+            Purpose::Init => Mode::Init,
+        };
+        let mut work = Work::new(mode);
+        work.project = Some(placed.project);
+        self.open_work(work);
+    }
+
     pub(super) fn work_mut(&mut self) -> Option<&mut Work> {
         match &mut self.screen {
             Screen::Work(work) => Some(work),
-            Screen::Menu(_) | Screen::Setup(_) | Screen::History(_) => None,
+            Screen::Menu(_) | Screen::Setup(_) | Screen::History(_) | Screen::Place(_) => None,
         }
     }
 
     fn history_mut(&mut self) -> Option<&mut History> {
         match &mut self.screen {
             Screen::History(history) => Some(history),
-            Screen::Menu(_) | Screen::Setup(_) | Screen::Work(_) => None,
+            Screen::Menu(_) | Screen::Setup(_) | Screen::Work(_) | Screen::Place(_) => None,
         }
     }
 

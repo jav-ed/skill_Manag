@@ -51,6 +51,8 @@ pub(super) fn planning(frame: &mut Frame, kind: Kind, tick: usize, area: Rect) {
         Kind::Sync => "the sync",
         Kind::Push => "the push",
         Kind::Delete => "the delete",
+        Kind::Add => "the add",
+        Kind::Init => "the new project",
     };
     waiting(
         frame,
@@ -84,6 +86,8 @@ pub(super) fn running(frame: &mut Frame, kind: Kind, done: usize, total: usize, 
         Kind::Sync => "Syncing",
         Kind::Push => "Pushing",
         Kind::Delete => "Deleting",
+        Kind::Add => "Adding",
+        Kind::Init => "Installing",
     };
     progress(frame, verb, done, total, area);
 }

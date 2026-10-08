@@ -1,5 +1,6 @@
 //! The main menu.
 
+use super::place::Purpose;
 use crate::binding::{BACK, CONFIRM, DOWN, UP};
 use crate::input::Key;
 use crate::items::Mode;
@@ -16,11 +17,13 @@ pub(crate) struct Entry {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Dest {
     Work(Mode),
+    /// Choose a folder, then the skills to install into it.
+    Place(Purpose),
     History,
     Setup,
 }
 
-pub(crate) const ENTRIES: [Entry; 6] = [
+pub(crate) const ENTRIES: [Entry; 8] = [
     Entry {
         label: "Sync",
         blurb: "Refresh the skills each project already has; never adds one",
@@ -44,6 +47,18 @@ pub(crate) const ENTRIES: [Entry; 6] = [
         blurb: "Install the mandatory skills into every opted-in project",
         detail: "Reads the mandatory list from your vault config and pushes those skills to every project that already has .agents/skills/, bypassing the opt-in rule. Configure mandatory skills by adding 'mandatory: [skill-name]' to <vault>/config.yaml.",
         dest: Dest::Work(Mode::Push),
+    },
+    Entry {
+        label: "Add",
+        blurb: "Install chosen vault skills into one project",
+        detail: "Pick a project folder, then the skills to install from your vault. The page says what would be written before anything is, and skills the project already has are compared like in a sync. If the vault config lists targets such as claude, the links to .agents/skills are made for the project too.",
+        dest: Dest::Place(Purpose::Add),
+    },
+    Entry {
+        label: "Init",
+        blurb: "Make a new project folder with your skills in it",
+        detail: "Pick the folder the project goes in and type its name, then pick the skills (the mandatory ones are ticked). Press g to make it a git repository. Nothing is made until you confirm, and if no skill could be installed the new folder is taken away again.",
+        dest: Dest::Place(Purpose::Init),
     },
     Entry {
         label: "History",

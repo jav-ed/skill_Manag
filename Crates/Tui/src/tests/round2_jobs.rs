@@ -15,6 +15,7 @@ fn phase(ui: &Harness) -> &'static str {
         crate::app::Screen::Menu(_) => "menu",
         crate::app::Screen::Setup(_) => "setup",
         crate::app::Screen::History(_) => "history",
+        crate::app::Screen::Place(_) => "place",
         crate::app::Screen::Work(w) => match w.phase {
             Phase::Loading => "loading",
             Phase::Failed(_) => "failed",
@@ -33,6 +34,7 @@ fn results() -> Results {
         skills: Vec::new(),
         warnings: Vec::new(),
         backup: None,
+        notes: Vec::new(),
     }
 }
 

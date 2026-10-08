@@ -8,7 +8,7 @@ use crate::event::Event;
 use crate::hit::Target;
 use crate::input::{Button, Input, Key, KeyKind, Mouse, MouseKind};
 use crate::screens::{
-    Action, Dest, ENTRIES, HistoryAction, HistoryPhase, MenuAction, Phase, SetupAction,
+    Action, Dest, ENTRIES, HistoryAction, HistoryPhase, MenuAction, Phase, PlaceAction, SetupAction,
 };
 
 impl App {
@@ -53,7 +53,11 @@ impl App {
 
     /// Whether keys currently go into a text field.
     fn typing(&self) -> bool {
-        matches!(&self.screen, Screen::Work(w) if w.filtering && matches!(w.phase, Phase::Select))
+        match &self.screen {
+            Screen::Work(w) => w.filtering && matches!(w.phase, Phase::Select),
+            Screen::Place(p) => p.typing(),
+            Screen::Menu(_) | Screen::History(_) | Screen::Setup(_) => false,
+        }
     }
 
     fn route_key(&mut self, key: Key) {
@@ -70,6 +74,10 @@ impl App {
             Screen::History(history) => {
                 let action = history.on_key(key);
                 self.history_act(action);
+            }
+            Screen::Place(place) => {
+                let action = place.on_key(key);
+                self.place_act(action);
             }
             Screen::Setup(setup) => {
                 let action = setup.on_key(key);
@@ -98,6 +106,7 @@ impl App {
         match ENTRIES.get(index).map(|e| e.dest) {
             Some(Dest::Work(mode)) => self.open(mode),
             Some(Dest::History) => self.open_history(),
+            Some(Dest::Place(purpose)) => self.open_place(purpose),
             Some(Dest::Setup) => self.open_setup(),
             None => {}
         }
@@ -117,6 +126,21 @@ impl App {
             }
             Action::Plan(pending) => self.plan(pending),
             Action::Run(pending) => self.start(pending),
+        }
+    }
+
+    fn place_act(&mut self, action: PlaceAction) {
+        match action {
+            PlaceAction::None => {}
+            PlaceAction::Leave => {
+                self.checking = None;
+                self.back_to_menu();
+            }
+            PlaceAction::Check(purpose, path) => {
+                let id = self.new_job();
+                self.checking = Some(id);
+                crate::jobs_install::spawn_place(self.tx.clone(), id, purpose, path);
+            }
         }
     }
 
@@ -167,6 +191,10 @@ impl App {
             Screen::History(history) => {
                 let action = history.on_mouse(mouse, &self.hits);
                 self.history_act(action);
+            }
+            Screen::Place(place) => {
+                let action = place.on_mouse(mouse, target);
+                self.place_act(action);
             }
             Screen::Setup(setup) => {
                 let action = setup.on_mouse(mouse, target);

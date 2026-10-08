@@ -12,7 +12,9 @@ use skillmirror_core::config::{ConfigError, Dirs, Settings, Source};
 use crate::event::{Event, JobId};
 use crate::hit::{HitMap, Target};
 use crate::items::Mode;
-use crate::screens::{Dest, ENTRIES, History, HistoryPhase, Menu, Phase, Setup, SetupStart, Work};
+use crate::screens::{
+    Dest, ENTRIES, History, HistoryPhase, Menu, Phase, Place, Purpose, Setup, SetupStart, Work,
+};
 use crate::session::Session;
 
 pub(crate) const SITE_URL: &str = "https://javedab.com";
@@ -21,6 +23,7 @@ pub(crate) enum Screen {
     Menu(Menu),
     Work(Box<Work>),
     History(Box<History>),
+    Place(Box<Place>),
     Setup(Box<Setup>),
 }
 
@@ -120,7 +123,7 @@ impl App {
         match &self.screen {
             Screen::Work(w) => matches!(w.phase, Phase::Running { .. }),
             Screen::History(h) => matches!(h.phase, HistoryPhase::Running { .. }),
-            Screen::Menu(_) | Screen::Setup(_) => false,
+            Screen::Menu(_) | Screen::Place(_) | Screen::Setup(_) => false,
         }
     }
 
@@ -137,6 +140,7 @@ impl App {
                     h.phase,
                     HistoryPhase::Running { .. } | HistoryPhase::Loading | HistoryPhase::Planning
                 ),
+                Screen::Place(p) => p.checking,
                 Screen::Menu(_) | Screen::Setup(_) => false,
             }
     }
@@ -155,17 +159,27 @@ impl App {
             Screen::Menu(_) => None,
             Screen::Setup(_) => Some("setup"),
             Screen::History(_) => Some("history"),
+            Screen::Place(place) => Some(match place.purpose {
+                Purpose::Add => "add",
+                Purpose::Init => "init",
+            }),
             Screen::Work(work) => Some(match work.mode {
                 Mode::Sync => "sync",
                 Mode::Push => "push",
                 Mode::Delete => "delete",
                 Mode::List => "list",
+                Mode::Add => "add",
+                Mode::Init => "init",
             }),
         }
     }
 
     pub(crate) fn open(&mut self, mode: Mode) {
-        let mut work = Work::new(mode);
+        self.open_work(Work::new(mode));
+    }
+
+    /// The selection page for `work`, filled from the scan when there is one, else after a new scan.
+    pub(super) fn open_work(&mut self, mut work: Work) {
         if let Some(session) = &self.session {
             work.populate(session);
         } else if self.loading.is_none() {
@@ -174,6 +188,19 @@ impl App {
             crate::jobs::spawn_load(self.tx.clone(), id, self.settings.clone());
         }
         self.screen = Screen::Work(Box::new(work));
+    }
+
+    /// The page that asks which folder add writes to, or which folder init makes the project in.
+    pub(crate) fn open_place(&mut self, purpose: Purpose) {
+        let start = [
+            self.settings.root().ok().map(|root| root.value.clone()),
+            Some(self.dirs.home().to_path_buf()),
+        ]
+        .into_iter()
+        .flatten()
+        .find(|path| path.is_dir())
+        .unwrap_or_else(|| self.dirs.home().to_path_buf());
+        self.screen = Screen::Place(Box::new(Place::new(purpose, &start)));
     }
 
     pub(crate) fn open_history(&mut self) {
@@ -188,7 +215,11 @@ impl App {
         let cursor = match &self.screen {
             Screen::Work(work) => ENTRIES
                 .iter()
-                .position(|e| e.dest == Dest::Work(work.mode))
+                .position(|e| e.dest == entry_of(work.mode))
+                .unwrap_or(0),
+            Screen::Place(place) => ENTRIES
+                .iter()
+                .position(|e| e.dest == Dest::Place(place.purpose))
                 .unwrap_or(0),
             Screen::Setup(_) => ENTRIES
                 .iter()
@@ -201,6 +232,15 @@ impl App {
             Screen::Menu(menu) => menu.cursor,
         };
         self.screen = Screen::Menu(Menu { cursor });
+    }
+}
+
+/// The menu entry that leads to a selection page.
+fn entry_of(mode: Mode) -> Dest {
+    match mode {
+        Mode::Add => Dest::Place(Purpose::Add),
+        Mode::Init => Dest::Place(Purpose::Init),
+        Mode::Sync | Mode::Push | Mode::Delete | Mode::List => Dest::Work(mode),
     }
 }
 

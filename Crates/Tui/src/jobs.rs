@@ -22,7 +22,7 @@ use crate::screens::{Pending, check_vault};
 use crate::session::{Session, describe, load};
 use crate::undo::{do_undo, list_runs, plan_undo};
 
-fn send(tx: &Sender<Event>, id: JobId, job: Job) {
+pub(crate) fn send(tx: &Sender<Event>, id: JobId, job: Job) {
     // A closed channel means the UI has ended; there is nobody left to tell.
     drop(tx.send(Event::Job { id, job }));
 }
@@ -45,11 +45,14 @@ pub(crate) fn spawn_check(tx: Sender<Event>, id: JobId, path: PathBuf) {
 /// Works out what a sync or push of the selected targets would do, without writing anything.
 pub(crate) fn spawn_plan(tx: Sender<Event>, id: JobId, session: Arc<Session>, pending: Pending) {
     thread::spawn(move || {
-        let plan = Plan::for_targets(
-            &session.workspace.vault,
-            &session.workspace.files,
-            pending.targets.clone(),
-        );
+        let vault = &session.workspace.vault;
+        let files = &session.workspace.files;
+        // Add and init may create `.agents/skills`; sync and push only work where it is.
+        let plan = if pending.install.is_some() {
+            Plan::for_targets_creating(vault, files, pending.targets.clone())
+        } else {
+            Plan::for_targets(vault, files, pending.targets.clone())
+        };
         let preview = Preview::of(&plan);
         let planned = Pending {
             plan: Some(plan),
@@ -61,7 +64,7 @@ pub(crate) fn spawn_plan(tx: Sender<Event>, id: JobId, session: Arc<Session>, pe
 }
 
 /// Starts the backup run that keeps what a job replaces or removes.
-fn begin(dirs: &Dirs, kind: RunKind) -> Result<(Backups, Run), String> {
+pub(crate) fn begin(dirs: &Dirs, kind: RunKind) -> Result<(Backups, Run), String> {
     let backups = Backups::in_dirs(dirs);
     let run = backups
         .begin(kind)

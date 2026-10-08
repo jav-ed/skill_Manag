@@ -1,6 +1,7 @@
 //! The rows of a selection screen, built from a session.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
+use std::path::PathBuf;
 
 use skillmirror_core::scan::Target;
 
@@ -15,6 +16,10 @@ pub(crate) enum Mode {
     Push,
     Delete,
     List,
+    /// Pick vault skills to install into one project that exists.
+    Add,
+    /// Pick vault skills for a new project.
+    Init,
 }
 
 /// How a note next to a row is coloured.
@@ -54,7 +59,58 @@ pub(crate) fn build(mode: Mode, session: &Session) -> Result<Vec<Item>, String> 
             .map_err(Clone::clone),
         Mode::Delete => Ok(installed_groups(session)),
         Mode::List => Ok(installed_rows(session)),
+        Mode::Add | Mode::Init => Err("internal error: no project was chosen".to_string()),
     }
+}
+
+/// The project that add and init install into.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct Project {
+    pub(crate) path: PathBuf,
+    /// Skill folders the project has already.
+    pub(crate) installed: BTreeSet<String>,
+    /// Init: make the new project a git repository.
+    pub(crate) git: bool,
+}
+
+/// Add and init rows: every skill of the vault, with the project as its one target. A new project starts
+/// with the mandatory skills ticked.
+pub(crate) fn for_install(mode: Mode, session: &Session, project: &Project) -> Vec<Item> {
+    let skills_dir = project.path.join(".agents").join("skills");
+    let mandatory = session.workspace.settings.mandatory();
+    session
+        .workspace
+        .vault
+        .skills
+        .values()
+        .map(|skill| {
+            let is_mandatory = mandatory.contains(&skill.name);
+            let note = if project.installed.contains(&skill.name) {
+                Some(Note {
+                    text: "already in the project".to_string(),
+                    tone: Tone::Quiet,
+                })
+            } else if is_mandatory {
+                Some(Note {
+                    text: "mandatory".to_string(),
+                    tone: Tone::Change,
+                })
+            } else {
+                None
+            };
+            Item {
+                name: skill.name.clone(),
+                detail: skill.group.join("/"),
+                note,
+                targets: vec![Target {
+                    project: project.path.clone(),
+                    skill: skill.name.clone(),
+                    path: skills_dir.join(&skill.name),
+                }],
+                preselected: mode == Mode::Init && is_mandatory,
+            }
+        })
+        .collect()
 }
 
 /// Sync and push rows: grouped by skill, with what applying would do. Rows with changes start selected.

@@ -58,8 +58,9 @@ fn the_mouse_opens_an_entry_and_an_idle_interface_uses_no_cpu() {
     let world = World::standard();
     let mut term = start(&world);
     term.wait_for("skillmirror");
-    // Menu rows: header 0, gap 1, tagline 2, gap 3, entries at 4, 7, 10, 13.
-    term.click(8, 7);
+    // Menu rows: header 0, gap 1, tagline 2, gap 3, then one row per entry from 4 (Sync, List, ...): eight
+    // entries with two lines each would leave no room for the long text under them.
+    term.click(8, 5);
     term.wait_for("Skills — 4 installed");
     term.send("q");
     term.wait_for("Refresh the skills each project already has");

@@ -76,7 +76,7 @@ Exit codes: `0` clean, `1` drift found by `--check`, `2` usage error (also: writ
 
 ## TUI
 
-ratatui 0.30 on the `termina` backend through `ratatui-termina` (crossterm 0.29 stalls on input bursts of about 1 KB, which a mouse sweep or a paste produces). Own input layer (`input.rs`, `binding.rs`, `hit.rs`), `tui-input` for text fields, `nucleo-matcher` for the fuzzy filter, an OSC 8 link via `CellDiffOption::ForcedWidth`. Background work (scan, plan, apply, delete, the wizard's look at a vault) runs in threads and reports over one mpsc channel; every report carries a job id and the app hears only the job its screen waits for (contract Q36); events are coalesced and the tick runs only while something animates. Screens: menu, work screens (sync and push: select, plan, confirm with the files that would be removed, run, results; delete: select, confirm, run, results; the results page names the backup run), list, setup wizard (vault and root with a folder picker, mandatory skills, save), help overlay. Mouse works everywhere. The app is tested by driving `App` with synthetic input against a `TestBackend` (insta snapshots in `Crates/Tui/src/tests/snapshots/`) and, for the real terminal path, with portable-pty and vt100 in `Crates/Cli/tests/interface.rs`.
+ratatui 0.30 on the `termina` backend through `ratatui-termina` (crossterm 0.29 stalls on input bursts of about 1 KB, which a mouse sweep or a paste produces). Own input layer (`input.rs`, `binding.rs`, `hit.rs`), `tui-input` for text fields, `nucleo-matcher` for the fuzzy filter, an OSC 8 link via `CellDiffOption::ForcedWidth`. Background work (scan, plan, apply, delete, the wizard's look at a vault) runs in threads and reports over one mpsc channel; every report carries a job id and the app hears only the job its screen waits for (contract Q36); events are coalesced and the tick runs only while something animates. Screens: menu (one line per entry when two would not leave room for the text), work screens (sync and push: select, plan, confirm with the files that would be removed, run, results; delete: select, confirm, run, results; the results page names the backup run; `i` lists the scan problems), list, add and init (folder picker, name field, skill rows, plan, confirm, install, links; contract Q48), history (backup runs, undo question, results; Q47), setup wizard (vault and root with a folder picker, mandatory skills, save), help overlay. Mouse works everywhere. The app is tested by driving `App` with synthetic input against a `TestBackend` (insta snapshots in `Crates/Tui/src/tests/snapshots/`) and, for the real terminal path, with portable-pty and vt100 in `Crates/Cli/tests/interface.rs`.
 
 ## Numbers (measured on the user's real data, read-only)
 
@@ -89,15 +89,14 @@ ratatui 0.30 on the `termina` backend through `ratatui-termina` (crossterm 0.29 
 
 131 oracle scenarios: 87 match, 44 expected divergences (each cites a contract Q-id), 0 unexpected. Re-run on the handoff tip on 2026-10-08 (`just parity`, about 75 s): the same 87 / 44 / 0. Material: `Docs/Investigation/Parity_Oracle/` (setup, table, report) and `Code/Development/Parity/` (harness). The Go source stays in the tree until cutover and can always be rebuilt from commit `c7310f9`.
 
-## Tools: what is installed on the lead's machine
+## Tools
 
-Installed: `cargo`, `just`, `cargo-nextest`. NOT installed: `tokei` (so `just loc-gate` has never run; the lead counted non-blank lines by hand, maximum 304 including comment lines, tokei counts code only), `cargo-deny` (so `deny.toml` is unvalidated), `hyperfine`, `cargo-insta` (snapshots were accepted with `INSTA_UPDATE=always` and reviewed in the diff). The user manages tools through `mise`; ask them to add the missing ones. CI (`.github/workflows/ci.yml`: fmt, clippy, test, loc-gate, check-deps, deny) has never run: the first push triggers it, so expect to triage its first failures (pins were verified by reading, not by running).
+Installed and used by the gate script (`Scratch/gate.sh`, local only): `cargo`, `just`, `cargo-nextest`, `tokei`, `cargo-deny`, `hyperfine`, `cargo-insta`, rustc 1.97 (default) and 1.99.0 (what CI runs; clippy lints differ between them). CI (`.github/workflows/ci.yml`: fmt, clippy, test, loc-gate, check-deps, deny) runs on every push to the PR and has been green on every commit since `3172930`.
 
 ## Known gaps
 
-- The TUI has no history or undo screen yet (the CLI has `undo` and `history`).
-- Review round 2 is fixed (see `Docs/Investigation/Review_Rounds/round_2_Full.md`, every status line says what was done and what was declined). A third review round has not been run.
-- No progress line while scanning (`indicatif` is planned); no root-level `--dry-run` alias (the Go tool had `skill_Manag --dry-run`; the Rust tool uses `sync --dry-run`, decision pending).
-- The TUI has no add/init/history screens and does not show scan issues.
+- Review rounds 1 to 3 are fixed (see `Docs/Investigation/Review_Rounds/`, every status line says what was done and what was declined). Round 3 was a self review; a fresh pair of eyes on the backup and undo code and on the new interface screens is still welcome.
+- No root-level `--dry-run` alias (the Go tool had `skill_Manag --dry-run`; the Rust tool uses `sync --dry-run`; decided: no alias).
+- The TUI confirmation lists the files that would be removed but has no diff view yet.
 - `exclude_dirs` in the user's vault config does not yet contain `Scratch`; this repo's `Scratch/Oracle/` holds Go fixtures with `.agents/skills` folders that a real sync would rewrite (only matters on the lead's machine).
 - The repo `.gitignore` contains `fast*` and `dist*` (user-written); they would hide any future file or folder whose name starts with these words.

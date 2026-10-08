@@ -1,10 +1,13 @@
 //! Tests that drive the whole interface with synthetic events against a throwaway vault.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 
+mod add;
 mod flow;
 mod history;
+mod init;
 mod issues;
 mod mouse;
+mod place_support;
 mod render;
 mod round2_jobs;
 mod round2_wizard;
