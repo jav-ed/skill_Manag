@@ -6,6 +6,9 @@ use std::os::unix::ffi::OsStrExt;
 use super::*;
 use crate::testutil::TempTree;
 
+/// A process id no running process has (above the kernel's maximum).
+const DEAD_PID: u32 = 4_294_967_000;
+
 #[test]
 fn an_installed_folder_with_a_non_utf8_name_is_reported_not_dropped() {
     let tree = TempTree::new();
@@ -26,8 +29,14 @@ fn an_installed_folder_with_a_non_utf8_name_is_reported_not_dropped() {
 fn stage_and_trash_folders_of_an_interrupted_run_are_reported() {
     let tree = TempTree::new();
     tree.write("p/.agents/skills/ok/SKILL.md", "x");
-    tree.write("p/.agents/.stage-1-abc-0/SKILL.md", "half built");
-    tree.write("p/.agents/.trash-1-abc-2/SKILL.md", "half deleted");
+    tree.write(
+        &format!("p/.agents/.stage-{DEAD_PID}-abc-0/SKILL.md"),
+        "half built",
+    );
+    tree.write(
+        &format!("p/.agents/.trash-{DEAD_PID}-abc-2/SKILL.md"),
+        "half deleted",
+    );
     tree.write("q/.agents/skills/ok/SKILL.md", "x");
     let report = scan(tree.path(), &ScanOptions::default()).unwrap();
     assert_eq!(report.skills_dirs.len(), 2);
@@ -36,6 +45,50 @@ fn stage_and_trash_folders_of_an_interrupted_run_are_reported() {
         .iter()
         .map(|i| i.path.file_name().unwrap().to_string_lossy().into_owned())
         .collect();
-    assert_eq!(paths, [".stage-1-abc-0", ".trash-1-abc-2"]);
+    assert_eq!(
+        paths,
+        [
+            format!(".stage-{DEAD_PID}-abc-0"),
+            format!(".trash-{DEAD_PID}-abc-2")
+        ]
+    );
     assert!(report.issues[0].message.contains("interrupted"));
+}
+
+fn leftover_names(tree: &TempTree) -> Vec<String> {
+    scan(tree.path(), &ScanOptions::default())
+        .unwrap()
+        .issues
+        .iter()
+        .map(|i| i.path.file_name().unwrap().to_string_lossy().into_owned())
+        .collect()
+}
+
+#[test]
+fn the_stage_folder_of_a_run_that_is_still_going_is_not_a_leftover() {
+    let tree = TempTree::new();
+    tree.write("p/.agents/skills/ok/SKILL.md", "x");
+    // A sync in another terminal builds its copy here right now.
+    let live = format!("p/.agents/.stage-{}-abc-0/SKILL.md", std::process::id());
+    tree.write(&live, "being built");
+
+    assert!(leftover_names(&tree).is_empty());
+}
+
+#[test]
+fn a_file_with_a_stage_name_is_the_users_file_not_a_leftover() {
+    let tree = TempTree::new();
+    tree.write("p/.agents/skills/ok/SKILL.md", "x");
+    tree.write("p/.agents/.stage-notes", "my own file");
+
+    assert!(leftover_names(&tree).is_empty());
+}
+
+#[test]
+fn a_stage_folder_whose_name_names_no_process_is_still_reported() {
+    let tree = TempTree::new();
+    tree.write("p/.agents/skills/ok/SKILL.md", "x");
+    tree.write("p/.agents/.stage-weird/SKILL.md", "half built");
+
+    assert_eq!(leftover_names(&tree), [".stage-weird"]);
 }

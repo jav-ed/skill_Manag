@@ -1,6 +1,6 @@
 //! The shared flow of every command that writes skills: show the plan, ask, apply, show the result.
 
-use skillmirror_core::apply::{ApplyOptions, apply};
+use skillmirror_core::apply::{ApplyOptions, Outcome, apply};
 use skillmirror_core::backup::RunKind;
 use skillmirror_core::events::ignore_events;
 use skillmirror_core::plan::Plan;
@@ -55,30 +55,41 @@ impl Run<'_> {
     }
 }
 
+/// What a call of [`execute`] came to.
+pub(super) struct Executed {
+    pub(super) exit: Exit,
+    /// Skill folders that were created or updated.
+    pub(super) wrote: usize,
+}
+
+impl Executed {
+    fn nothing(exit: Exit) -> Self {
+        Self { exit, wrote: 0 }
+    }
+}
+
 /// Plans are shown, confirmed and written here. `before_write` runs once, after the user agreed and before the first byte is written.
 pub(super) fn execute(
     plan: Plan,
     issues: &[ScanIssue],
     run: &Run<'_>,
     before_write: &dyn Fn() -> Result<(), CliError>,
-) -> Result<Exit, CliError> {
+) -> Result<Executed, CliError> {
     let mode = run.mode();
     let rows: Vec<Row> = plan.entries.iter().map(Row::from_plan).collect();
     if rows.is_empty() {
-        return finish_empty(run, mode);
+        return finish_empty(run, mode).map(Executed::nothing);
     }
     let summary = Summary::of(&rows);
-    if mode != Mode::Apply {
+    // Nothing to write, whether the plan is clean or only holds failures: show it like a dry run, never ask,
+    // and never run `before_write` (`init` would create a directory for nothing).
+    if mode != Mode::Apply || summary.changes() == 0 {
         show_plan(run, mode, &rows, issues)?;
-        return Ok(exit_for_plan(mode, &summary));
+        return Ok(Executed::nothing(exit_for_plan(mode, &summary)));
     }
-    if summary.changes() == 0 && summary.failed == 0 {
-        show_plan(run, mode, &rows, issues)?;
-        return Ok(Exit::Clean);
-    }
-    if !run.yes && !confirm_write(&rows, &summary)? {
+    if !run.yes && !confirm_write(&rows, &summary, run.json)? {
         output::line("Cancelled, nothing was written.");
-        return Ok(Exit::Clean);
+        return Ok(Executed::nothing(Exit::Clean));
     }
     let (backups, backup_run) = backup::begin(run.kind)?;
     before_write()?;
@@ -98,11 +109,17 @@ pub(super) fn execute(
     let rows: Vec<Row> = done.applied.iter().map(Row::from_applied).collect();
     show_done(run, &rows, issues, backup::saved(&finished))?;
     backup::announce(&finished, run.json);
-    Ok(if done.failed() > 0 {
+    let wrote = done
+        .applied
+        .iter()
+        .filter(|a| matches!(a.outcome, Outcome::Created | Outcome::Updated))
+        .count();
+    let exit = if done.failed() > 0 {
         Exit::Partial
     } else {
         Exit::Clean
-    })
+    };
+    Ok(Executed { exit, wrote })
 }
 
 fn finish_empty(run: &Run<'_>, mode: Mode) -> Result<Exit, CliError> {
@@ -161,7 +178,14 @@ fn show_done(
 }
 
 /// Shows what will be written and asks. Without a terminal the answer must come from `--yes`.
-fn confirm_write(rows: &[Row], summary: &Summary) -> Result<bool, CliError> {
+fn confirm_write(rows: &[Row], summary: &Summary, json: bool) -> Result<bool, CliError> {
+    // The rows and the question would land on stdout in front of the document that `--json` promises.
+    if json {
+        return Err(CliError::usage(
+            "--json cannot ask for confirmation",
+            "pass --yes to apply, or --dry-run to preview",
+        ));
+    }
     if !output::can_prompt() {
         return Err(CliError::usage(
             "refusing to write without confirmation",

@@ -161,6 +161,35 @@ fn create_new_makes_the_directory_and_optionally_a_git_repository() {
 }
 
 #[test]
+fn take_back_removes_the_directory_and_repository_that_create_new_made() {
+    let tree = TempTree::new();
+    let dir = tree.path().join("fresh");
+    let project = create_new(&dir, true).unwrap();
+    std::fs::create_dir_all(dir.join(".agents/skills")).unwrap();
+
+    project.take_back().unwrap();
+
+    assert!(!dir.exists());
+}
+
+#[test]
+fn take_back_keeps_a_directory_that_was_there_and_anything_that_is_not_empty() {
+    let tree = TempTree::new();
+    let dir = tree.path().join("mine");
+    std::fs::create_dir(&dir).unwrap();
+    let project = create_new(&dir, true).unwrap();
+    // A skill got installed, and a file appeared next to it meanwhile.
+    tree.write("mine/.agents/skills/coding/SKILL.md", "x");
+    tree.write("mine/notes.md", "n");
+
+    project.take_back().unwrap();
+
+    assert!(dir.join(".agents/skills/coding/SKILL.md").exists());
+    assert!(dir.join("notes.md").exists());
+    assert!(!dir.join(".git").exists(), "the repository it made is gone");
+}
+
+#[test]
 fn install_into_a_project_without_skills_dir_creates_it_and_is_idempotent() {
     let (tree, ws) = world();
     let project = tree.path().join("projects/new");

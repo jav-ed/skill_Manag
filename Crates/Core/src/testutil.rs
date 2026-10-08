@@ -122,4 +122,19 @@ impl Fixture {
     pub(crate) fn plan(&self, targets: Vec<crate::scan::Target>) -> crate::plan::Plan {
         crate::plan::Plan::for_targets(&self.vault, &self.files, targets)
     }
+
+    /// A target in a project that has no `.agents` yet; planning it creates the skills directory.
+    pub(crate) fn new_project_target(&self, project: &str, skill: &str) -> crate::scan::Target {
+        let project_dir = self.tree.path().join(project);
+        std::fs::create_dir_all(&project_dir).unwrap();
+        crate::scan::Target {
+            project: project_dir.clone(),
+            skill: skill.to_string(),
+            path: project_dir.join(".agents/skills").join(skill),
+        }
+    }
+
+    pub(crate) fn plan_creating(&self, targets: Vec<crate::scan::Target>) -> crate::plan::Plan {
+        crate::plan::Plan::for_targets_creating(&self.vault, &self.files, targets)
+    }
 }

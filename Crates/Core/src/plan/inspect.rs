@@ -2,18 +2,21 @@
 
 use std::collections::BTreeMap;
 use std::io::Read;
-use std::os::unix::fs::PermissionsExt;
+use std::os::unix::fs::{MetadataExt, PermissionsExt};
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
 /// One entry below a destination skill folder.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Entry {
-    /// `modified` is part of the entry so that an edit which keeps the size is still noticed.
+    /// `modified` is part of the entry so that an edit which keeps the size is still noticed, and
+    /// `changed` (the inode change time) so that one which also puts the modification time back is too:
+    /// a program cannot set it.
     File {
         len: u64,
         mode: u32,
         modified: Option<SystemTime>,
+        changed: (i64, i64),
     },
     Dir,
     Other,
@@ -21,6 +24,33 @@ pub(crate) enum Entry {
 
 /// The state of a destination folder at one moment, by relative path.
 pub(crate) type Snapshot = BTreeMap<PathBuf, Entry>;
+
+/// An entry without its times: what is there, not when it was written.
+#[derive(PartialEq, Eq)]
+enum Shape {
+    File { len: u64, mode: u32 },
+    Dir,
+    Other,
+}
+
+impl Entry {
+    fn shape(self) -> Shape {
+        match self {
+            Self::File { len, mode, .. } => Shape::File { len, mode },
+            Self::Dir => Shape::Dir,
+            Self::Other => Shape::Other,
+        }
+    }
+}
+
+/// True when both snapshots hold the same paths, sizes and modes, whatever the times say.
+pub(crate) fn same_shape(left: &Snapshot, right: &Snapshot) -> bool {
+    left.len() == right.len()
+        && left
+            .iter()
+            .zip(right)
+            .all(|((a, x), (b, y))| a == b && x.shape() == y.shape())
+}
 
 /// Every entry below `dir` by relative path, without following symlinks.
 pub(crate) fn walk(dir: &Path) -> std::io::Result<Snapshot> {
@@ -45,6 +75,7 @@ fn visit(base: &Path, rel: &Path, found: &mut Snapshot) -> std::io::Result<()> {
                     len: meta.len(),
                     mode: meta.permissions().mode() & 0o777,
                     modified: meta.modified().ok(),
+                    changed: (meta.ctime(), meta.ctime_nsec()),
                 },
             );
         } else {
@@ -55,7 +86,7 @@ fn visit(base: &Path, rel: &Path, found: &mut Snapshot) -> std::io::Result<()> {
 }
 
 /// True when both files hold the same bytes. The lengths are already known to be equal.
-pub(super) fn same_bytes(left: &Path, right: &Path) -> std::io::Result<bool> {
+pub(crate) fn same_bytes(left: &Path, right: &Path) -> std::io::Result<bool> {
     const CHUNK: usize = 64 * 1024;
     let mut left = fs_err::File::open(left)?;
     let mut right = fs_err::File::open(right)?;

@@ -149,6 +149,8 @@ fn error_path(error: &ignore::Error) -> Option<PathBuf> {
 }
 
 /// Folders an interrupted run leaves next to `skills`: a half-built copy or a half-deleted skill.
+/// The folder of a run that is still going (its process exists) is not a leftover, and a plain file that
+/// happens to carry such a name is the user's.
 fn leftovers(agents: &Path) -> Vec<ScanIssue> {
     let entries = match fs_err::read_dir(agents) {
         Ok(entries) => entries,
@@ -159,15 +161,47 @@ fn leftovers(agents: &Path) -> Vec<ScanIssue> {
             }];
         }
     };
-    entries
-        .filter_map(Result::ok)
-        .filter(|e| {
-            let name = e.file_name();
-            name.as_bytes().starts_with(b".stage-") || name.as_bytes().starts_with(b".trash-")
-        })
-        .map(|e| ScanIssue {
-            path: e.path(),
-            message: "left over from an interrupted run; delete it by hand".to_string(),
-        })
-        .collect()
+    let mut issues = Vec::new();
+    for entry in entries {
+        let entry = match entry {
+            Ok(entry) => entry,
+            Err(e) => {
+                issues.push(ScanIssue {
+                    path: agents.to_path_buf(),
+                    message: format!("cannot read an entry: {e}"),
+                });
+                continue;
+            }
+        };
+        let name = entry.file_name();
+        let Some(rest) = name
+            .as_bytes()
+            .strip_prefix(b".stage-")
+            .or_else(|| name.as_bytes().strip_prefix(b".trash-"))
+        else {
+            continue;
+        };
+        let is_dir = match entry.file_type() {
+            Ok(kind) => kind.is_dir(),
+            // Unknown: report it rather than hide it.
+            Err(_) => true,
+        };
+        if is_dir && !run_is_going(rest) {
+            issues.push(ScanIssue {
+                path: entry.path(),
+                message: "left over from an interrupted run; delete it by hand".to_string(),
+            });
+        }
+    }
+    issues
+}
+
+/// The part of a stage or trash name after its prefix starts with the process id of the run that made it
+/// (`<pid>-<time>-<index>`). Whether that process still exists decides if the run is going.
+fn run_is_going(rest: &[u8]) -> bool {
+    rest.split(|b| *b == b'-')
+        .next()
+        .and_then(|pid| std::str::from_utf8(pid).ok())
+        .and_then(|pid| pid.parse::<u32>().ok())
+        .is_some_and(|pid| Path::new("/proc").join(pid.to_string()).exists())
 }

@@ -1,6 +1,6 @@
 //! Turning names, groups and profiles into a set of vault skills.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 
 use crate::Hint;
@@ -115,19 +115,23 @@ fn add_profile(
     name: &str,
     chosen: &mut BTreeSet<String>,
 ) -> Result<(), SelectError> {
-    let mut members = BTreeSet::new();
-    collect_profile(vault, config, name, &mut members)?;
-    chosen.extend(members);
+    chosen.extend(members(vault, config, name, &mut BTreeMap::new())?);
     Ok(())
 }
 
-/// The config loader already rejected loops, so recursion ends.
-fn collect_profile(
+/// The skills of one profile: what its parents select, plus its groups and skills, minus its `exclude`.
+/// An exclude only touches what its own profile selects, so the order of `extends` never matters and a
+/// child can add back a skill that a parent left out. Each profile is worked out once, so a deep
+/// diamond of parents costs time in proportion to its size. The config loader already rejected loops.
+fn members(
     vault: &Vault,
     config: &VaultConfig,
     name: &str,
-    out: &mut BTreeSet<String>,
-) -> Result<(), SelectError> {
+    memo: &mut BTreeMap<String, BTreeSet<String>>,
+) -> Result<BTreeSet<String>, SelectError> {
+    if let Some(known) = memo.get(name) {
+        return Ok(known.clone());
+    }
     let profile = config
         .profiles
         .get(name)
@@ -139,18 +143,20 @@ fn collect_profile(
             name: name.to_string(),
         });
     }
+    let mut out = BTreeSet::new();
     for parent in &profile.extends {
-        collect_profile(vault, config, parent, out)?;
+        out.extend(members(vault, config, parent, memo)?);
     }
     for group in &profile.groups {
-        add_group(vault, group, out)?;
+        add_group(vault, group, &mut out)?;
     }
     for skill in &profile.skills {
-        add_skill(vault, skill, out)?;
+        add_skill(vault, skill, &mut out)?;
     }
     for skill in &profile.exclude {
         add_skill(vault, skill, &mut BTreeSet::new())?;
         out.remove(skill);
     }
-    Ok(())
+    memo.insert(name.to_string(), out.clone());
+    Ok(out)
 }

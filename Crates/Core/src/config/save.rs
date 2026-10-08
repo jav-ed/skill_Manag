@@ -3,10 +3,10 @@
 
 use std::io::Write;
 use std::os::unix::fs::PermissionsExt;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use super::ConfigError;
-use super::vault_config::{FILE_NAME, VaultConfig};
+use super::vault_config::VaultConfig;
 
 /// Mode of a config file that did not exist before.
 const NEW_FILE_MODE: u32 = 0o644;
@@ -22,10 +22,13 @@ pub struct ConfigUpdate<'a> {
 /// error and stays untouched: the tool never replaces a file it cannot read.
 pub fn save_config(vault: &Path, update: &ConfigUpdate<'_>) -> Result<(), ConfigError> {
     let path = VaultConfig::path_in(vault);
-    let (text, mode) = match fs_err::read_to_string(&path) {
+    // A config that is a link is edited where it really lives, so the link and the file it points to
+    // (often a dotfiles repository) both stay what they are.
+    let real = real_path(&path)?;
+    let (text, mode) = match fs_err::read_to_string(&real) {
         Ok(text) => {
             VaultConfig::parse(&text, &path)?;
-            (text, fs_err::metadata(&path)?.permissions().mode() & 0o777)
+            (text, fs_err::metadata(&real)?.permissions().mode() & 0o777)
         }
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => (String::new(), NEW_FILE_MODE),
         Err(e) => return Err(e.into()),
@@ -53,7 +56,25 @@ pub fn save_config(vault: &Path, update: &ConfigUpdate<'_>) -> Result<(), Config
             "the rewritten file does not hold the new mandatory list",
         ));
     }
-    write_atomically(vault, &edited, mode)
+    write_atomically(&real, &edited, mode)
+}
+
+/// Where the config really is: the path itself, or the target of a link. A link that points nowhere is
+/// an error, not a reason to write a new file over it.
+fn real_path(path: &Path) -> Result<PathBuf, ConfigError> {
+    match fs_err::canonicalize(path) {
+        Ok(real) => Ok(real),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            match fs_err::symlink_metadata(path) {
+                Ok(_) => Err(ConfigError::Io(std::io::Error::new(
+                    std::io::ErrorKind::NotFound,
+                    format!("{} is a link to a file that does not exist", path.display()),
+                ))),
+                Err(_) => Ok(path.to_path_buf()),
+            }
+        }
+        Err(e) => Err(e.into()),
+    }
 }
 
 fn root_line(root: &Path) -> Result<String, ConfigError> {
@@ -114,43 +135,62 @@ fn quoted(text: &str) -> String {
 }
 
 /// Replaces the top-level `key` (with its indented lines or list items) by `block`, or appends it.
+/// A byte order mark and the line endings of the file stay as they are.
 fn set_key(text: &str, key: &str, block: &str) -> String {
-    let lines: Vec<&str> = text.lines().collect();
-    let is_key = |line: &str| {
-        line.strip_prefix(key)
-            .is_some_and(|rest| rest.starts_with(':'))
+    let (bom, body) = match text.strip_prefix('\u{feff}') {
+        Some(rest) => ("\u{feff}", rest),
+        None => ("", text),
     };
-    let Some(start) = lines.iter().position(|l| is_key(l)) else {
-        let mut out = text.to_string();
-        if !out.is_empty() && !out.ends_with('\n') {
-            out.push('\n');
-        }
-        out.push_str(block);
-        out.push('\n');
-        return out;
+    let eol = if body.contains("\r\n") { "\r\n" } else { "\n" };
+    let lines: Vec<&str> = body.lines().collect();
+    let (before, after) = match lines.iter().position(|l| is_key(l, key)) {
+        Some(start) => (start, block_end(&lines, start)),
+        None => (lines.len(), lines.len()),
     };
+    let mut out: Vec<&str> = lines.iter().take(before).copied().collect();
+    out.extend(block.lines());
+    out.extend(lines.iter().skip(after).copied());
+    format!("{bom}{}{eol}", out.join(eol))
+}
+
+/// Whether `line` starts the top-level `key`, written plain or in quotes.
+fn is_key(line: &str, key: &str) -> bool {
+    [key.to_string(), format!("\"{key}\""), format!("'{key}'")]
+        .iter()
+        .find_map(|spelled| line.strip_prefix(spelled.as_str()))
+        .is_some_and(|rest| rest.trim_start().starts_with(':'))
+}
+
+/// The line after the value of the key at `start`: its indented lines and list items, including blank
+/// lines and comments between them. Blank lines and comments after the last item belong to what follows.
+fn block_end(lines: &[&str], start: usize) -> usize {
     let belongs = |line: &str| {
         line.starts_with(' ') || line.starts_with('\t') || line.starts_with("- ") || line == "-"
     };
-    let following = lines
-        .iter()
-        .skip(start + 1)
-        .take_while(|l| belongs(l))
-        .count();
-    let end = start + 1 + following;
-    let mut out: Vec<&str> = lines.iter().take(start).copied().collect();
-    out.push(block);
-    out.extend(lines.iter().skip(end).copied());
-    let mut joined = out.join("\n");
-    joined.push('\n');
-    joined
+    let between = |line: &str| line.trim().is_empty() || line.starts_with('#');
+    let mut end = start + 1;
+    for (offset, line) in lines.iter().enumerate().skip(start + 1) {
+        if belongs(line) {
+            end = offset + 1;
+        } else if !between(line) {
+            break;
+        }
+    }
+    end
 }
 
-fn write_atomically(vault: &Path, text: &str, mode: u32) -> Result<(), ConfigError> {
-    let mut tmp = tempfile::NamedTempFile::new_in(vault)?;
+/// Writes `text` to `target` through a temporary file in the same folder, so a crash leaves the old file.
+fn write_atomically(target: &Path, text: &str, mode: u32) -> Result<(), ConfigError> {
+    let folder = target.parent().ok_or_else(|| {
+        ConfigError::Io(std::io::Error::other(format!(
+            "{} has no parent folder",
+            target.display()
+        )))
+    })?;
+    let mut tmp = tempfile::NamedTempFile::new_in(folder)?;
     tmp.write_all(text.as_bytes())?;
     tmp.as_file()
         .set_permissions(std::fs::Permissions::from_mode(mode))?;
-    tmp.persist(vault.join(FILE_NAME)).map_err(|e| e.error)?;
+    tmp.persist(target).map_err(|e| e.error)?;
     Ok(())
 }

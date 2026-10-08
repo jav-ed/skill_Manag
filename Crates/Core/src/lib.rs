@@ -13,6 +13,7 @@ pub mod brand;
 pub mod config;
 pub mod error;
 pub mod events;
+mod git;
 pub mod ops;
 pub mod plan;
 mod runid;

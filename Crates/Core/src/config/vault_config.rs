@@ -106,15 +106,27 @@ impl VaultConfig {
                     "profile {name:?} extends {unknown:?}, which is not defined"
                 ));
             }
-            self.check_acyclic(name, &mut vec![name.as_str()])?;
+        }
+        // A profile that is done has no loop below it, so a shared parent is walked once, not once per path.
+        let mut done = std::collections::BTreeSet::new();
+        for name in self.profiles.keys() {
+            self.check_acyclic(name, &mut vec![name.as_str()], &mut done)?;
         }
         Ok(())
     }
 
-    fn check_acyclic<'a>(&'a self, name: &str, path: &mut Vec<&'a str>) -> Result<(), String> {
+    fn check_acyclic<'a>(
+        &'a self,
+        name: &'a str,
+        path: &mut Vec<&'a str>,
+        done: &mut std::collections::BTreeSet<&'a str>,
+    ) -> Result<(), String> {
         let Some(profile) = self.profiles.get(name) else {
             return Ok(());
         };
+        if done.contains(name) {
+            return Ok(());
+        }
         for parent in &profile.extends {
             if path.contains(&parent.as_str()) {
                 return Err(format!(
@@ -123,9 +135,10 @@ impl VaultConfig {
                 ));
             }
             path.push(parent);
-            self.check_acyclic(parent, path)?;
+            self.check_acyclic(parent, path, done)?;
             path.pop();
         }
+        done.insert(name);
         Ok(())
     }
 }

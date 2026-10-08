@@ -10,6 +10,7 @@ use super::{BackupError, Finished, UndoError};
 use crate::apply::{Keep, Replaces, discard, place};
 use crate::events::{Event, Observer, Status};
 use crate::ops::validate_name;
+use crate::runid::run_id;
 use crate::scan::{Target, first_link_above};
 
 /// Which entries of the run are undone. An empty filter takes all of them.
@@ -83,9 +84,11 @@ pub fn undo(
     } else {
         Some(backups.begin(RunKind::Undo)?)
     };
+    // Names of the temporary folders, in the form that scans can tell from a leftover of a dead run.
+    let token = run_id()?;
     let mut entries = Vec::new();
     for (position, entry) in run.entries.iter().filter(|e| filter.accepts(e)).enumerate() {
-        let result = restore(entry, new_run.as_ref(), position);
+        let result = restore(entry, new_run.as_ref(), position, &token);
         observer(Event::TargetDone {
             target: Target {
                 project: entry.entry.project.clone(),
@@ -133,7 +136,12 @@ enum Current {
     Folder,
 }
 
-fn restore(entry: &LoadedEntry, new_run: Option<&Run>, index: usize) -> Result<Undone, UndoError> {
+fn restore(
+    entry: &LoadedEntry,
+    new_run: Option<&Run>,
+    index: usize,
+    token: &str,
+) -> Result<Undone, UndoError> {
     let target = target_of(entry)?;
     let current = current_state(&target)?;
     let dry = new_run.is_none();
@@ -141,7 +149,7 @@ fn restore(entry: &LoadedEntry, new_run: Option<&Run>, index: usize) -> Result<U
         (Change::Created, Current::Missing) => Ok(Undone::AlreadyGone),
         (Change::Created, Current::Folder) => {
             if let Some(run) = new_run {
-                remove_created(entry, &target, run, index)?;
+                remove_created(entry, &target, run, index, token)?;
             }
             Ok(Undone::Removed)
         }
@@ -154,7 +162,7 @@ fn restore(entry: &LoadedEntry, new_run: Option<&Run>, index: usize) -> Result<U
                 .into());
             }
             if let (false, Some(run)) = (dry, new_run) {
-                put_back(entry, &target, &current, run, index)?;
+                put_back(entry, &target, &current, run, index, token)?;
             }
             Ok(Undone::Restored)
         }
@@ -202,9 +210,10 @@ fn remove_created(
     target: &Target,
     run: &Run,
     index: usize,
+    token: &str,
 ) -> Result<(), UndoError> {
     let agents = agents_dir(target)?;
-    let trash = agents.join(format!(".trash-{}-{index}", run.id()));
+    let trash = agents.join(format!(".trash-{token}-{index}"));
     fs_err::rename(&target.path, &trash).map_err(BackupError::from)?;
     match run.keep(index, target, Change::Deleted, &trash) {
         Ok(None) => {}
@@ -230,6 +239,7 @@ fn put_back(
     current: &Current,
     run: &Run,
     index: usize,
+    token: &str,
 ) -> Result<(), UndoError> {
     let agents = agents_dir(target)?;
     let skills = target
@@ -239,7 +249,7 @@ fn put_back(
             path: target.path.clone(),
         })?;
     fs_err::create_dir_all(skills).map_err(BackupError::from)?;
-    let stage = agents.join(format!(".stage-{}-{index}", run.id()));
+    let stage = agents.join(format!(".stage-{token}-{index}"));
     if let Err(cause) = copy_tree(&entry.tree(), &stage) {
         return Err(discard(&stage, cause.into()).into());
     }

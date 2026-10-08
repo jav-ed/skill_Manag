@@ -23,6 +23,8 @@ mod migrate_tests;
 #[cfg(test)]
 mod safety_tests;
 #[cfg(test)]
+mod save_edge_tests;
+#[cfg(test)]
 mod save_tests;
 #[cfg(test)]
 mod tests;

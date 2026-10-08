@@ -49,7 +49,7 @@ Fix first: M1 (the Tui plans after Enter and writes with no preview), M2 (job ev
 - **Scenario** (`a1`): three new skills into a fresh project, 3 threads, `b/big.md` unreadable. `b` fails as it should. Over 300 rounds the healthy `a` and `c` failed with `Swap { ..., source: Os { code: 2, kind: NotFound } }` 203 times each on the snapshot and 109 times each on the tip (race, load dependent). `remove_dir` succeeds while `skills/` is still empty, because siblings are only staged in `.agents/.stage-*`.
 - **Impact**: no data loss and a retry works, but one bad file becomes three failures, two with a bare ENOENT. This is the `init` and `add` path (`creates_skills_dir`).
 - **Fix**: do not clean up per target. Create `skills/` once per project in a serial step before the pool starts. After the pool, remove `skills/` and `.agents` only for projects the run created and whose targets all failed. Test it 50 times because it is a race.
-- **Status**: open.
+- **Status**: fixed on 2026-10-08. `apply` creates `skills/` once per new project before the pool starts and gives the directories back only when every target of that project failed (`Core/src/apply/run.rs`). Test: `apply/new_project_tests.rs`, a 50-round race loop that was red before the fix (it uses a deleted source file instead of file permissions, so it also bites as root).
 
 ### M4. `save_config` breaks symlinks, drops comments, rewrites line endings, and refuses ordinary lists `[RUN]`
 
@@ -60,7 +60,7 @@ Fix first: M1 (the Tui plans after Enter and writes with no preview), M2 (job ev
   - Valid YAML that `VaultConfig::load` accepts makes the save fail with the file untouched: a blank line inside the list and a column-0 comment inside the list ("the rewritten file does not hold the new mandatory list"), a quoted key `"mandatory":` and a BOM before the key ("duplicate mapping key: mandatory").
   - A read-only (0444) config is replaced without a word (permissions are kept, and there is a test for that).
 - **Fix**: resolve the path with `canonicalize` and write the temp file next to the real target, or refuse a symlinked config naming the real path. Keep blank lines and comments inside the block until the next column-0 key. Detect `\r\n` and keep it. Match the key through the parser's span, or compare keys with quotes stripped. Name the blocking construct in the error.
-- **Status**: open.
+- **Status**: fixed in part on 2026-10-08 (`config/save_edge_tests.rs`, red first). A symlinked config is edited where it lives and stays a link, a dangling link is an error, a blank line or a column-0 comment inside the list no longer breaks the save or leaves old items, quoted keys and a BOM are found, CRLF is kept. **Declined**: comments inside the replaced list go with the old items (the test `comments_other_keys_and_their_order_survive_a_rewrite` documents it), and a read-only config is still replaced with its mode kept: the save is the user's explicit choice in the wizard.
 
 ### M5. The setup wizard writes the pointer before it knows the config can be saved `[RUN]`
 
@@ -75,7 +75,7 @@ Fix first: M1 (the Tui plans after Enter and writes with no preview), M2 (job ev
 - **Where**: `Cli/src/commands/pipeline.rs:73-81` (the early return covers only `changes() == 0 && failed == 0`), `Cli/src/output/view.rs:183` (`changes()` is `new + update`), `Cli/src/commands/install.rs:36-63` (`before_write` runs `create_new`).
 - **Scenario** (script K1): the only mandatory skill has an untracked `SKILL.md`. `init <dir> --yes` ends with the failed row and exit 4, and `<dir>` exists, empty. `init <dir2> --git --yes` leaves `<dir2>/.git`. The second try ends with `error: ... is not empty`, so the user must delete the directory before retrying. Without `--yes` the prompt reads `Write 0 skill folder(s) in 1 project(s)?` and a yes creates the directory anyway (`[READ]`).
 - **Fix**: when `changes() == 0` (failures only), behave like a dry run: show rows, return `Exit::Partial`, never prompt, never call `before_write`. In `init`, remove a directory and repository the command created if the apply fails.
-- **Status**: open.
+- **Status**: fixed on 2026-10-08. A plan with failures only is shown like a dry run (no prompt, no `before_write`, exit 4), and `init` takes back the directory and repository it made when nothing could be installed, but never a directory that was there or anything not empty (`NewProject::take_back`). Tests: `Cli/tests/init_failures.rs`.
 
 ## Low
 
@@ -84,28 +84,28 @@ Fix first: M1 (the Tui plans after Enter and writes with no preview), M2 (job ev
 - **Where**: `Core/src/plan/inspect.rs:11-17` (`Entry::File { len, mode, modified }`), checked in `apply/place.rs:75` and `apply/run.rs:203-214`.
 - **Scenario** (`a2`): `OLD1` becomes `EDIT` with the mtime set back: `Updated`, the edit is gone. An ordinary edit is caught. `rsync -t`, `cp -p`, `touch -r` defeat the guard.
 - **Fix**: add `ctime` (`MetadataExt::ctime`, `ctime_nsec`) to `Entry::File`; userspace cannot set it.
-- **Status**: open.
+- **Status**: fixed on 2026-10-08: the snapshot holds `ctime` too. Test: `apply/guard_tests.rs`.
 
 ### L2. An `Unchanged` plan fails when a file is merely re-saved `[RUN]`
 
 - **Where**: `Core/src/apply/run.rs:203-214` (`verify_unchanged`).
 - **Scenario** (`a3`): plan says `Unchanged`, the user saves a file with identical bytes, apply reports `Failed(DestinationChanged)` and `sync` exits 4 for a skill that is in sync.
 - **Fix**: on a snapshot mismatch of an Unchanged plan, compare bytes again (`same_bytes` exists) and report `Unchanged` when equal.
-- **Status**: open.
+- **Status**: fixed on 2026-10-08: on a snapshot mismatch an `Unchanged` plan is checked again byte by byte against the vault, and only a real difference fails it. Test: `apply/guard_tests.rs`.
 
 ### L3. Profile `extends` diamonds take exponential time `[RUN]`
 
 - **Where**: `Core/src/config/vault_config.rs:114-130` (`check_acyclic` re-walks every parent, no memo), `Core/src/ops/select.rs:125-156` (`collect_profile`).
 - **Scenario** (`p1`): each level extends the two profiles below it. Load time: 16 levels 0.12 s, 18 levels 0.6 s, 20 levels 2 s, 22 levels 8 s. The loop check runs on every `VaultConfig::load`, so every command pays.
 - **Fix**: depth-first search with a done set (white, grey, black); the same set in `collect_profile`.
-- **Status**: open.
+- **Status**: fixed on 2026-10-08: the loop check and the profile resolution work out each profile once. Test: `ops/profile_tests.rs` (22 levels in milliseconds, 15.7 s before).
 
 ### L4. A profile's `exclude` depends on the order of `extends` `[RUN]`
 
 - **Where**: `Core/src/ops/select.rs:149-153` (`out.remove(skill)` removes only what was collected so far; `out` is shared by every parent).
 - **Scenario** (`p2`): `a: {skills: [x, y]}`, `c: {exclude: [y]}`. `b1: {extends: [a, c]}` gives `{x}`, `b2: {extends: [c, a]}` gives `{x, y}`. The same holds for two `--profile` flags.
 - **Fix**: decide the meaning and write it in the contract. Cleanest: collect parents, groups and skills of the whole closure first, then apply all excludes.
-- **Status**: open.
+- **Status**: fixed on 2026-10-08 with a decision, contract Q35: an `exclude` removes skills from what its own profile selects, so the order of `extends` never matters. Tests: `ops/profile_tests.rs`.
 
 ### L5. Enter after a filter acts on selected rows that are hidden `[RUN]`
 
@@ -141,21 +141,21 @@ Fix first: M1 (the Tui plans after Enter and writes with no preview), M2 (job ev
 - **Where**: `Core/src/ops/project.rs:98-103` (`Command::new("git")` without removing `GIT_*`); `vault/tracked.rs:164-166` and `testutil.rs:47` strip them.
 - **Scenario** (K2): `GIT_DIR=<dir>/other.git skillmirror init new2 --git --yes` exits 0, `new2/.git` does not exist and `other.git` was created.
 - **Fix**: one shared `git_command()` helper that removes every `GIT_*` variable, used for vault and project.
-- **Status**: open.
+- **Status**: fixed on 2026-10-08: one `git::command()` helper removes every `GIT_*` variable for the vault and for `init --git`. Tests: `git.rs` and `Cli/tests/init_failures.rs`.
 
 ### L10. `--json` with a terminal prints the human rows before the JSON document `[READ]`
 
 - **Where**: `Cli/src/commands/pipeline.rs:149-162` (`confirm_write` prints `render_rows`, then asks), reached with `run.json` set and no `--yes`.
 - **Scenario**: `skillmirror sync --json` in a terminal prints colored rows, the question, then the JSON; `jq` fails (script K7 is a note, it needs a tty).
 - **Fix**: with `--json` and neither `--yes` nor `--dry-run`, return the usage error ("refusing to write without confirmation"), or print the rows to stderr.
-- **Status**: open.
+- **Status**: fixed on 2026-10-08: `--json` without `--yes` or `--dry-run` is refused with a usage error before anything is printed. Test: `Cli/tests/json_terminal.rs` (real PTY, red without the guard).
 
 ### L11. `leftovers()` swallows per-entry errors and matches on the name only `[READ]`
 
 - **Where**: `Core/src/scan/walk.rs:152-173`.
 - **Details**: `.filter_map(Result::ok)` drops entry read errors. Any entry named `.stage-*` or `.trash-*` is reported as "left over from an interrupted run", including a file the user named so and the `.stage-<run>-<index>` of a run still in progress (a Tui scan while a Cli sync runs elsewhere).
 - **Fix**: turn entry errors into issues, check `file_type().is_dir()`, and parse the `<pid>-<hex>-<index>` run id (skip a live pid).
-- **Status**: open.
+- **Status**: fixed on 2026-10-08: only folders count, a run whose process still exists is skipped, entry errors become issues. `undo` names its temporary folders in the same `<pid>-<time>-<index>` form. Tests: `scan/safety_tests.rs`.
 
 ### L12. The wizard reads the whole vault on the UI thread `[READ]`
 

@@ -1,7 +1,7 @@
 //! `add` and `init`: install a selection of vault skills into one project.
 
+use std::cell::RefCell;
 use std::collections::BTreeSet;
-use std::path::Path;
 
 use skillmirror_core::backup::RunKind;
 use skillmirror_core::ops::{self, SelectError, Selection, Workspace};
@@ -10,6 +10,7 @@ use super::context::load_settings;
 use super::pipeline::{Run, execute};
 use crate::args::{AddArgs, Cli, InitArgs, InstallFlags, SelectArgs};
 use crate::exit::Exit;
+use crate::output;
 use crate::report::CliError;
 
 pub(super) fn add(cli: &Cli, args: &AddArgs) -> Result<Exit, CliError> {
@@ -25,7 +26,7 @@ pub(super) fn add(cli: &Cli, args: &AddArgs) -> Result<Exit, CliError> {
         &selection(&args.select),
     )?;
     let plan = ops::plan_install(&workspace, &project, &skills);
-    execute(plan, &[], &run_of(RunKind::Add, &args.flags), &|| Ok(()))
+    execute(plan, &[], &run_of(RunKind::Add, &args.flags), &|| Ok(())).map(|done| done.exit)
 }
 
 pub(super) fn init(cli: &Cli, args: &InitArgs) -> Result<Exit, CliError> {
@@ -34,9 +35,18 @@ pub(super) fn init(cli: &Cli, args: &InitArgs) -> Result<Exit, CliError> {
     ops::check_new(&dir)?;
     let skills = init_skills(&workspace, args)?;
     let plan = ops::plan_install(&workspace, &dir, &skills);
-    execute(plan, &[], &run_of(RunKind::Init, &args.flags), &|| {
-        create_project(&dir, args.git)
-    })
+    let made = RefCell::new(None);
+    let done = execute(plan, &[], &run_of(RunKind::Init, &args.flags), &|| {
+        *made.borrow_mut() = Some(ops::create_new(&dir, args.git)?);
+        Ok(())
+    })?;
+    // Nothing got installed: the project and repository this command made go, so it can be run again.
+    if let (0, Some(project)) = (done.wrote, made.into_inner())
+        && let Err(e) = project.take_back()
+    {
+        output::warn_line(&format!("could not remove the empty project: {e}"));
+    }
+    Ok(done.exit)
 }
 
 /// The mandatory skills (unless switched off) plus whatever was selected. At least one skill is required.
@@ -58,11 +68,6 @@ fn init_skills(workspace: &Workspace, args: &InitArgs) -> Result<BTreeSet<String
         return Err(SelectError::Empty.into());
     }
     Ok(skills)
-}
-
-fn create_project(dir: &Path, git: bool) -> Result<(), CliError> {
-    ops::create_new(dir, git)?;
-    Ok(())
 }
 
 fn selection(args: &SelectArgs) -> Selection {

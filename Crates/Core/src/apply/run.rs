@@ -1,5 +1,6 @@
 //! Applying a whole plan with bounded parallelism.
 
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 use rayon::prelude::*;
@@ -92,7 +93,9 @@ pub fn apply(
         .build()
         .map_err(|e| ApplyError::Pool(e.to_string()))?;
     let run = run_id()?;
-    let applied = pool.install(|| {
+    // Created once, before the pool starts, so that no target can take away what its siblings need.
+    let prepared = prepare_skills_dirs(&plan);
+    let mut applied: Vec<Applied> = pool.install(|| {
         plan.entries
             .into_par_iter()
             .enumerate()
@@ -100,7 +103,7 @@ pub fn apply(
                 let (plan, outcome, leftover) = match entry.result {
                     Ok(skill_plan) => {
                         let (outcome, leftover) =
-                            write_one(&skill_plan, &run, index, options.backup);
+                            write_one(&skill_plan, &run, index, options.backup, &prepared);
                         (Some(skill_plan), outcome, leftover)
                     }
                     Err(e) => (None, Outcome::Failed(Failure::Plan(e)), None),
@@ -118,7 +121,85 @@ pub fn apply(
             })
             .collect()
     });
+    take_back_unused_dirs(&prepared, &mut applied);
     Ok(ApplyReport { applied })
+}
+
+/// What making the skills directory of one new project came to.
+type Prepared = BTreeMap<PathBuf, Result<Vec<PathBuf>, (std::io::ErrorKind, String)>>;
+
+/// Creates `.agents/skills` once for every new project in the plan. The value holds the directories
+/// this call had to create, innermost first.
+fn prepare_skills_dirs(plan: &Plan) -> Prepared {
+    let mut prepared = Prepared::new();
+    for skill_plan in plan.entries.iter().filter_map(|e| e.result.as_ref().ok()) {
+        let Some(skills_dir) = skill_plan
+            .target
+            .path
+            .parent()
+            .filter(|_| skill_plan.creates_skills_dir)
+        else {
+            continue;
+        };
+        prepared
+            .entry(skills_dir.to_path_buf())
+            .or_insert_with(|| create_dirs(skills_dir).map_err(|e| (e.kind(), e.to_string())));
+    }
+    prepared
+}
+
+/// Creates `skills_dir` and returns the directories that did not exist before, innermost first.
+fn create_dirs(skills_dir: &Path) -> std::io::Result<Vec<PathBuf>> {
+    let created: Vec<PathBuf> = skills_dir
+        .ancestors()
+        .take(2)
+        .filter(|dir| !dir.exists())
+        .map(Path::to_path_buf)
+        .collect();
+    fs_err::create_dir_all(skills_dir)?;
+    Ok(created)
+}
+
+/// A new project whose targets all failed gets back the directories this run made for it, so a failure
+/// leaves no empty `.agents`. A project with at least one new skill keeps them.
+fn take_back_unused_dirs(prepared: &Prepared, applied: &mut [Applied]) {
+    for (skills_dir, made) in prepared {
+        let Ok(made) = made else { continue };
+        let of_project = |a: &Applied| a.target.path.parent() == Some(skills_dir.as_path());
+        if made.is_empty()
+            || applied
+                .iter()
+                .any(|a| of_project(a) && !matches!(a.outcome, Outcome::Failed(_)))
+        {
+            continue;
+        }
+        if let Err(stuck) = remove_dirs(made)
+            && let Some(first) = applied.iter_mut().find(|a| of_project(a))
+            && let Outcome::Failed(Failure::Apply(cause)) = &first.outcome
+        {
+            first.outcome = Outcome::Failed(Failure::Apply(ApplyError::LeftBehind {
+                stage: stuck.0,
+                cause: cause.to_string(),
+                cleanup: stuck.1,
+            }));
+        }
+    }
+}
+
+/// Removes the directories in order. Missing or no longer empty ones belong to someone else by now.
+fn remove_dirs(dirs: &[PathBuf]) -> Result<(), (PathBuf, String)> {
+    for dir in dirs {
+        match fs_err::remove_dir(dir) {
+            Ok(()) => {}
+            Err(e)
+                if matches!(
+                    e.kind(),
+                    std::io::ErrorKind::NotFound | std::io::ErrorKind::DirectoryNotEmpty
+                ) => {}
+            Err(e) => return Err((dir.clone(), e.to_string())),
+        }
+    }
+    Ok(())
 }
 
 fn write_one(
@@ -126,6 +207,7 @@ fn write_one(
     run: &str,
     index: usize,
     backup: Option<&Run>,
+    prepared: &Prepared,
 ) -> (Outcome, Option<Leftover>) {
     let failed = |e: ApplyError| (Outcome::Failed(Failure::Apply(e)), None);
     if plan.kind == PlanKind::Unchanged {
@@ -139,10 +221,10 @@ fn write_one(
             "skill path has no .agents parent",
         )));
     };
-    let created = match create_skills_dir(plan, agents_dir) {
-        Ok(created) => created,
-        Err(e) => return failed(e),
-    };
+    if let Some(Err((kind, message))) = plan.target.path.parent().and_then(|dir| prepared.get(dir))
+    {
+        return failed(ApplyError::Io(std::io::Error::new(*kind, message.clone())));
+    }
     // Outside `skills/`, so an agent that lists the skills never sees a half-built copy.
     let stage_dir = agents_dir.join(format!(".stage-{run}-{index}"));
     let keep = backup.map(|run| Keep {
@@ -153,50 +235,8 @@ fn write_one(
     match write_staged(plan, &stage_dir, keep) {
         Ok(leftover) if plan.kind == PlanKind::Create => (Outcome::Created, leftover),
         Ok(leftover) => (Outcome::Updated, leftover),
-        Err(e) => failed(remove_created(&created, e)),
+        Err(e) => failed(e),
     }
-}
-
-/// Creates the skills directory of a new project and returns what it had to create, outermost last.
-fn create_skills_dir(plan: &SkillPlan, agents_dir: &Path) -> Result<Vec<PathBuf>, ApplyError> {
-    let Some(skills_dir) = plan
-        .target
-        .path
-        .parent()
-        .filter(|_| plan.creates_skills_dir)
-    else {
-        return Ok(Vec::new());
-    };
-    let created: Vec<PathBuf> = [skills_dir, agents_dir]
-        .into_iter()
-        .filter(|dir| !dir.exists())
-        .map(Path::to_path_buf)
-        .collect();
-    fs_err::create_dir_all(skills_dir)?;
-    Ok(created)
-}
-
-/// Takes back the directories a failed target created, so a failure leaves no empty `.agents` behind.
-fn remove_created(created: &[PathBuf], cause: ApplyError) -> ApplyError {
-    for dir in created {
-        match fs_err::remove_dir(dir) {
-            Ok(()) => {}
-            // Someone else started using it meanwhile; it is theirs now.
-            Err(e)
-                if matches!(
-                    e.kind(),
-                    std::io::ErrorKind::NotFound | std::io::ErrorKind::DirectoryNotEmpty
-                ) => {}
-            Err(e) => {
-                return ApplyError::LeftBehind {
-                    stage: dir.clone(),
-                    cause: cause.to_string(),
-                    cleanup: e.to_string(),
-                };
-            }
-        }
-    }
-    cause
 }
 
 /// An unchanged plan is only true while nobody touched the folder since.
@@ -204,13 +244,32 @@ fn verify_unchanged(plan: &SkillPlan) -> Result<(), ApplyError> {
     let Some(expected) = &plan.existing else {
         return Ok(());
     };
-    if inspect::walk(&plan.target.path)? == *expected {
+    let now = inspect::walk(&plan.target.path)?;
+    if now == *expected || saved_again_unchanged(plan, &now, expected)? {
         Ok(())
     } else {
         Err(ApplyError::DestinationChanged {
             dest: plan.target.path.clone(),
         })
     }
+}
+
+/// A file saved again with the same bytes has new times but is still the file the plan compared.
+fn saved_again_unchanged(
+    plan: &SkillPlan,
+    now: &inspect::Snapshot,
+    expected: &inspect::Snapshot,
+) -> Result<bool, ApplyError> {
+    if !inspect::same_shape(now, expected) {
+        return Ok(false);
+    }
+    for source in &plan.sources {
+        let vault = plan.source_dir.join(&source.rel);
+        if !inspect::same_bytes(&vault, &plan.target.path.join(&source.rel))? {
+            return Ok(false);
+        }
+    }
+    Ok(true)
 }
 
 fn write_staged(

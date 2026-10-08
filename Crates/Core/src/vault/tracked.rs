@@ -4,7 +4,6 @@ use std::collections::{BTreeMap, HashMap};
 use std::ffi::OsStr;
 use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 use super::{Vault, VaultError};
 
@@ -159,14 +158,8 @@ fn owner<'a>(by_dir: &HashMap<&Path, &'a str>, path: &Path) -> Option<(&'a str, 
 }
 
 fn run_git(vault: &Path, args: &[&str]) -> Result<Vec<u8>, VaultError> {
-    let mut cmd = Command::new("git");
-    cmd.arg("-C").arg(vault).args(args).env("LC_ALL", "C");
-    // A stray GIT_DIR or GIT_INDEX_FILE would make git read another repository.
-    for (key, _) in std::env::vars_os() {
-        if key.as_bytes().starts_with(b"GIT_") {
-            cmd.env_remove(key);
-        }
-    }
+    let mut cmd = crate::git::command();
+    cmd.arg("-C").arg(vault).args(args);
     let out = cmd.output().map_err(|e| match e.kind() {
         std::io::ErrorKind::NotFound => VaultError::GitMissing,
         _ => VaultError::Io(e),

@@ -11,6 +11,10 @@ pub(crate) use place::{Keep, Replaces, discard, place};
 pub use run::{Applied, ApplyOptions, ApplyReport, Failure, Leftover, Outcome, apply};
 
 #[cfg(test)]
+mod guard_tests;
+#[cfg(test)]
+mod new_project_tests;
+#[cfg(test)]
 mod stale_tests;
 #[cfg(test)]
 mod tests;
