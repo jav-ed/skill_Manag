@@ -1,80 +1,99 @@
 # Handoff: overview
 
-*Entry file of the handoff for the Rust rewrite of `skill_Manag`. It says what the project is, what state the branch is in, how to get a working build in minutes, and which file of this folder answers which question. The other files are written to be opened one at a time.*
+*Entry file of the handoff for `skillmirror`, the Rust tool that replaced `skill_Manag`. It says what the project is, what is built and proved, what is not done and not proved, how to get a working build and a first look in an hour, and which file of this folder answers which question. The other files are written to be opened one at a time.*
 
-The previous lead (a Claude Code session) stopped on 2026-10-08 at the user's request, because the user wants a colleague to finish the work. Everything the lead knew that is not visible in the code is written down in this folder. The lead can still be asked questions through the user.
+The previous lead (a Claude Code session) stopped on 2026-10-08 at the user's request, because a colleague continues from the user's own machine. Everything the lead knew that is not visible in the code is in this folder. Facts here are dated; where a number matters, the command that produced it is given so it can be run again.
 
 ## What the project is
 
-`skill_Manag` mirrors agent skill folders from one git-tracked master vault into every project's `.agents/skills/<name>/` directory. The files are copied, never symlinked, so projects stay git-tracked and work over SSH. The Go implementation on `main` is slow (a dry run took 4.8 to 7 s in the last comparison and up to 13 s with a cold cache). The branch `rust-rewrite-handoff` (see "Branches" below) holds a Rust rewrite named `skillmirror` that is faster (scan about 0.7 s), safer (staged writes, atomic directory swap, hard errors) and has more features (nested vault groups, profiles, `add`, `init`, a TUI with mouse and fuzzy filter). The user wants it finished: feature rich, verified properly, then cut over (Go removed in one commit).
+`skillmirror` mirrors agent skill folders from one git-tracked master vault into every project's `.agents/skills/<name>/` directory. The files are copied, never symlinked, so projects stay git-tracked and work over SSH. It is a Cargo workspace (Rust, Linux only) with an engine, a command line, a full-screen terminal interface, a static HTML report and a local web server with its own interface project (`Ui/`). It replaced the Go tool of the same job: the Rust scan takes about 0.7 s on the user's tree where the Go tool took 4.8 to 13 s.
+
+Since 2026-10-08 the Rust tool **is `main`**. The merge was pull request [jav-ed/skill_Manag#1](https://github.com/jav-ed/skill_Manag/pull/1), a merge commit, CI green on the head and on `main`. The Go sources are gone from the tree; commit `c7310f9` holds them and stays reachable through `main`'s history.
 
 ## State in one table
 
-State on 2026-10-08, after the second working day on the branch.
+| Area | State | Proved by |
+|---|---|---|
+| Engine (`Crates/Core`) | done; review rounds 1 to 4 fixed (round 3 and 4 were self reviews) | engine tests over real temp directories; mutation checks on the guards (470 of the 637 tests are unit tests in the crates' `src/`, 167 are integration tests in `Crates/Cli/tests/`) |
+| Command line (`Crates/Cli`) | every command in [current_State.md](current_State.md); scoped `sync`, `push`, `status`; `--json`; exit codes 0 to 4 | integration tests, real-PTY tests, `Code/Development/Smoke/check_Smoke.sh` on a binary installed from a fresh clone |
+| Terminal interface (`Crates/Tui`) | menu, sync, push, delete, list, a skills browser, add, init, history with undo, setup, scan problems, changes page | synthetic-event tests with snapshots, one real-terminal test per screen |
+| Web (`Crates/Web`, `Ui/`) | `report` (one HTML file) and `web` (127.0.0.1, one-time link, cookie, write mode behind `--allow-write`, plan first, applied once) | in-process server tests, `Code/Development/Web/check_Web.sh` in Chromium, the smoke script over HTTP |
+| Go parity | 131 scenarios: 90 match, 41 expected divergences, 0 unexpected (as root; 87 / 44 / 0 otherwise) | `just parity` on the head's own build |
+| Build cost | debug information and the incremental cache are off; numbers in [build_Resources.md](../../Docs/Setup/build_Resources.md) | measured on 2026-10-08 |
+| CI | green on `main` (`b2e11fc`): fmt, clippy 1.99, tests, loc-gate, check-deps, deny | GitHub Actions run 33 |
 
-| Area | State |
-|---|---|
-| Core engine (`Crates/Core`) | done; reviewed in rounds 1 to 4 |
-| CLI (`Crates/Cli`) | all commands: `sync push add init delete list skills info new adopt vault config mandatory status diff doctor report web bridge undo history migrate completions tui`; scope words on sync, push and status; `--json`, exit codes 0 to 4, scan progress line |
-| TUI (`Crates/Tui`) | menu, sync, push, delete, list, skills (vault browser with a detail card), add, init, history with undo, setup wizard, scan problems, changes page; plan first, job ids, snapshot tests and a real-terminal test per page |
-| Web (`Crates/Web`) | the static HTML report (`report`) and the local server (`web`, `axum`, guarded; sync, push and undo behind `--allow-write` with a plan first; checked in Chromium by `Code/Development/Web/check_Web.sh`) |
-| Parity against the Go tool (oracle, 131 scenarios) | 90 match, 41 expected divergences, 0 unexpected (the container runs as root) |
-| Backup store, `undo`, `history` | done in Core, CLI and TUI |
-| Review | rounds 1 to 3 fixed; round 4 (self) fixed; a fresh pair of eyes on backup and undo is still welcome |
-| Docs pass | done: README, architecture docs, concept, contract rows Q34 to Q56 |
-| CI | green on every commit since `3172930` |
-| Cutover | the Go tree is removed on the branch; the tag, the merge and the clean-up wait for the user, runbook in [cutover_Runbook.md](cutover_Runbook.md) |
+On the final head: 637 tests, fmt and clippy `-D warnings` clean on rustc 1.97 and 1.99, `cargo deny`, `just loc-gate`, `just check-deps`, `just check-features` pass, `just msrv` (Rust 1.89) compiles, the `dist` profile builds (6.0 MB binary), the committed web interface equals a fresh build of `Ui/`. `Code/Development/Gate/check_Gate.sh` runs the lot.
 
-Totals: 633 tests pass; fmt and clippy `-D warnings` are clean on rustc 1.97 and 1.99; `cargo deny`, `just loc-gate` and `just check-deps` pass. `Scratch/gate.sh` (local, not committed) runs all of it.
+## What is not done and not proved
 
-## Branches
+Read this before you say "done" about anything. Nothing here is hidden elsewhere.
 
-- `rust-rewrite-handoff`: the branch to clone and continue on. It holds the Rust workspace, the docs and this handoff. The user chose a separate branch on 2026-10-08 to keep the history clean.
-- `rust-rewrite`: the lead's local branch at the same code without the handoff commits. It was never pushed; ignore it.
-- `main`: the Go implementation, untouched until the merge (its sources are no longer in the branch; commit `c7310f9` holds them). Its local tip `c7310f9` ("skills added") was pushed together with the handoff branch because it is the base of the branch.
-- CI (`.github/workflows/ci.yml`) triggers on pushes to `main` and `rust-rewrite` and on pull requests, so pushing `rust-rewrite-handoff` alone does not run it. Add the branch name to the workflow, or open a pull request, to get the first CI run (expect fixes).
+| # | Gap | Why it is open | How to close it |
+|---|---|---|---|
+| 1 | **No run on the user's real vault and tree since the new commands were added.** `info`, `new`, `adopt`, `vault init`, `config`, `mandatory`, `web` and the scoped forms were exercised only in throwaway worlds. The 436-skills-in-65-projects measurement predates them. | The standing rule: no real `sync`/`push` against the user's tree; the lead worked in a container without that tree. | On the local machine, read-only first: [First hour](#first-hour), step 5. |
+| 2 | **Nobody has used it as a person would.** The terminal and the web screens were verified by tests, synthetic input, a pseudo-terminal and Chromium, and screenshots the lead read. The user has not been asked how they look or feel. | No access to the user's eyes. | Use `skillmirror` and `skillmirror web` for a day on the throwaway world, then on the real one. Fix what annoys. |
+| 3 | **CI does not run `just check-features` or `just ui-check`** (the second needs node 22.12 in the job), nor the Chromium check. | The token the lead used had no `workflows` permission, so `.github/workflows/ci.yml` could not be edited. | A person with that permission adds the two steps to the `check-deps` job. Until then run `Code/Development/Gate/check_Gate.sh` and `just ui-check` before a push that touches `Crates/Web` or `Ui/`. |
+| 4 | **The tag `go-oracle` is not pushed.** | Tags need an explicit yes; the user asked for the merge, not the tag. | `git tag go-oracle c7310f9 && git push origin go-oracle`. Until then `just parity` works only because `main`'s history contains `c7310f9`. |
+| 5 | **No fresh pair of eyes on the backup and undo code, or on the web server.** Review rounds 3 and 4 were by the lead. | The user's rule: no external agents. | A human review, or a new session the user opens; hand it `Docs/Investigation/Review_Rounds/review_Method.md` and the security list in [web_Api.md](../../Docs/Architecture/web_Api.md) and [front_Ends.md](../../Docs/Architecture/front_Ends.md). |
+| 6 | **Linux only, and one machine.** All timings and memory numbers come from one container (4 cores, 16 GB, running as root). Parity differs by three scenarios when not root. The web interface was checked in Chromium only. | By design (`compile_error!` elsewhere); no other hardware. | Re-run `just parity` as a normal user; look at `skillmirror web` in Firefox. |
+| 7 | **Provenance lock** (three-way drift: who changed a file) is not built. | The user deferred it ("maybe later"). | Do not start without the user. |
+| 8 | **Decisions that wait for the user** are listed with defaults. | They are theirs. | [open_Questions.md](open_Questions.md), one batch. |
+| 9 | **This folder and the branch `rust-rewrite-handoff` still exist.** The folder is transient; the branch is merged. | Deleting a branch is outward. | [cutover_Runbook.md](cutover_Runbook.md), last section; ask the user first. |
 
-## What happens to this handoff branch
-
-The branch `rust-rewrite-handoff` is a transfer vehicle, not a permanent home. The user's plan (2026-10-08): the colleague reads everything here, implements the backlog, and afterwards deletes the branch to keep the repository clean. So that nothing is lost when it goes:
-
-- **Lasting knowledge lives in `Project_Manag/Docs/`** and stays: the decision record, the behavior contract, the research reports, the review rounds, the parity oracle docs and the prototype archives (`Docs/Investigation/`). Nothing important is kept only in `Scratch/` (gitignored, never reaches a clone).
-- **This folder (`Live_Working/Rust_Rewrite_Handoff/`) is transient.** When its backlog is done, first promote what is still true into permanent places (the verification playbook and pitfalls into `Docs/Setup/` or `Docs/Descr/`, the architecture summary into `Docs/Architecture/`, open decisions into `Docs/Decisions/`), then delete the folder and the `open_Issues.md` rows that point into it.
-- **Delete the branch last, and ask the user first.** Local: `git branch -d rust-rewrite-handoff` after it is merged or its commits are on the branch that replaces it. Remote: `git push origin --delete rust-rewrite-handoff`. Both are outward actions that need the user's explicit yes.
+Not a gap, but easy to misread: the mutation check script proves nothing if the mutated file is not compiled by the tests you name. See [pitfalls_And_Lessons.md](pitfalls_And_Lessons.md).
 
 ## First hour
 
+On the user's machine, in a new clone (the clone's `.agents/skills` may be rewritten by the user's own sync if it sits under their scan root; never commit that).
+
 ```bash
-git clone git@github.com:jav-ed/skill_Manag.git && cd skill_Manag
-git checkout rust-rewrite-handoff
-cargo build --workspace --locked
-cargo test --workspace --locked            # 186 tests; the first build takes a few minutes
-cargo clippy --workspace --all-targets --locked -- -D warnings
-target/debug/skillmirror --help
+git clone git@github.com:jav-ed/skill_Manag.git && cd skill_Manag      # main is the Rust tool
+rustup toolchain install 1.89 1.99.0                                   # the floor and what CI runs
+cargo install tokei cargo-deny cargo-insta hyperfine just --locked     # or mise; jq from the system
+Code/Development/Gate/check_Gate.sh                                    # expect GATE OK, 637 passed
+cargo install --path Crates/Cli --locked                               # about a minute and a quarter; the build folder is removable
+Code/Development/Smoke/check_Smoke.sh "$(command -v skillmirror)"      # expect SMOKE OK
+skillmirror migrate                                                    # writes one small file: copies the old tool's vault pointer
+skillmirror doctor                                                     # read-only
 ```
 
-Skills in a fresh clone: `.agents/skills/` holds `coding`, `default-tools`, `doc-start`, `file-tree-optimization`, `refac-cli`, `remote-helper`, `skill-writer`, `temp-task-file` and `tmux`. Two things are missing because they are not in git. First, Claude Code reads skills through the ignored symlink `.claude/skills`; create it with `mkdir -p .claude && ln -s ../.agents/skills .claude/skills`. Second, the `inshallah` skill (needed by the doc-start writing rules) lives only in the user's vault; ask the user to copy `inshallah` from the vault into the clone's `.agents/skills/` (a read-only copy from the vault, never the other way round) and do not commit it.
+Step 5, read-only on the real data (nothing here writes):
 
-Then open a real terminal (not a pipe) and run `target/debug/skillmirror tui --vault <a throwaway vault> --root <a throwaway folder>` to feel the TUI. A throwaway world is easy to make: `Crates/Testkit/src/lib.rs` (`World::standard`) builds one for tests, and the same layout works by hand (a git repo with `coding/SKILL.md`, a `web/astro/SKILL.md`, a root folder with projects that have `.agents/skills/coding/`).
+```bash
+skillmirror skills                      # the vault, grouped
+skillmirror status                      # exit 1 means drift, not an error
+skillmirror sync --dry-run              # what a sync would do
+skillmirror info <a skill you know>     # one skill from every side
+skillmirror report -o /tmp/r.html --open
+skillmirror web --open                  # read-only: no --allow-write
+```
 
-Never point the tool at the user's real vault with a writing command while learning. The read-only commands are fine (`skills`, `list`, `sync --dry-run`, `--check`).
+Compare `skillmirror list --json | jq length` with what you expect from your tree (436 at the earlier measurement). Do not run `sync`, `push`, `add`, `init`, `delete`, `undo`, `new`, `adopt` or `web --allow-write` against the real tree or vault until the user says so; they write. The first real write is the user's call, and `undo` is there if it goes wrong (`history` lists the runs, backups are in `~/.local/state/skillmirror/backups/`).
+
+The Chromium check needs node and Playwright: `Code/Development/Web/README.md` (`PLAYWRIGHT_NODE` and `PLAYWRIGHT_CHROMIUM` name them when they are not at the container's paths). Changing `Ui/` needs node 22.12 or newer; plain `cargo build` and `cargo install` never touch node.
+
+Skills in a clone: `.agents/skills/` holds the project's own skills. Claude Code reads them through an ignored link: `mkdir -p .claude && ln -s ../.agents/skills .claude/skills`. The `inshallah` skill (the doc-start writing rules refer to it) lives only in the user's vault; ask the user to copy it into your clone's `.agents/skills/` (a read-only copy out of the vault, never the other way round) and do not commit it.
 
 ## Which file answers what
 
-- [Start prompt](start_Prompt.md): the text the user pastes into the colleague's session: how to clone and set up the skills, the first tasks in order, the spirit the user expects, helpers, hard rules and traps around the setup. Open it to see what the colleague was told on day one.
-- [Working agreement](working_Agreement.md): who the user is, the standing rules they gave, what "done" means to them, how to talk to them, and the spirit the lead worked in (push to completion, verify properly, feature rich). Open it before the first message to the user.
-- [Current state](current_State.md): the architecture as built, the invariants that keep data safe, the command surface and exit codes, measured numbers, tool availability, known gaps. Open it before changing code.
-- [Next steps](next_Steps.md): the ordered backlog with a "done when" for each item: finish backup and `undo`, the review-2 fixes, the rest of phase 5, phases 6 to 8, and the separate skills track. Open it to pick the next piece of work.
-- [Verification playbook](verification_Playbook.md): every way to prove a change works: unit and integration tests, snapshot tests, PTY runs, the Go parity oracle, read-only checks on the real vault, review reproducers, what each layer cannot catch. Open it before calling anything done.
-- [Cutover runbook](cutover_Runbook.md): the steps that replace the Go tool on `main`: the checks before, the tag that keeps the Go oracle rebuildable, the one commit that deletes the Go tree, the merge, promoting and deleting this folder, and the way back. Open it when the user says the cutover may start.
-- [Open questions](open_Questions.md): decisions that belong to the user, with the lead's default for each. Open it before deciding something that changes behaviour, naming, licence or the user's files.
-- [Pitfalls and lessons](pitfalls_And_Lessons.md): mistakes already made once, tool quirks, and traps in this repo. Open it when something behaves strangely.
+- [Start prompt](start_Prompt.md): the text the user pastes into the colleague's session. Open it first if you are the colleague.
+- [Working agreement](working_Agreement.md): who the user is, the standing rules they gave, what "done" means to them, what they expect of reports. Open it before the first message to the user and before the first commit.
+- [Current state](current_State.md): the architecture as built, the invariants that keep user data safe, the command surface and exit codes, measured numbers, tools, known gaps. Open it before changing code.
+- [Next steps](next_Steps.md): what is left, in order, each with a "done when". Open it to pick the next piece of work.
+- [Verification playbook](verification_Playbook.md): every way to prove a change works, what each layer cannot catch, a battery of destructive probes. Open it before calling anything done.
+- [Cutover runbook](cutover_Runbook.md): what was done to replace the Go tool, what is left (the tag, this folder, the branch), and the way back.
+- [Open questions](open_Questions.md): decisions that belong to the user, with the lead's default for each, and the settled ones.
+- [Pitfalls and lessons](pitfalls_And_Lessons.md): mistakes already made once, tool quirks, traps. Open it when something behaves strangely.
 
-Related material outside this folder: [the decision record](../../Docs/Decisions/rust_Rewrite.md) (why each crate and layout choice), [the behavior contract](../../Docs/Descr/behavior_Contract.md) (exact behaviour of the Go tool, quirks tagged KEEP, CHANGE, UNCLEAR, and the Q31 to Q33 rulings), [the research reports](../../Docs/Investigation/Rust_Stack/linker_Rust_Stack.md), the review rounds under `Docs/Investigation/Review_Rounds/` and the parity oracle under `Docs/Investigation/Parity_Oracle/`.
+Related material outside this folder: [the decision record](../../Docs/Decisions/rust_Rewrite.md) (why each choice), [the behavior contract](../../Docs/Descr/behavior_Contract.md) (one numbered row per rule, Q1 to Q56), [the web API](../../Docs/Architecture/web_Api.md), [the architecture](../../Docs/Architecture/rust_Overview.md), [the build cost](../../Docs/Setup/build_Resources.md), the research reports and review rounds under `Docs/Investigation/`, the Go parity oracle under `Docs/Investigation/Parity_Oracle/`.
+
+## What happens to this folder
+
+This folder is transient. When its backlog is done: promote what is still true into permanent places (the verification playbook and pitfalls into `Docs/Setup/` or `Docs/Descr/`, the state into `Docs/Architecture/`, open decisions into `Docs/Decisions/`), then delete the folder and the rows of `Project_Manag/Live_Working/open_Issues.md` that point into it. Lasting knowledge already lives in `Project_Manag/Docs/`; nothing important is kept only in `Scratch/` (git-ignored, never reaches a clone).
 
 ## Who is who
 
-- **The user**: owner of the project, the vault and about 60 projects on their machine. Decides naming, licence, anything that touches their data, and when to commit or push to anything other than the agreed branch.
-- **The previous lead**: wrote the engine, CLI, TUI and most tests. Gone from the code, still reachable through the user.
-- **Helper sessions**: two peer Claude Code sessions the user opened, "helper 1" (read-only reviewer, tooling) and "helper 2" (Go oracle and parity). They wrote the behavior contract, the CI and `deny.toml`, both review rounds and the parity harness. Their knowledge is written out in the Investigation folder. They may or may not still exist; ask the user.
-- **You**: the colleague. The user will inshallah tell you what they expect first; this folder is the background.
+- **The user**: owner of the project, the vault and about 60 projects on their machine. Decides naming, licence, anything that touches their data, and tags, force-pushes and branch deletion.
+- **The previous lead**: a Claude Code session; wrote the engine, command line, interface, server and most tests. Reachable only through the user.
+- **Two earlier helper sessions** wrote the behavior contract, CI, `deny.toml`, review rounds 1 and 2 and the parity harness; their work is in `Docs/Investigation/`. The user's current rule is no external agents (see [working_Agreement.md](working_Agreement.md)).
+- **You**: the colleague.

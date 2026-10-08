@@ -17,7 +17,7 @@ Entry point(s): `Cargo.toml` in the repo root, then `Crates/Core/src/lib.rs` (en
 
 ## Live work
 
-- [Rust rewrite handoff](../Live_Working/Rust_Rewrite_Handoff/handoff_Overview.md): the state of the Rust tool for whoever continues it: what is built and verified, what is half built (backup store and `undo`), the ordered backlog with "done when", the working agreement with the user, the verification playbook, open questions and pitfalls. Open it before touching the Rust code or when picking the next piece of work.
+- [Rust rewrite handoff](../Live_Working/Rust_Rewrite_Handoff/handoff_Overview.md): the state of the Rust tool for whoever continues it: what is built and proved, what is not proved (the list to read before saying "done"), the ordered backlog with "done when", the working agreement with the user, the verification playbook, open questions and pitfalls. Open it before touching the Rust code or when picking the next piece of work.
 - [Open issues](../Live_Working/open_Issues.md): short list of active items that point into the handoff.
 
 ## Repo References

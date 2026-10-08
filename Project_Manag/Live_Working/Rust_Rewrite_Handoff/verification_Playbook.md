@@ -7,16 +7,22 @@
 | Layer | Run with | Catches | Cannot catch |
 |---|---|---|---|
 | Format and lint | `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets --locked -- -D warnings` | style, panics in product code (`unwrap`, indexing), unreachable `pub`, pedantic smells | behaviour |
-| Core unit tests | `cargo test -p skillmirror-core --locked` (107) | planning, apply, delete, config, scan, vault rules, with real directories in temp folders | terminal behaviour, front-end wiring |
-| CLI integration tests | `cargo test -p skillmirror --locked` (40) | flags, exit codes, JSON, refusing to write without `--yes`, config errors, install flows | what a human sees in a terminal |
-| TUI synthetic tests | `cargo test -p skillmirror-tui --locked` (39) | state machine, key and mouse routing, rendering (insta snapshots in `Crates/Tui/src/tests/snapshots/`) | real terminal bytes, resize storms, input floods |
+| Core unit tests | `cargo test -p skillmirror-core --locked` | planning, apply, delete, config, scan, vault rules, with real directories in temp folders | terminal behaviour, front-end wiring |
+| CLI integration tests | `cargo test -p skillmirror --locked` | flags, exit codes, JSON, refusing to write without `--yes`, config errors, install flows | what a human sees in a terminal |
+| TUI synthetic tests | `cargo test -p skillmirror-tui --locked` | state machine, key and mouse routing, rendering (insta snapshots in `Crates/Tui/src/tests/snapshots/`) | real terminal bytes, resize storms, input floods |
 | Real-PTY tests | `Crates/Cli/tests/interface.rs` (portable-pty + vt100) | start-up, quitting cleanly, mouse, zero idle CPU, raw-mode restore | visual taste |
-| Browser check of the report | `Code/Development/Report/check_Report.sh` (Chromium through Playwright, docs in its README) | the report's filter, theme button, diff anchors, no outside requests, no console errors, screenshots to read | print layout, browsers other than Chromium |
+| Web server tests | `cargo test -p skillmirror-web --features server --locked` (the router driven in process: `guard`, `read`, `flow`, `undo`, `files`, `idle`) | who gets in, the JSON shapes (pinned for `Ui/`), plan then apply then job, a plan used twice, undo, the built pages having no inline script | what a browser does with it |
+| Browser check of the web interface | `Code/Development/Web/check_Web.sh` (Chromium through Playwright; README there) | the link and cookie, counters, a plan with its diff and apply, push, undo, the skills page, theme, refusals a page script can provoke, requests leaving the server, console errors and CSP violations | other browsers, small phones |
+| Browser check of the report | `Code/Development/Report/check_Report.sh` (same method) | the report's filter, theme button, diff anchors, no outside requests, no console errors, screenshots to read | print layout, browsers other than Chromium |
+| Smoke of the built binary | `Code/Development/Smoke/check_Smoke.sh [binary]` | the whole user path on the artifact (authoring, install, drift, sync, undo and redo, adopt, scoped add, the web server over HTTP with its refusals and a plan/apply/job round trip) | taste; the real tree |
+| Mutation check | `Code/Development/Gate/check_Mutation.sh FILE 'sed' <cargo test args>` | a guard no test would miss: break it, a test must fail. Needs the right `--features` or it tests nothing | guards nobody mutated |
+| Fresh clone | `git clone` into an empty folder, then `cargo build --locked`, `cargo test --locked`, `Code/Development/Web/build_Ui.sh --check`, `cargo install --path Crates/Cli --locked` | files that exist only in your working tree (git-ignored generated files, a stale binary, a missing lockfile entry) | everything else |
+| Stress under load | run one test binary many times with busy loops in the background (see pitfalls: the Ctrl-C race failed 6 of 120 runs this way and 0 of 300 after the fix) | races and timing assumptions that a quiet machine hides | |
 | Go parity oracle | `just parity` (harness in `Code/Development/Parity/`, docs in `Docs/Investigation/Parity_Oracle/`) | any unplanned behaviour change versus the Go tool over 131 scenarios | new features (no Go counterpart) |
 | Review rounds | `Docs/Investigation/Review_Rounds/` | races, odd filesystems, UI under odd sizes, anything the author did not think of | nothing is guaranteed; run again after fixes |
 | Real data, read-only | below | surprises in the user's real tree | writes (never run them) |
 
-The whole local gate is `just check` (fmt-check, clippy, nextest, loc-gate, check-deps); it needs `tokei` and `jq` for the line gate. Without them run the first three layers by hand and count lines (`grep -cv '^\s*$' file`, comments included, is a safe over-estimate of tokei's code count).
+The whole local gate is `Code/Development/Gate/check_Gate.sh` (fmt and clippy on two toolchains, loc-gate, check-features, check-deps, deny, every test; ends with `GATE OK`); `just check` is the shorter form. Both need `tokei` and `jq` for the line gate. Without them run the first layers by hand and count lines (`grep -cv '^\s*$' file`, comments included, is a safe over-estimate of tokei's code count).
 
 ## Snapshot tests
 
@@ -36,10 +42,15 @@ The vault path is in [internal repo paths](../../Docs/Setup/internal_Repo_Paths.
 cargo build --release --locked
 export SKILLMIRROR_VAULT=<vault path> SKILLMIRROR_ROOT=<scan root>
 target/release/skillmirror skills                    # vault view: groups and skills
-target/release/skillmirror list --json | jq length   # installed folders (436 at hand-off)
+target/release/skillmirror list --json | jq length   # installed folders (436 at the earlier measurement)
 time target/release/skillmirror sync --dry-run       # compare with the Go dry run
-target/release/skillmirror sync --check; echo $?     # 0 clean, 1 drift
+target/release/skillmirror status; echo $?           # 0 clean, 1 drift
+target/release/skillmirror info <skill>              # one skill from every side
+target/release/skillmirror doctor                    # also reads every skill header
+target/release/skillmirror web                       # read-only without --allow-write
 ```
+
+This run on the real data has not been done since the new commands were added (handoff_Overview, gap 1).
 
 Never run `sync`, `push`, `delete`, `add` or `init` without `--dry-run` there. If a check needs a write, build a throwaway world instead (`World::standard` in `Crates/Testkit`, or the same layout by hand).
 
