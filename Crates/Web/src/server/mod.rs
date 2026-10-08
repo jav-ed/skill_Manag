@@ -96,13 +96,16 @@ async fn run(options: ServeConfig, ready: impl FnOnce(&str)) -> Result<(), Serve
     let port = listener.local_addr()?.port();
     let token = guard::random_hex(32).map_err(ServeError::Setup)?;
     let state = Arc::new(AppState::new(options.config, port, token.clone()));
+    // Registered before the link is shown: a Ctrl-C that comes right after it must end the server
+    // cleanly, not kill the process by the default signal action.
+    let mut interrupt = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::interrupt())?;
     ready(&format!("http://127.0.0.1:{port}/?token={token}"));
     let idle = options.idle;
     let watched = Arc::clone(&state);
     axum::serve(listener, router(state))
         .with_graceful_shutdown(async move {
             tokio::select! {
-                _ = tokio::signal::ctrl_c() => {}
+                _ = interrupt.recv() => {}
                 () = idle_over(watched, idle) => {}
             }
         })
