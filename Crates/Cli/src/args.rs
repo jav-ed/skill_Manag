@@ -48,6 +48,8 @@ pub(crate) enum Command {
     Diff(DiffArgs),
     /// Check the vault, the configuration and the machine; writes nothing, exit 1 for warnings, 3 for errors
     Doctor(DoctorArgs),
+    /// Write one self-contained HTML file: skills against projects, the vault tree, diffs, a filter
+    Report(ReportArgs),
     /// Show the skills in the vault, grouped by folder
     Skills(SkillsArgs),
     /// Install skills, groups or profiles into an existing project
@@ -94,6 +96,22 @@ pub(crate) struct ListArgs {
     /// Print one JSON document instead of text
     #[arg(long)]
     pub(crate) json: bool,
+}
+
+#[derive(Debug, Args)]
+pub(crate) struct ReportArgs {
+    /// Where to write the report; `-` prints it. An existing file is replaced only when it is a report
+    /// this tool wrote.
+    #[arg(
+        short,
+        long,
+        value_name = "FILE",
+        default_value = "skillmirror-report.html"
+    )]
+    pub(crate) output: PathBuf,
+    /// Open the report in the browser afterwards (xdg-open)
+    #[arg(long)]
+    pub(crate) open: bool,
 }
 
 // The flags mirror independent command-line switches.

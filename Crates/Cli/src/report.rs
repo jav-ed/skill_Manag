@@ -11,6 +11,10 @@ pub(crate) enum CliError {
     Core(#[from] skillmirror_core::Error),
     #[error("{0}")]
     Usage(String, Option<String>),
+    /// The tool declined to do something that would have been legal but unsafe, such as replacing a file
+    /// that is not its own.
+    #[error("{0}")]
+    Refused(String, Option<String>),
     #[error("{0}")]
     Io(#[from] std::io::Error),
     #[error("{0}")]
@@ -22,6 +26,10 @@ pub(crate) enum CliError {
 impl CliError {
     pub(crate) fn usage(message: impl Into<String>, hint: impl Into<String>) -> Self {
         Self::Usage(message.into(), Some(hint.into()))
+    }
+
+    pub(crate) fn refused(message: impl Into<String>, hint: impl Into<String>) -> Self {
+        Self::Refused(message.into(), Some(hint.into()))
     }
 
     pub(crate) fn exit(&self) -> Exit {
@@ -43,7 +51,7 @@ impl CliError {
     fn hint(&self) -> Option<String> {
         match self {
             Self::Core(e) => e.hint(),
-            Self::Usage(_, hint) => hint.clone(),
+            Self::Usage(_, hint) | Self::Refused(_, hint) => hint.clone(),
             Self::Tui(e) => e.hint(),
             _ => None,
         }

@@ -1,0 +1,18 @@
+[package]
+name = "skillmirror-web"
+description = "The views of skillmirror that open in a browser: the static HTML report."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license-file.workspace = true
+publish.workspace = true
+
+[dependencies]
+maud = "0.27"
+skillmirror-core.workspace = true
+
+[dev-dependencies]
+skillmirror-testkit.workspace = true
+
+[lints]
+workspace = true

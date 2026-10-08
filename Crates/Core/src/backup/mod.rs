@@ -7,7 +7,7 @@ mod store;
 mod tree;
 mod undo;
 
-pub use clock::describe as describe_run;
+pub use clock::{describe as describe_run, now_utc};
 pub use error::{BackupError, UndoError};
 pub use store::{
     Backups, Change, Entry, Finished, KEEP_RUNS, LoadedEntry, LoadedRun, Run, RunKind,

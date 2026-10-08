@@ -41,7 +41,7 @@ Done on 2026-10-08: scan problems (`i`, Q46), History page with undo (Q47), Add 
 
 ## 5. [ ] Phase 6: UX pass and web view
 
-Live scan, detail pane, preview of what changes. Then the web view in stages (decision record, section 5): stage 0 `skillmirror report` writes one static self-contained HTML file with `maud` (matrix, group browser, skill detail, diffs, filter, dark mode); stage 1 `skillmirror web` is a loopback `axum` server behind the cargo feature `web` with the security minimum listed in the ADR; stage 2 mutations only behind `--allow-write`. `Crates/Web` does not exist yet. Done when the user accepts it.
+Done on 2026-10-08: stage 0, `skillmirror report` (Q50): `Crates/Web` with `maud`, data from `ops::report_data`, checked in Chromium (filter, theme toggle, anchors, no console errors, screenshots read). Left: stage 1 `skillmirror web` (loopback `axum` 0.8 behind the cargo feature `web`, with the security minimum of the decision record, section 5) and stage 2 mutations behind `--allow-write`. They are bigger than the rest, bring an async runtime and an attack surface, and the report already covers read-only viewing, so they are deliberately not started; decide with the user whether they are wanted. The TUI live scan, detail pane and preview of the UX pass exist (scan line, `i`, changes page).
 
 ## 6. [ ] Phase 7: documentation pass
 

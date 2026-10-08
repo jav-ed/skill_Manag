@@ -11,6 +11,7 @@ Cargo virtual workspace, edition 2024, `rust-version = 1.88`, resolver 3, strict
 | `Crates/Core` | `skillmirror-core` | Engine. Synchronous, terminal-free, no async (`just check-deps` fails if `tokio` enters its tree). |
 | `Crates/Cli` | `skillmirror` | The binary. clap derive, plain and `--json` output, exit codes, PTY tests. |
 | `Crates/Tui` | `skillmirror-tui` | The interactive interface. Public API is only `run(Launch)`, `Launch`, `TuiError`. |
+| `Crates/Web` | `skillmirror-web` | The views that open in a browser: today the static report (`render_report`, `maud`). The loopback server of the decision record joins it later behind a cargo feature. No async runtime. |
 | `Crates/Testkit` | `skillmirror-testkit` | `World`: throwaway vault (git repo), scan root with projects and an isolated `HOME`/XDG environment. |
 
 ### Core modules (`Crates/Core/src`)
@@ -61,6 +62,7 @@ Global options on every command: `--vault <DIR>`, `--root <DIR>`. No subcommand:
 | `delete <NAME> [--project DIR] [--dry-run] [-y] [--json]` | Remove one skill from one or all projects |
 | `skills [--group PATH] [--json]` | The vault's skills grouped by folder |
 | `doctor [--json]` | Read-only health check of the machine, configuration, vault, skill headers and scan root; exit 0 / 1 warnings / 3 errors (contract Q43) |
+| `report [-o FILE] [--open]` | Writes one self-contained HTML report: matrix, vault tree, skill cards with diffs, filter, dark mode (contract Q50) |
 | `bridge [--dry-run] [--yes] [--all] [--json]` | Links `.claude/skills` to `../.agents/skills` in every project where the vault config lists `targets: [claude]`; never replaces anything; `add` and `init` do it for their project (contract Q44) |
 | `diff [SKILL] [--project DIR] [--stat] [--json]` | Read-only: the lines a sync would bring in and take away, per file (contract Q42) |
 | `status [--all] [--json]` | Read-only: how every project stands against the vault (outdated, mandatory missing, not in the vault, failed); exit like `--check` (contract Q41) |

@@ -40,6 +40,19 @@ pub fn describe(id: &str) -> String {
     }
 }
 
+/// The time now as `2026-10-08 12:34 UTC`, for a header that says when a file was made.
+pub fn now_utc() -> String {
+    let secs = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |since| since.as_secs());
+    format_utc(secs)
+}
+
+fn format_utc(secs: u64) -> String {
+    let (year, month, day, hour, minute, _) = civil(secs);
+    format!("{year:04}-{month:02}-{day:02} {hour:02}:{minute:02} UTC")
+}
+
 /// Civil date and time of a Unix timestamp (days-to-date after Howard Hinnant).
 fn civil(secs: u64) -> (u64, u64, u64, u64, u64, u64) {
     let days = secs / 86_400;
@@ -66,6 +79,13 @@ mod tests {
         assert_eq!(civil(0), (1970, 1, 1, 0, 0, 0));
         assert_eq!(civil(951_782_400), (2000, 2, 29, 0, 0, 0));
         assert_eq!(civil(1_791_376_496), (2026, 10, 7, 12, 34, 56));
+    }
+
+    #[test]
+    fn the_header_time_has_the_form_of_a_date_and_minutes() {
+        assert_eq!(format_utc(1_791_376_496), "2026-10-07 12:34 UTC");
+        assert_eq!(format_utc(0), "1970-01-01 00:00 UTC");
+        assert!(now_utc().ends_with(" UTC"));
     }
 
     #[test]

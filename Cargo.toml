@@ -20,6 +20,7 @@ similar = "2"
 skillmirror-core = { path = "Crates/Core" }
 skillmirror-testkit = { path = "Crates/Testkit" }
 skillmirror-tui = { path = "Crates/Tui" }
+skillmirror-web = { path = "Crates/Web" }
 tempfile = "3"
 thiserror = "2"
 vt100 = "0.16"

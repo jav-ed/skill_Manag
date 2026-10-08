@@ -5,17 +5,8 @@ use std::ffi::OsStr;
 use std::os::unix::ffi::OsStrExt;
 use std::path::Path;
 
-use serde::Deserialize;
-
 use super::{Report, Severity};
-use crate::vault::{Skill, Vault, VaultFiles};
-
-/// The two keys agents read from the header of `SKILL.md`.
-#[derive(Debug, Default, Deserialize)]
-struct Header {
-    name: Option<String>,
-    description: Option<String>,
-}
+use crate::vault::{Header, Skill, Vault, VaultFiles, read_header};
 
 /// Checks the header of every skill: it must exist, parse as YAML, name the folder and describe the skill.
 pub(super) fn lint(report: &mut Report, vault: &Vault, files: &VaultFiles) {
@@ -34,7 +25,7 @@ pub(super) fn lint(report: &mut Report, vault: &Vault, files: &VaultFiles) {
                 Some("`git add` it in the vault and commit".to_string()),
             );
         }
-        match header_of(skill) {
+        match read_header(skill) {
             Ok(header) => judge(report, skill, &header),
             Err(problem) => {
                 let hint = problem.contains("not valid YAML").then(|| {
@@ -78,41 +69,6 @@ fn judge(report: &mut Report, skill: &Skill, header: &Header) {
                 .to_string(),
         );
     }
-}
-
-fn header_of(skill: &Skill) -> Result<Header, String> {
-    let text = std::fs::read_to_string(skill.dir.join("SKILL.md"))
-        .map_err(|e| format!("cannot read SKILL.md: {e}"))?;
-    let text = text.strip_prefix('\u{feff}').unwrap_or(&text);
-    let mut lines = text.lines();
-    if lines.next().map(str::trim_end) != Some("---") {
-        return Err("SKILL.md does not start with a --- header".to_string());
-    }
-    let mut yaml = String::new();
-    let mut closed = false;
-    for line in lines {
-        if line.trim_end() == "---" {
-            closed = true;
-            break;
-        }
-        yaml.push_str(line);
-        yaml.push('\n');
-    }
-    if !closed {
-        return Err("the --- header of SKILL.md is never closed".to_string());
-    }
-    serde_saphyr::from_str::<Option<Header>>(&yaml)
-        .map(Option::unwrap_or_default)
-        .map_err(|e| {
-            // The parser draws the offending line; the first line of its message is the reason.
-            let reason = e.to_string();
-            let reason = reason
-                .lines()
-                .next()
-                .unwrap_or_default()
-                .trim_start_matches("error: ");
-            format!("the header is not valid YAML: {reason}")
-        })
 }
 
 /// What git says about the skill folders. Sync copies the working-tree version of every tracked file, so

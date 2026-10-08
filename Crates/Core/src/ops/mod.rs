@@ -7,6 +7,7 @@ mod doctor;
 mod list;
 mod project;
 mod push;
+mod report;
 mod select;
 mod status;
 mod sync;
@@ -26,6 +27,7 @@ pub use doctor::{Finding, Report as DoctorReport, Severity, doctor};
 pub use list::{Installed, InstalledSet, installed};
 pub use project::{NewProject, ProjectError, check_existing, check_new, create_new, plan_install};
 pub use push::plan as plan_push;
+pub use report::{Cell, ReportData, SkillInfo, report_data};
 pub use select::{SelectError, Selection, resolve, resolve_names};
 pub use status::{Outdated, Problem, ProjectStatus, StatusReport, status};
 pub use sync::plan as plan_sync;
@@ -43,6 +45,8 @@ mod doctor_tests;
 mod profile_tests;
 #[cfg(test)]
 mod project_tests;
+#[cfg(test)]
+mod report_tests;
 #[cfg(test)]
 mod safety_tests;
 #[cfg(test)]
