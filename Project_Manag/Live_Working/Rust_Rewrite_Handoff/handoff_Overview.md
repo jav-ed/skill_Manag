@@ -50,6 +50,8 @@ cargo clippy --workspace --all-targets --locked -- -D warnings
 target/debug/skillmirror --help
 ```
 
+Skills in a fresh clone: `.agents/skills/` holds `coding`, `default-tools`, `doc-start`, `file-tree-optimization`, `refac-cli`, `remote-helper`, `skill-writer`, `temp-task-file` and `tmux`. Two things are missing because they are not in git. First, Claude Code reads skills through the ignored symlink `.claude/skills`; create it with `mkdir -p .claude && ln -s ../.agents/skills .claude/skills`. Second, the `inshallah` skill (needed by the doc-start writing rules) lives only in the user's vault; ask the user to copy `inshallah` from the vault into the clone's `.agents/skills/` (a read-only copy from the vault, never the other way round) and do not commit it.
+
 Then open a real terminal (not a pipe) and run `target/debug/skillmirror tui --vault <a throwaway vault> --root <a throwaway folder>` to feel the TUI. A throwaway world is easy to make: `Crates/Testkit/src/lib.rs` (`World::standard`) builds one for tests, and the same layout works by hand (a git repo with `coding/SKILL.md`, a `web/astro/SKILL.md`, a root folder with projects that have `.agents/skills/coding/`).
 
 Never point the tool at the user's real vault with a writing command while learning. The read-only commands are fine (`skills`, `list`, `sync --dry-run`, `--check`).
