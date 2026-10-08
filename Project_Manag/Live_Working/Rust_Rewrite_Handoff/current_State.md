@@ -85,7 +85,7 @@ ratatui 0.30 on the `termina` backend through `ratatui-termina` (crossterm 0.29 
 - Real vault: 24 skills in the vault; the tree under the scan root holds 436 installed skill folders in 65 projects, the same count as the Go tool.
 - Scan: about 0.7 s for the whole root with the Rust tool; the Go dry run took 4.8 to 7 s in the same comparison (13 s cold earlier, 1.5 s warm on a smaller tree). Plain `find` with the same pruning needs about 1.6 s, so the directory walk dominates; the Rust walk is parallel.
 - Plan: comparing all 395 targets (the earlier measurement) took 38 ms; apply of all of them 274 ms with 8 threads.
-- `hyperfine` is not installed; the numbers came from simple timers.
+- Timed again on 2026-10-08 with `hyperfine` (release build, warm cache, a synthetic tree of 60 projects with 420 installed skills in 840 folders, 40 vault skills, `node_modules` and deep source folders in every project; the container, not the user's machine): `sync --dry-run` 21 ms, `status` 22 ms, `list` 7 ms, `diff --stat` 98 ms, `report -o -` (everything, with diffs) 109 ms, peak memory 7 to 13 MB; the frozen Go tool's `--dry-run` on the same tree 882 ms and 15 MB, so about 40 times slower than the Rust dry run. The scan line, the events and the new commands cost nothing visible.
 
 ## Parity with the Go tool
 
