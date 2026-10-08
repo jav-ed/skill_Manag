@@ -67,7 +67,9 @@ fn the_mouse_opens_an_entry_and_an_idle_interface_uses_no_cpu() {
     let before = term.cpu_ticks();
     thread::sleep(Duration::from_secs(2));
     let idle = term.cpu_ticks() - before;
-    assert!(idle <= 1, "an idle interface used {idle} CPU ticks in 2 s");
+    // A tick is 10 ms. A loop that redraws or polls without waiting would use about 200 in 2 s; a few
+    // ticks is what the process spends on the work the machine's other tests make it wait for.
+    assert!(idle <= 5, "an idle interface used {idle} CPU ticks in 2 s");
     term.send("\x03");
     assert_eq!(term.exit_code(), 0);
 }

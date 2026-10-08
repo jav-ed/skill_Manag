@@ -69,7 +69,7 @@ Opt-in rule (unchanged): `sync` updates only skills a project already has; `push
 
 - Stage 0, built early: `skillmirror report` writes one static, self-contained HTML file (matrix, group browser, skill detail, diffs, client-side filter, dark mode). No server, no attack surface. Renderer: `maud` (automatic escaping).
 - Stage 1, decided after the TUI exists: `skillmirror web`, a loopback server on `axum` 0.8 with minimal features, server-rendered HTML, about 150 lines of vanilla JS, server-sent events for scan progress. Read-only by default. Security minimum: random port on 127.0.0.1, Host allow-list, one-time launch token exchanged for an HttpOnly SameSite=Strict cookie, `Sec-Fetch-Site` and `Origin` checks on every request, POST-only mutations, no CORS, CSP header.
-- Stage 2: mutations only behind `--allow-write` with a plan and confirm step, after the drift guard exists.
+- Stage 2: mutations only behind `--allow-write` with a plan and confirm step, after the drift guard exists. Both stages were built on 2026-10-08 (contract Q56), with polling instead of server-sent events for progress: a job is one run of at most a few seconds and polling needs no streaming code.
 - Rejected: SPA (hundreds of npm packages), WASM full-stack, desktop shells, `tiny_http` (open CVEs, no release since 2022).
 - tokio appears only through the web crate; `cargo tree -p skillmirror-core -i tokio` must fail (`just check-deps`).
 
@@ -94,7 +94,7 @@ Opt-in rule (unchanged): `sync` updates only skills a project already has; `push
 1. **Git index: one subprocess per run instead of `gix-index`.** The engine report recommends `gix-index` (0.10 ms, 83 crates, 136 CPU-s compile, +0.6 MB) and itself offers one `git ls-files` spawn (1.9 ms, zero crates) as the alternative. Speed is no argument (the Go cost came from 395 spawns, one per target, not from spawning). The cost rule of the requirements ("a crate that saves 30 lines but adds 40 dependencies is a no") decides: the spawn wins. The rule "no subprocess" in the requirements was written from the Go flaw and is relaxed to "no spawn per target". Revisit `gix-index` only if the tool must run where `git` is absent.
 2. **Registry not in the first cut.** The walk is 0.4 s warm with `ignore`; a registry saves that but can silently miss a project cloned elsewhere. It comes in phase 5 after the cold scan is measured, with `--rescan`, a TTL and a printed "N projects from cache, age 3 h" line.
 3. **Provenance lock and `sha2` deferred** to phase 5, following the user's "maybe later".
-4. **Web feature default.** Off in plain `cargo build`, on for `just install` and release artifacts; the final choice waits for stage 1.
+4. **Web feature default.** Decided with stage 1: the Cli feature `web` is on by default (a plain `cargo install` has `skillmirror web`); `--no-default-features` leaves out `axum` and `tokio`. Measured cost of the server stack: about 12 s of compile time, 100 MB of build folder and 360 MB of peak memory, 1.6 MB of binary (`Docs/Setup/build_Resources.md`).
 5. **`musl` builds** are not planned: nothing is measured about allocator speed, and the only channel is a native `cargo install`.
 6. **Frontmatter strictness applies to `doctor`, `list` and groups, not to sync.** Two real vault skills (`post-scheduler`, and the old vault `secrets`) have an unquoted `: ` in `description`, so every YAML parser rejects them. Sync copies files and never parses `SKILL.md`, so the 395 installs keep working; `doctor` reports the fix. The project copy of the new `secrets` skill is valid.
 

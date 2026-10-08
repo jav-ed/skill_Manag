@@ -11,7 +11,7 @@ A Cargo workspace (`Crates/*`, default member `Crates/Cli`). The dependency arro
 | `Crates/Core` | `skillmirror-core` | The engine: configuration, vault, scan, plan, apply, backups, and `ops`, the operations the front ends call. Synchronous, no terminal, no async runtime. `just check-deps` fails if `tokio` ever enters its tree |
 | `Crates/Cli` | `skillmirror` | The binary: `clap` grammar, one file per command, text and JSON output, exit codes |
 | `Crates/Tui` | `skillmirror-tui` | The interactive interface on `ratatui`. Public API is only `run(Launch)`, `Launch`, `TuiError` |
-| `Crates/Web` | `skillmirror-web` | Views for a browser; today the static HTML report on `maud` |
+| `Crates/Web` | `skillmirror-web` | Views for a browser: the static HTML report on `maud`, and behind the cargo feature `server` the local web server (`axum`, the only async runtime of the workspace) |
 | `Crates/Testkit` | `skillmirror-testkit` | `World`, a throwaway vault and projects for tests |
 
 Every file stays under 300 code lines (`just loc-gate`); a file that grows is split by responsibility.

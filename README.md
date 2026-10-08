@@ -41,7 +41,7 @@ projects/
 
 ## Install
 
-Needs Rust 1.88 or newer and `git`. Linux only.
+Needs Rust 1.89 or newer and `git`. Linux only.
 
 ```bash
 git clone git@github.com:jav-ed/skill_Manag.git
@@ -72,6 +72,7 @@ Every command accepts `--vault <DIR>` and `--root <DIR>`. Commands that write as
 | `status [SKILL...] [--group P] [--project DIR] [--all]` | How every project stands against the vault: outdated, mandatory missing, not in the vault. Exit 1 when something differs |
 | `diff [SKILL] [--project DIR] [--stat]` | The lines a sync would bring in and take away, as unified diffs |
 | `report [-o FILE] [--open]` | One self-contained HTML page: skills against projects, the vault tree, diffs, a filter, dark mode |
+| `web [--allow-write] [--port N] [--open] [--idle-timeout MINUTES]` | The same views live in your browser, served on 127.0.0.1 only behind a link that works once. With `--allow-write` the pages can also run sync, push and undo, each after showing its plan with the diffs |
 | `new NAME [--group PATH] [--description TEXT] [--dry-run]` | Creates a skill in the vault from a template (`SKILL.md` with a header), staged in git, not committed |
 | `adopt NAME --from PROJECT [--group PATH] [--dry-run]` | Copies a skill folder that a project already has into the vault, staged, not committed; the project's folder is then in sync |
 | `vault init DIR [--root DIR] [--use] [--dry-run]` | Makes a new vault (a git repository with a `config.yaml`) and, when you have no default vault yet, makes it the default |
@@ -100,6 +101,12 @@ Exit codes: `0` done or nothing differs, `1` drift found (`--check`, `status`, `
 | Setup | Pick the vault and the root, tick the mandatory skills, save |
 
 Every page that works out a plan shows it before anything is written. If the scan could not read something, the heading says so and `i` lists it.
+
+## The web view
+
+`skillmirror web` prints a link and serves on `127.0.0.1` (a free port, or `--port`) until Ctrl-C or until nobody has asked for anything for two hours (`--idle-timeout`). The pages: an overview of every project, Sync and Push (pick skills and a project, see the plan with its diffs, apply), History (undo a run), Doctor, Settings, and the full report. Without `--allow-write` it only looks: no page can change a file. With it, a change is a plan first, then a go-ahead for exactly that plan; folders edited in between are left alone, replaced folders are saved for History, and one change runs at a time.
+
+It is built to be safe on a computer where other web pages run in the same browser: the link works once and is traded for a cookie that scripts cannot read, requests that do not come from the page itself are refused, and nothing the pages show can become markup. The details are in `Project_Manag/Docs/Architecture/front_Ends.md`. A build without the server is `cargo install --path Crates/Cli --locked --no-default-features`.
 
 ## Configuration
 

@@ -19,6 +19,7 @@ mod report;
 mod skills;
 mod status;
 mod vault;
+mod web;
 
 use std::io::IsTerminal;
 
@@ -65,6 +66,7 @@ fn dispatch(cli: &Cli, command: &Command) -> Result<Exit, CliError> {
         Command::Config(command) => config::run(cli, command),
         Command::Mandatory(command) => mandatory::run(cli, command),
         Command::Report(args) => report::run(cli, args),
+        Command::Web(args) => web::run(cli, args),
         Command::Bridge(args) => bridge::run(cli, args),
         Command::Status(args) => status::run(cli, args),
         Command::Diff(args) => diff::run(cli, args),

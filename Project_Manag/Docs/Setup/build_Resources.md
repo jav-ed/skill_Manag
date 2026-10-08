@@ -21,6 +21,8 @@ After a one-line edit the rebuild takes 7 s with the default settings here and 2
 
 The number that surprised us: a `target/` folder that had been used for a few days of ordinary development had grown to **13 GB**, 12 GB of it the debug profile (6.1 GB compiled dependencies, 5.3 GB incremental cache). Nothing in it was wrong; it is what Cargo's defaults produce when you build, test and lint over many days.
 
+The local web server (`skillmirror web`, cargo feature `web`, on by default) brings `axum`, `hyper` and `tokio`: about 12 s of extra compile time, 100 MB of build folder, 360 MB of peak memory in the largest compiler process and 1.6 MB of binary (measured on a hello-world server with the same features). `cargo build --no-default-features -p skillmirror` leaves them out, and `just check-features` keeps that build working.
+
 ## What this repository does about it
 
 The root `Cargo.toml` turns off the two things that cost the most and help the least:

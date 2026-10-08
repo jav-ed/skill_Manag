@@ -7,6 +7,11 @@ use std::path::PathBuf;
 use clap::{Args, Parser, Subcommand};
 use clap_complete::Shell;
 
+pub(crate) use crate::args_more::{
+    AdoptArgs, ConfigCommand, ConfigRootArgs, InfoArgs, MandatoryCommand, MandatoryEditArgs,
+    NewArgs, ScopeArgs, VaultCommand, VaultInitArgs, WebArgs,
+};
+
 #[derive(Debug, Parser)]
 #[command(
     name = "skillmirror",
@@ -50,6 +55,8 @@ pub(crate) enum Command {
     Doctor(DoctorArgs),
     /// Write one self-contained HTML file: skills against projects, the vault tree, diffs, a filter
     Report(ReportArgs),
+    /// Serve the report live on this computer only; with --allow-write also sync, push and undo from the browser
+    Web(WebArgs),
     /// Show the skills in the vault, grouped by folder
     Skills(SkillsArgs),
     /// Show one skill: its place and files in the vault, the profiles that name it, and what it is in each project
@@ -82,23 +89,6 @@ pub(crate) enum Command {
         #[arg(value_enum)]
         shell: Shell,
     },
-}
-
-/// Limits a command to some skills, to a vault folder or profile, or to one project.
-#[derive(Debug, Args)]
-pub(crate) struct ScopeArgs {
-    /// Only these skills (default: all of them)
-    #[arg(value_name = "SKILL")]
-    pub(crate) skills: Vec<String>,
-    /// Only the skills below this vault folder, such as `web` or `web/seo`
-    #[arg(long = "group", value_name = "PATH")]
-    pub(crate) groups: Vec<String>,
-    /// Only the skills of a profile defined under `profiles:` in <vault>/config.yaml
-    #[arg(long = "profile", value_name = "NAME")]
-    pub(crate) profiles: Vec<String>,
-    /// Only this project (default: every project under the root)
-    #[arg(long, value_name = "DIR")]
-    pub(crate) project: Option<PathBuf>,
 }
 
 /// Flags shared by `sync` and `push`.
@@ -288,128 +278,6 @@ pub(crate) struct SkillsArgs {
     /// Only the skills below this vault folder
     #[arg(long, value_name = "PATH")]
     pub(crate) group: Option<String>,
-    /// Print one JSON document instead of text
-    #[arg(long)]
-    pub(crate) json: bool,
-}
-
-#[derive(Debug, Args)]
-pub(crate) struct InfoArgs {
-    /// The skill folder name
-    #[arg(value_name = "SKILL")]
-    pub(crate) skill: String,
-    /// Print one JSON document instead of text
-    #[arg(long)]
-    pub(crate) json: bool,
-}
-
-#[derive(Debug, Args)]
-pub(crate) struct NewArgs {
-    /// Name of the new skill: lowercase letters, digits, `-` and `_`
-    #[arg(value_name = "NAME")]
-    pub(crate) name: String,
-    /// The vault folder to put it in, such as `web` or `web/seo` (made when it does not exist)
-    #[arg(long, value_name = "PATH", default_value = "")]
-    pub(crate) group: String,
-    /// The line agents read to decide when to use the skill
-    #[arg(long, value_name = "TEXT")]
-    pub(crate) description: Option<String>,
-    /// Show what would be created and create nothing
-    #[arg(long)]
-    pub(crate) dry_run: bool,
-    /// Print one JSON document instead of text
-    #[arg(long)]
-    pub(crate) json: bool,
-}
-
-#[derive(Debug, Args)]
-pub(crate) struct AdoptArgs {
-    /// The skill folder name in the project
-    #[arg(value_name = "NAME")]
-    pub(crate) name: String,
-    /// The project that has it
-    #[arg(long, value_name = "DIR", required = true)]
-    pub(crate) from: PathBuf,
-    /// The vault folder to put it in, such as `web` or `web/seo` (made when it does not exist)
-    #[arg(long, value_name = "PATH", default_value = "")]
-    pub(crate) group: String,
-    /// Show what would be copied and copy nothing
-    #[arg(long)]
-    pub(crate) dry_run: bool,
-    /// Print one JSON document instead of text
-    #[arg(long)]
-    pub(crate) json: bool,
-}
-
-#[derive(Debug, Subcommand)]
-pub(crate) enum VaultCommand {
-    /// Make a new vault: a git repository with a config.yaml
-    Init(VaultInitArgs),
-}
-
-#[derive(Debug, Subcommand)]
-pub(crate) enum ConfigCommand {
-    /// Show the vault, the scan root and the settings in <vault>/config.yaml, and where each came from
-    Show {
-        /// Print one JSON document instead of text
-        #[arg(long)]
-        json: bool,
-    },
-    /// Print the path of <vault>/config.yaml, for `$EDITOR $(skillmirror config path)`
-    Path,
-    /// Set `root:` in <vault>/config.yaml to a folder that holds your projects
-    Root(ConfigRootArgs),
-}
-
-#[derive(Debug, Args)]
-pub(crate) struct ConfigRootArgs {
-    /// The folder to scan for projects; it must exist
-    pub(crate) dir: PathBuf,
-    /// Show the change and make none
-    #[arg(long)]
-    pub(crate) dry_run: bool,
-}
-
-#[derive(Debug, Subcommand)]
-pub(crate) enum MandatoryCommand {
-    /// List the mandatory skills
-    List {
-        /// Print one JSON document instead of text
-        #[arg(long)]
-        json: bool,
-    },
-    /// Add skills of the vault to the list
-    Add(MandatoryEditArgs),
-    /// Take skills off the list
-    Remove(MandatoryEditArgs),
-}
-
-#[derive(Debug, Args)]
-pub(crate) struct MandatoryEditArgs {
-    /// Skill names
-    #[arg(value_name = "SKILL", required = true)]
-    pub(crate) names: Vec<String>,
-    /// Show the new list and change nothing
-    #[arg(long)]
-    pub(crate) dry_run: bool,
-    /// Print one JSON document instead of text
-    #[arg(long)]
-    pub(crate) json: bool,
-}
-
-#[derive(Debug, Args)]
-pub(crate) struct VaultInitArgs {
-    /// The new vault folder; it must not exist or must be empty
-    pub(crate) dir: PathBuf,
-    /// The folder that holds your projects, written to config.yaml as `root:`
-    #[arg(long, value_name = "DIR")]
-    pub(crate) root: Option<PathBuf>,
-    /// Make it the default vault even when another one is set
-    #[arg(long = "use")]
-    pub(crate) use_it: bool,
-    /// Show what would be created and create nothing
-    #[arg(long)]
-    pub(crate) dry_run: bool,
     /// Print one JSON document instead of text
     #[arg(long)]
     pub(crate) json: bool,
