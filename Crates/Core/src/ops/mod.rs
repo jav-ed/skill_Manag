@@ -19,7 +19,9 @@ pub use bridge::{
 pub use delete::{
     DeleteError, DeleteReport, Deleted, delete, target_in_project, targets_named, validate_name,
 };
-pub use diff::{DiffFilter, DiffKind, DiffReport, FileDiff, SkillDiff, Skipped, diff};
+pub use diff::{
+    DiffFilter, DiffKind, DiffReport, FileDiff, SkillDiff, Skipped, diff, diff_of_plan,
+};
 pub use doctor::{Finding, Report as DoctorReport, Severity, doctor};
 pub use list::{Installed, InstalledSet, installed};
 pub use project::{NewProject, ProjectError, check_existing, check_new, create_new, plan_install};

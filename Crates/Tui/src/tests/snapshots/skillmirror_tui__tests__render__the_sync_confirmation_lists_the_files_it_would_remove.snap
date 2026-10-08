@@ -25,4 +25,4 @@ expression: ui.screen()
 
 
  rows 1–2 of 2
- y/enter confirm • n/esc cancel • ctrl+c quit
+ y/enter confirm • n/esc cancel • v view changes • ctrl+c quit

@@ -10,7 +10,7 @@ use crate::backend::InputSource;
 use crate::input::Input;
 use crate::jobs_install::Placed;
 use crate::results::Results;
-use crate::screens::{Pending, VaultCheck};
+use crate::screens::{DiffPage, Pending, VaultCheck};
 use crate::session::Session;
 use crate::undo::{RunRow, UndoView};
 
@@ -26,6 +26,8 @@ pub(crate) enum Job {
     Planned(Box<Pending>),
     /// The setup wizard looked at the chosen vault folder.
     Checked(Box<Result<VaultCheck, String>>),
+    /// The changes of the plan of a question, read from the files.
+    Diffed(Box<DiffPage>),
     /// Add or init looked at the folder it was given.
     Placed(Box<Result<Placed, String>>),
     /// The runs in the backup store.

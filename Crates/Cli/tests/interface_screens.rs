@@ -132,3 +132,39 @@ fn init_makes_a_new_project() {
     term.send("q");
     assert_eq!(term.exit_code(), 0);
 }
+
+#[test]
+fn the_question_shows_the_changes_before_anything_is_written() {
+    let world = World::standard();
+    let mut term = tui(&world);
+    term.wait_for("skillmirror");
+    term.send("\r");
+    term.wait_for("2 / 2 selected");
+    term.send("\r");
+    term.wait_for("Sync 2 skills in 2 projects?");
+    term.wait_for("v view changes");
+
+    term.send("v");
+    term.wait_for("is taken from the project");
+    term.wait_for("-coding v1");
+    term.wait_for("+coding v2");
+    assert_eq!(
+        world.read("projects/one/.agents/skills/coding/SKILL.md"),
+        "coding v1",
+        "looking writes nothing"
+    );
+
+    // `q` leaves the changes and returns to the same question, which `y` then answers.
+    term.send("q");
+    term.wait_for("Sync 2 skills in 2 projects?");
+    term.send("y");
+    term.wait_for("Sync results");
+    assert_eq!(
+        world.read("projects/one/.agents/skills/coding/SKILL.md"),
+        "coding v2"
+    );
+    term.send("q");
+    term.wait_for("Refresh the skills each project already has");
+    term.send("q");
+    assert_eq!(term.exit_code(), 0);
+}

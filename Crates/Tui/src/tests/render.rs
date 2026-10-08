@@ -238,3 +238,14 @@ fn the_pages_of_add_and_init() {
     ui.press('g').code(Code::Enter).wait_confirm();
     insta::assert_snapshot!("init_question", plain(ui.screen()));
 }
+
+#[test]
+fn the_changes_page_colours_come_from_the_tone_of_each_line() {
+    let mut ui = Harness::new(world());
+    ui.open("Sync").wait_select();
+    ui.code(Code::Enter).wait_confirm().press('v');
+    ui.wait_for("the changes", |app| {
+        matches!(&app.screen, crate::app::Screen::Work(w) if matches!(w.phase, crate::screens::Phase::Diff(_)))
+    });
+    insta::assert_snapshot!("changes_page", ui.screen());
+}

@@ -231,3 +231,30 @@ fn a_folder_that_cannot_be_compared_is_reported() {
     assert!(report.failed[0].0.project.ends_with("p2"));
     assert_eq!(report.failed[0].0.skill, "ghost");
 }
+
+#[test]
+fn the_diff_of_a_made_plan_is_the_diff_of_those_skills() {
+    let (_tree, ws) = world();
+    let scanned = ws.scan(&ignore_events).unwrap();
+    let plan = crate::ops::plan_sync(&ws, &scanned);
+
+    let shown = diff_of_plan(&plan);
+
+    let direct = diff(&ws, &scanned, &DiffFilter::default());
+    let name = |skills: &[SkillDiff]| -> Vec<(String, Vec<(String, String)>)> {
+        skills
+            .iter()
+            .map(|s| {
+                (
+                    s.target.project.display().to_string(),
+                    s.files
+                        .iter()
+                        .map(|f| (f.path.display().to_string(), f.text.clone()))
+                        .collect(),
+                )
+            })
+            .collect()
+    };
+    assert_eq!(name(&shown), name(&direct.skills));
+    assert!(!shown.is_empty(), "the world has differences");
+}

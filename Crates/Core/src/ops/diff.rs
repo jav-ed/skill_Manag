@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use similar::{ChangeTag, TextDiff};
 
 use super::{Workspace, plan_sync};
-use crate::plan::{ChangeKind, PlanError, PlanKind, SkillPlan};
+use crate::plan::{ChangeKind, Plan, PlanError, PlanKind, SkillPlan};
 use crate::scan::{ScanReport, Target, same_folder};
 
 /// Files above this size are listed but not shown line by line.
@@ -102,6 +102,21 @@ pub fn diff(workspace: &Workspace, report: &ScanReport, filter: &DiffFilter) -> 
         }
     }
     out
+}
+
+/// The diffs of a plan that is already made, for the skills it would change. The interface shows them
+/// before it writes: they are exactly the plan it applies.
+pub fn diff_of_plan(plan: &Plan) -> Vec<SkillDiff> {
+    plan.entries
+        .iter()
+        .filter_map(|entry| match &entry.result {
+            Ok(skill_plan) if skill_plan.kind != PlanKind::Unchanged => Some(SkillDiff {
+                target: entry.target.clone(),
+                files: files_of(skill_plan),
+            }),
+            _ => None,
+        })
+        .collect()
 }
 
 fn files_of(plan: &SkillPlan) -> Vec<FileDiff> {

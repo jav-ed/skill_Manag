@@ -2,6 +2,7 @@
 
 mod boxed;
 mod dialog;
+mod diff;
 mod footer;
 mod header;
 mod history;
@@ -74,6 +75,12 @@ fn draw_work(
             }
         }
         Phase::Planning(kind) => page::planning(frame, *kind, tick, area),
+        Phase::Diffing => page::waiting(frame, tick, "Reading the changes…", area),
+        Phase::Diff(_) => {
+            if let Phase::Diff(page) = &mut work.phase {
+                diff::draw(frame, page, area);
+            }
+        }
         Phase::Confirm(_) => {
             select::draw(frame, hits, work, area);
             if let Phase::Confirm(pending) = &work.phase {

@@ -1,0 +1,28 @@
+---
+source: Crates/Tui/src/tests/render.rs
+expression: ui.screen()
+---
+ ← skillmirror  ·  javedab.com  ·  sync
+
+ Changes
+ - is taken from the project, + comes from the vault
+ astro in projects/one
+   SKILL.md (changed, +1 -1)
+     @@ -1 +1 @@
+     -astro v1
+     \ No newline at end of file
+     +astro v2
+     \ No newline at end of file
+   ref.md (new file, +1 -0)
+     @@ -0,0 +1 @@
+     +ref
+     \ No newline at end of file
+
+ coding in projects/one
+   SKILL.md (changed, +1 -1)
+     @@ -1 +1 @@
+     -coding v1
+     \ No newline at end of file
+     +coding v2
+     \ No newline at end of file
+ ↑/↓ scroll • esc back to the question

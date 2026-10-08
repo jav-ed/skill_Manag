@@ -2,6 +2,7 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 
 mod add;
+mod changes;
 mod flow;
 mod history;
 mod init;
@@ -249,5 +250,26 @@ fn launch(world: &World, with_flags: bool) -> Launch {
         settings,
         dirs,
         reload: Box::new(move || Settings::load(&flags, &EnvOverrides::default(), &reload_dirs)),
+    }
+}
+
+/// The page and phase the app is on, in one word.
+pub(super) fn phase_name(app: &App) -> &'static str {
+    match &app.screen {
+        Screen::Menu(_) => "menu",
+        Screen::Setup(_) => "setup",
+        Screen::History(_) => "history",
+        Screen::Place(_) => "place",
+        Screen::Work(w) => match w.phase {
+            Phase::Loading => "loading",
+            Phase::Failed(_) => "failed",
+            Phase::Select => "select",
+            Phase::Planning(_) => "planning",
+            Phase::Confirm(_) => "confirm",
+            Phase::Diffing => "diffing",
+            Phase::Diff(_) => "diff",
+            Phase::Running { .. } => "running",
+            Phase::Done(_) => "done",
+        },
     }
 }

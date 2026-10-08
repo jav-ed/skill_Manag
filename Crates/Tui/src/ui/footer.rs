@@ -7,14 +7,14 @@ use ratatui::widgets::{Block, Borders, Clear, Paragraph};
 
 use crate::app::Screen;
 use crate::binding::{
-    ALL, BACK, BACK_HELP, Binding, CONFIRM_HELP, DELETE, DOWN, FILTER, GIT, HELP, ISSUES,
+    ALL, BACK, BACK_HELP, Binding, CANCEL, CONFIRM_HELP, DELETE, DOWN, FILTER, GIT, HELP, ISSUES,
     MENU_HELP, MENU_QUIT, OPEN, QUIT, RESULTS_HELP, RUN_ADD, RUN_DELETE, RUN_INIT, RUN_PUSH,
-    RUN_SYNC, SCROLL, SELECT_COMMON, SYNC, TOGGLE, UP,
+    RUN_SYNC, SCROLL, SELECT_COMMON, SYNC, TOGGLE, UP, VIEW, YES,
 };
 use crate::hit::{HitMap, Target};
 use crate::items::Mode;
 use crate::num::to_u16;
-use crate::screens::{History, HistoryPhase, Phase, Place, Setup, Stage, Step, Work};
+use crate::screens::{History, HistoryPhase, Pending, Phase, Place, Setup, Stage, Step, Work};
 use crate::theme;
 
 /// A key as written, and what it does.
@@ -53,13 +53,26 @@ fn short(screen: &Screen) -> Vec<Hint> {
                 keys.extend([&HELP, &BACK]);
                 hints(&keys)
             }
-            Phase::Confirm(_) => hints(CONFIRM_HELP),
+            Phase::Confirm(pending) => confirm_hints(pending),
+            Phase::Diff(_) => vec![("↑/↓", "scroll"), ("esc", "back to the question")],
             Phase::Done(_) => hints(RESULTS_HELP),
-            Phase::Loading | Phase::Failed(_) | Phase::Planning(_) | Phase::Running { .. } => {
-                hints(BACK_HELP)
-            }
+            Phase::Loading
+            | Phase::Failed(_)
+            | Phase::Planning(_)
+            | Phase::Diffing
+            | Phase::Running { .. } => hints(BACK_HELP),
         },
     }
+}
+
+/// The keys of a question; a plan can be looked at, a delete has none.
+fn confirm_hints(pending: &Pending) -> Vec<Hint> {
+    let mut keys: Vec<&Binding> = vec![&YES, &CANCEL];
+    if pending.plan.is_some() {
+        keys.push(&VIEW);
+    }
+    keys.push(&QUIT);
+    hints(&keys)
 }
 
 fn place_hints(place: &Place) -> Vec<Hint> {
@@ -151,7 +164,13 @@ fn work_full(work: &Work) -> Vec<Hint> {
             keys.extend([&HELP, &BACK, &QUIT]);
             hints(&keys)
         }
-        Phase::Confirm(_) => hints(CONFIRM_HELP),
+        Phase::Confirm(pending) => confirm_hints(pending),
+        Phase::Diff(_) => vec![
+            ("↑/↓", "scroll"),
+            ("pgup/pgdn", "page"),
+            ("esc", "back to the question"),
+            ("ctrl+c", "quit"),
+        ],
         Phase::Done(_) => hints(RESULTS_HELP),
         _ => hints(BACK_HELP),
     }

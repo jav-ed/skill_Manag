@@ -1,7 +1,7 @@
 //! Review round 2 for the work pages: plan before asking (M1), one job at a time (M2), visible rows only
 //! (L5), Ctrl-C during a job (L6), a dead keyboard (L8).
 
-use super::{Harness, world};
+use super::{Harness, phase_name, world};
 use crate::event::{Event, Job};
 use crate::hit::Target;
 use crate::input::Code;
@@ -11,21 +11,7 @@ use crate::screens::Phase;
 const NOTES: &str = "projects/one/.agents/skills/astro/my_notes.md";
 
 fn phase(ui: &Harness) -> &'static str {
-    match &ui.app.screen {
-        crate::app::Screen::Menu(_) => "menu",
-        crate::app::Screen::Setup(_) => "setup",
-        crate::app::Screen::History(_) => "history",
-        crate::app::Screen::Place(_) => "place",
-        crate::app::Screen::Work(w) => match w.phase {
-            Phase::Loading => "loading",
-            Phase::Failed(_) => "failed",
-            Phase::Select => "select",
-            Phase::Planning(_) => "planning",
-            Phase::Confirm(_) => "confirm",
-            Phase::Running { .. } => "running",
-            Phase::Done(_) => "done",
-        },
-    }
+    phase_name(&ui.app)
 }
 
 fn results() -> Results {

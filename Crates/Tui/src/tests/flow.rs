@@ -1,25 +1,6 @@
-use super::{Harness, world};
+use super::{Harness, phase_name, world};
 use crate::app::Screen;
 use crate::input::Code;
-use crate::screens::Phase;
-
-fn phase_name(app: &crate::app::App) -> &'static str {
-    match &app.screen {
-        Screen::Menu(_) => "menu",
-        Screen::Setup(_) => "setup",
-        Screen::History(_) => "history",
-        Screen::Place(_) => "place",
-        Screen::Work(w) => match w.phase {
-            Phase::Loading => "loading",
-            Phase::Failed(_) => "failed",
-            Phase::Select => "select",
-            Phase::Planning(_) => "planning",
-            Phase::Confirm(_) => "confirm",
-            Phase::Running { .. } => "running",
-            Phase::Done(_) => "done",
-        },
-    }
-}
 
 #[test]
 fn sync_updates_installed_skills_only_and_shows_the_results() {

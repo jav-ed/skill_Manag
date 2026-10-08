@@ -125,6 +125,7 @@ impl App {
                 self.back_to_menu();
             }
             Action::Plan(pending) => self.plan(pending),
+            Action::Diff(pending) => self.diff(pending),
             Action::Run(pending) => self.start(pending),
         }
     }
@@ -217,6 +218,9 @@ impl App {
                 match &mut self.screen {
                     Screen::Work(work) if matches!(work.phase, Phase::Confirm(_)) => {
                         work.phase = Phase::Select;
+                    }
+                    Screen::Work(work) if matches!(work.phase, Phase::Diff(_)) => {
+                        work.return_to_question();
                     }
                     Screen::History(history)
                         if matches!(history.phase, HistoryPhase::Confirm(_)) =>

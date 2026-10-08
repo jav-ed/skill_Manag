@@ -35,6 +35,12 @@ impl App {
                 }
             }
             Job::Planned(pending) if self.running == Some(id) => self.on_planned(*pending),
+            Job::Diffed(page) if self.running == Some(id) => {
+                self.running = None;
+                if let Some(work) = self.work_mut() {
+                    work.phase = Phase::Diff(page);
+                }
+            }
             Job::Runs(result) if self.listing == Some(id) => {
                 self.listing = None;
                 if let Some(history) = self.history_mut() {
@@ -135,6 +141,13 @@ impl App {
             work.phase = Phase::Planning(pending.kind);
         }
         jobs::spawn_plan(self.tx.clone(), id, session, pending);
+    }
+
+    /// Starts reading the files that the plan of the question would change.
+    pub(super) fn diff(&mut self, pending: Pending) {
+        let id = self.new_job();
+        self.running = Some(id);
+        jobs::spawn_diff(self.tx.clone(), id, pending);
     }
 
     /// The plan is ready: a run that would write something is shown first, one that would not goes on.

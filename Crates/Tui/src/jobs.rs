@@ -12,13 +12,14 @@ use skillmirror_core::apply::{ApplyOptions, apply};
 use skillmirror_core::backup::{Backups, Run, RunKind};
 use skillmirror_core::config::{Dirs, Settings};
 use skillmirror_core::events::Event as CoreEvent;
-use skillmirror_core::ops;
+use skillmirror_core::ops::{self, diff_of_plan};
 use skillmirror_core::plan::Plan;
 
+use crate::diffview::lines_of;
 use crate::event::{Event, Job, JobId};
 use crate::preview::Preview;
 use crate::results::{Kind, Results};
-use crate::screens::{Pending, check_vault};
+use crate::screens::{DiffPage, Pending, check_vault};
 use crate::session::{Session, describe, load};
 use crate::undo::{do_undo, list_runs, plan_undo};
 
@@ -157,5 +158,18 @@ pub(crate) fn spawn_undo(tx: Sender<Event>, id: JobId, dirs: Dirs, run: String, 
         };
         let undone = do_undo(&dirs, &run, &progress);
         send(&tx, id, Job::Undone(Box::new(undone)));
+    });
+}
+
+/// Reads the files that the plan of a question would change and turns the differences into lines.
+pub(crate) fn spawn_diff(tx: Sender<Event>, id: JobId, pending: Pending) {
+    thread::spawn(move || {
+        let skills = pending.plan.as_ref().map(diff_of_plan).unwrap_or_default();
+        let page = DiffPage {
+            lines: lines_of(&skills),
+            pending,
+            scroll: 0,
+        };
+        send(&tx, id, Job::Diffed(Box::new(page)));
     });
 }

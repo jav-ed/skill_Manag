@@ -5,7 +5,7 @@ use ratatui::layout::Position;
 use super::work::{Action, Phase, Work};
 use crate::binding::{
     ALL, BACK, CANCEL, CONFIRM, DELETE, DOWN, FILTER, GIT, ISSUES, PAGE_DOWN, PAGE_UP, SYNC,
-    TOGGLE, UP, YES,
+    TOGGLE, UP, VIEW, YES,
 };
 use crate::hit::{HitMap, Target};
 use crate::input::{self, Button, Code, Key, KeyKind, Mouse, MouseKind};
@@ -24,12 +24,15 @@ impl Work {
         }
         match self.phase {
             Phase::Loading | Phase::Failed(_) => back_only(key),
-            Phase::Planning(_) if BACK.matches(key) || key.code == Code::Esc => Action::Back,
+            Phase::Planning(_) | Phase::Diffing if BACK.matches(key) || key.code == Code::Esc => {
+                Action::Back
+            }
             Phase::Select if self.filtering => self.filter_key(key),
             Phase::Select => self.select_key(key),
             Phase::Confirm(_) => self.confirm_key(key),
             // Nothing else leaves a plan being made or a job that writes: a double tap must not.
-            Phase::Planning(_) | Phase::Running { .. } => Action::None,
+            Phase::Planning(_) | Phase::Diffing | Phase::Running { .. } => Action::None,
+            Phase::Diff(_) => self.diff_key(key),
             Phase::Done(_) => self.done_key(key),
         }
     }
@@ -124,6 +127,13 @@ impl Work {
         if YES.matches(key) {
             return self.confirmed();
         }
+        // Only a sync, push, add or init has a plan to show; a delete has none.
+        if VIEW.matches(key)
+            && matches!(&self.phase, Phase::Confirm(p) if p.plan.is_some())
+            && let Phase::Confirm(pending) = std::mem::replace(&mut self.phase, Phase::Diffing)
+        {
+            return Action::Diff(pending);
+        }
         if CANCEL.matches(key) {
             self.phase = Phase::Select;
         }
@@ -138,6 +148,32 @@ impl Work {
                 self.phase = other;
                 Action::None
             }
+        }
+    }
+
+    /// The changes page scrolls; any way back returns to the question.
+    fn diff_key(&mut self, key: Key) -> Action {
+        let Phase::Diff(page) = &mut self.phase else {
+            return Action::None;
+        };
+        if UP.matches(key) {
+            page.scroll = page.scroll.saturating_sub(1);
+        } else if DOWN.matches(key) {
+            page.scroll = page.scroll.saturating_add(1);
+        } else if PAGE_UP.matches(key) {
+            page.scroll = page.scroll.saturating_sub(10);
+        } else if PAGE_DOWN.matches(key) {
+            page.scroll = page.scroll.saturating_add(10);
+        } else if BACK.matches(key) || key.code == Code::Esc || VIEW.matches(key) {
+            self.return_to_question();
+        }
+        Action::None
+    }
+
+    /// From the changes page back to the question, with the same plan.
+    pub(crate) fn return_to_question(&mut self) {
+        if let Phase::Diff(page) = std::mem::replace(&mut self.phase, Phase::Select) {
+            self.phase = Phase::Confirm(page.pending);
         }
     }
 
@@ -170,6 +206,10 @@ impl Work {
         match self.phase {
             Phase::Select => self.select_mouse(mouse, target, hits),
             Phase::Confirm(_) => self.confirm_mouse(mouse, target),
+            Phase::Diff(_) => {
+                self.diff_mouse(mouse);
+                Action::None
+            }
             Phase::Done(_) => {
                 match mouse.kind {
                     MouseKind::ScrollUp => self.scroll = self.scroll.saturating_sub(3),
@@ -179,6 +219,16 @@ impl Work {
                 Action::None
             }
             _ => Action::None,
+        }
+    }
+
+    fn diff_mouse(&mut self, mouse: Mouse) {
+        if let Phase::Diff(page) = &mut self.phase {
+            match mouse.kind {
+                MouseKind::ScrollUp => page.scroll = page.scroll.saturating_sub(3),
+                MouseKind::ScrollDown => page.scroll = page.scroll.saturating_add(3),
+                _ => {}
+            }
         }
     }
 

@@ -8,6 +8,7 @@ use skillmirror_core::scan::Target;
 use tui_input::Input as TextInput;
 
 use super::list_view::ListView;
+use crate::diffview::DiffLine;
 use crate::filter::Fuzzy;
 use crate::items::{self, Item, Mode, Project};
 use crate::preview::Preview;
@@ -61,6 +62,10 @@ pub(crate) enum Phase {
     /// Working out what the selected sync or push would write.
     Planning(Kind),
     Confirm(Pending),
+    /// Reading the files to show what the plan would change.
+    Diffing,
+    /// The changes of the plan the question is about.
+    Diff(Box<DiffPage>),
     Running {
         kind: Kind,
         done: usize,
@@ -69,11 +74,21 @@ pub(crate) enum Phase {
     Done(Box<Results>),
 }
 
+/// The plan of a question, and its changes as text.
+pub(crate) struct DiffPage {
+    pub(crate) pending: Pending,
+    pub(crate) lines: Vec<DiffLine>,
+    /// First visible line.
+    pub(crate) scroll: usize,
+}
+
 /// What the app must do after a key or a click.
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum Action {
     None,
     Back,
+    /// Read what the plan of the question would change.
+    Diff(Pending),
     /// Work out what the selection would do, then ask.
     Plan(Pending),
     Run(Pending),
