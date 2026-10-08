@@ -50,7 +50,7 @@ git checkout rust-rewrite-handoff
 just install            # or: cargo install --path Crates/Cli --locked
 ```
 
-The binary lands in `~/.cargo/bin/skillmirror`. Check it with `skillmirror doctor`.
+The binary lands in `~/.cargo/bin/skillmirror`. Check it with `skillmirror doctor`. The compile takes about a minute and up to about 600 MB of memory; the build folder is removed afterwards (see [Development](#development) for the cost of working on the code).
 
 First run: `skillmirror` with no arguments opens the interface, and its Setup entry asks for the vault and the root and writes the configuration. Coming from the Go tool: `skillmirror migrate` copies its vault pointer.
 
@@ -152,6 +152,8 @@ just check      # format, clippy, tests, file size (300 code lines), core stays 
 just deny       # advisories, licences, bans
 just parity     # replay 131 scenarios of the old Go tool against this one (needs the Go oracle)
 ```
+
+**Building Rust is heavy.** A clean build of the workspace with Cargo's defaults uses 1.9 GB of disk and around 800 MB of extra memory, and a `target/` folder that has been used for a few days reaches 10 GB or more (debug information and the incremental cache). This repository turns both off in the root `Cargo.toml` (0.47 GB, about 500 MB, 27 s on four cores). On a small machine add `CARGO_BUILD_JOBS=2`; `cargo clean` frees everything. Numbers, what to switch back on for a debugger, and the rest: [`build_Resources.md`](Project_Manag/Docs/Setup/build_Resources.md).
 
 Crates: `Crates/Core` (the engine, no async), `Crates/Cli`, `Crates/Tui`, `Crates/Web` (the HTML report), `Crates/Testkit`. The architecture, the behaviour contract (one numbered row per rule) and the decisions behind them are under `Project_Manag/Docs/`; start at [`doc_Start.md`](Project_Manag/Docs/doc_Start.md).
 

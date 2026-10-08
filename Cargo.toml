@@ -42,6 +42,14 @@ indexing_slicing = "deny"
 let_underscore_must_use = "deny"
 print_stdout = "deny"      # only Crates/Cli/src/output re-allows it
 
+# Lean by default: a Rust build is the heaviest thing this repository does (see
+# Project_Manag/Docs/Setup/build_Resources.md). Debug information and the incremental cache are what
+# fill the disk (about 12 GB of a 13 GB target/ folder) and they are only worth it when stepping
+# through code in a debugger. Opt in per shell: CARGO_PROFILE_DEV_DEBUG=true CARGO_INCREMENTAL=1.
+[profile.dev]
+debug = false
+incremental = false
+
 # `release` stays the quick profile (hyperfine loops); packaging uses `cargo build --profile dist`.
 [profile.dist]
 inherits = "release"
