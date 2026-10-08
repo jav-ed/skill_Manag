@@ -1,0 +1,46 @@
+# Virtual workspace. Go sources (cmd/, internal/, main.go, go.mod) stay beside it until the cutover.
+[workspace]
+resolver = "3"
+members = ["Crates/*"]
+default-members = ["Crates/Cli"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"      # real floor: ignore 0.4.33, globset 0.4.20 (cli_Stack)
+license-file = "LICENSE"   # Hippocratic License 3.0 variant, no SPDX id
+publish = false
+
+[workspace.dependencies]
+skillmirror-core = { path = "Crates/Core" }
+skillmirror-tui = { path = "Crates/Tui" }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+unreachable_pub = "warn"
+unused_must_use = "deny"
+
+[workspace.lints.clippy]
+all = { level = "deny", priority = -2 }
+pedantic = { level = "warn", priority = -1 }
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+module_name_repetitions = "allow"
+unwrap_used = "deny"
+expect_used = "deny"
+indexing_slicing = "deny"
+let_underscore_must_use = "deny"
+print_stdout = "deny"      # only Crates/Cli/src/output re-allows it
+
+# `release` stays the quick profile (hyperfine loops); packaging uses `cargo build --profile dist`.
+[profile.dist]
+inherits = "release"
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
+
+[profile.profiling]
+inherits = "release"
+debug = "line-tables-only"
+strip = "none"

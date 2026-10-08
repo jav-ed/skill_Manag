@@ -1,0 +1,90 @@
+# deny.toml: cargo-deny policy for the skillmirror workspace (advisories, licences, bans, sources).
+# Run with `just deny` (`cargo deny --locked check`).
+#
+# STATUS: UNVALIDATED. cargo-deny is not installed on this machine, so this file has never been
+# run through `cargo deny check` or `cargo deny check --config deny.toml` (no schema parse, no
+# real dependency graph). Every key below was checked by reading the cargo-deny 0.20.2 docs and
+# `deny.template.toml` at tag 0.20.2 (docs/src/cfg.md, docs/src/checks/{advisories,licenses,bans,
+# sources}/cfg.md). Behaviour that only a real run can confirm is flagged "unverified" in place.
+# Decisions behind the policy: Project_Manag/Docs/Decisions/rust_Rewrite.md (section 7) and
+# Project_Manag/Docs/Investigation/Rust_Stack/cli_Stack.md ("deny.toml sketch").
+
+[graph]
+# Linux only (user decision): Windows, macOS and UEFI-only crates are never checked.
+targets = [
+    "x86_64-unknown-linux-gnu",
+    "aarch64-unknown-linux-gnu",
+    "x86_64-unknown-linux-musl",
+    "aarch64-unknown-linux-musl",
+]
+
+[advisories]
+# RustSec database. 0.20 removed vulnerability, notice and severity-threshold (they now always
+# error), so only the keys that still exist are set. The database is fetched on every run;
+# `maximum-db-staleness` (default P90D) only matters with --offline or --disable-fetch.
+unmaintained = "all"   # any unmaintained advisory fails, direct or transitive
+unsound = "all"        # default is "workspace"; transitive unsound advisories fail too
+yanked = "deny"
+
+[licenses]
+# Allow-list only: cargo-deny denies every licence that is not listed here, so GPL-*, AGPL-*,
+# LGPL-*, GFDL-*, SSPL-1.0, BUSL-1.1 and anything non-OSI stay blocked by NOT being listed.
+# The project itself is Hippocratic License 3.0 (use restrictions), which GPL-family terms
+# cannot be combined with (reading, not legal advice; see name_And_Distribution.md section 3).
+# Do not add a copyleft id here without a new decision.
+#
+# Needed by the prototype dependency graph: MIT, Apache-2.0, Unicode-3.0, BSD-3-Clause, ISC, Zlib,
+# Unlicense, BSL-1.0 (Boost, not BUSL), CC0-1.0, MPL-2.0 (marked: nucleo-matcher). The rest is
+# defensive and appears today only inside OR expressions. Seen once in the prototype graph and
+# deliberately NOT listed: MIT-0, Unicode-DFS-2016, WTFPL (add only if a real run reports them).
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Zlib",
+    "Unicode-3.0",
+    "CC0-1.0",
+    "0BSD",
+    "Unlicense",
+    "MPL-2.0",    # cli_Stack preferred a per-crate `exceptions` entry; the ADR allows it globally
+    "BSL-1.0",    # Boost Software License (ryu), not BUSL
+]
+# The list is partly defensive, so unused entries are not worth a warning.
+unused-allowed-license = "allow"
+# Used only when a crate has no SPDX expression and cargo-deny reads its LICENSE file.
+confidence-threshold = 0.93
+
+# Our own crates declare `license-file = "LICENSE"` (no SPDX id for the Hippocratic licence) and
+# `publish = false`. With `ignore = true` cargo-deny skips the licence-expression check for
+# unpublished workspace members (docs: licenses `private.ignore`). Unverified until the first run.
+# Do not invent a `LicenseRef-` plus `clarify` entry: it would have to go into `allow` and
+# widen the policy for every crate.
+[licenses.private]
+ignore = true
+
+[bans]
+multiple-versions = "warn"
+# `deny` fails on `*` version requirements; `allow-wildcard-paths` exempts path dependencies of
+# private (publish = false) crates, which is how the workspace members refer to each other.
+wildcards = "deny"
+allow-wildcard-paths = true
+highlight = "all"
+deny = [
+    { crate = "git2", use-instead = "gix", reason = "git2 vendors libgit2 (GPL-2.0 with a linking exception) and its xdiff (LGPL); cargo-deny cannot see vendored C. Use gix (MIT OR Apache-2.0) or the git binary." },
+    { crate = "libgit2-sys", reason = "vendored libgit2 is GPL-2.0 with a linking exception and xdiff is LGPL; the crate manifest only says MIT OR Apache-2.0, so the licence check cannot catch it." },
+]
+
+# Defaults are `deny`: every workspace dependency must be declared once in [workspace.dependencies]
+# and used. While the workspace is being built up an unused entry should not fail CI.
+[bans.workspace-dependencies]
+unused = "warn"
+
+[sources]
+# Only crates.io. No git dependencies, no other registries.
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []

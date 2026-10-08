@@ -58,3 +58,13 @@ skill_Manag.exe
 # Go workspace
 go.work
 go.work.sum
+# Scratch: disposable agent outputs (doc-start convention).
+# Anchored to the repo root: an unanchored "Scratch/" would also ignore the
+# tracked cleanup helper in Code/Development/Scratch/.
+/Scratch/
+
+# Go binary, lowercase build name
+skill_manag
+
+# Rust build output
+target/
