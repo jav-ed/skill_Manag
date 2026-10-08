@@ -106,7 +106,7 @@ Every page that works out a plan shows it before anything is written. If the sca
 
 `skillmirror web` prints a link and serves on `127.0.0.1` (a free port, or `--port`) until Ctrl-C or until nobody has asked for anything for two hours (`--idle-timeout`). The pages: an overview of every project, Sync and Push (pick skills and a project, see the plan with its diffs, apply), History (undo a run), Doctor, Settings, and the full report. Without `--allow-write` it only looks: no page can change a file. With it, a change is a plan first, then a go-ahead for exactly that plan; folders edited in between are left alone, replaced folders are saved for History, and one change runs at a time.
 
-It is built to be safe on a computer where other web pages run in the same browser: the link works once and is traded for a cookie that scripts cannot read, requests that do not come from the page itself are refused, and nothing the pages show can become markup. The details are in `Project_Manag/Docs/Architecture/front_Ends.md`. A build without the server is `cargo install --path Crates/Cli --locked --no-default-features`.
+It is built to be safe on a computer where other web pages run in the same browser: the link works once and is traded for a cookie that scripts cannot read, requests that do not come from the page itself are refused, and nothing the pages show can become markup. The details are in `Project_Manag/Docs/Architecture/front_Ends.md`. The interface is a small web app (Astro and Solid, Lucide icons, Motion) in its own project, [`Ui/`](Ui/README.md); its built files are committed and held in the binary, so installing needs no node. A build without the server is `cargo install --path Crates/Cli --locked --no-default-features`.
 
 ## Configuration
 
@@ -169,7 +169,7 @@ just parity     # replay 131 scenarios of the old Go tool against this one (need
 
 **Building Rust is heavy.** A clean build of the workspace with Cargo's defaults uses 1.9 GB of disk and around 800 MB of extra memory, and a `target/` folder that has been used for a few days reaches 10 GB or more (debug information and the incremental cache). This repository turns both off in the root `Cargo.toml` (0.47 GB, about 500 MB, 27 s on four cores). On a small machine add `CARGO_BUILD_JOBS=2`; `cargo clean` frees everything. Numbers, what to switch back on for a debugger, and the rest: [`build_Resources.md`](Project_Manag/Docs/Setup/build_Resources.md).
 
-Crates: `Crates/Core` (the engine, no async), `Crates/Cli`, `Crates/Tui`, `Crates/Web` (the HTML report), `Crates/Testkit`. The architecture, the behaviour contract (one numbered row per rule) and the decisions behind them are under `Project_Manag/Docs/`; start at [`doc_Start.md`](Project_Manag/Docs/doc_Start.md).
+Crates: `Crates/Core` (the engine, no async), `Crates/Cli`, `Crates/Tui`, `Crates/Web` (the HTML report and the local server), `Crates/Testkit`. The web interface itself is `Ui/` (node, not part of the Cargo workspace; `Code/Development/Web/build_Ui.sh` builds it). The architecture, the behaviour contract (one numbered row per rule) and the decisions behind them are under `Project_Manag/Docs/`; start at [`doc_Start.md`](Project_Manag/Docs/doc_Start.md).
 
 ## License
 

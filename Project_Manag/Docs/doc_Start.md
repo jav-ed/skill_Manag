@@ -4,7 +4,7 @@
 
 `skillmirror` (formerly `skill_Manag`) is a command line tool and a full-screen interface that mirror agent skill folders from one master vault into every matching `.agents/skills/` directory across a codebase: git-tracked, SSH-safe, no symlinks, with backups and `undo`. It is written in Rust on the branch `rust-rewrite-handoff` (the branch to continue on). The Go tool it replaces is still on `main` until the merge; its sources were removed from this branch on 2026-10-08 and live in the history at commit `c7310f9` (the behavior contract and the parity harness refer to it).
 
-Entry point(s): `Cargo.toml` in the repo root, then `Crates/Core/src/lib.rs` (engine) and `Crates/Cli/src/main.rs` (binary).
+Entry point(s): `Cargo.toml` in the repo root, then `Crates/Core/src/lib.rs` (engine) and `Crates/Cli/src/main.rs` (binary). The web interface is a separate project in `Ui/` (see its README); the Rust side only embeds what it builds.
 
 ## Docs
 

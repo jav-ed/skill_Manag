@@ -251,7 +251,14 @@ async fn every_answer_carries_the_security_headers_and_no_cors() {
     let server = Server::new(false);
     let cookie = server.login().await;
 
-    for path in ["/", "/app.js", "/app.css", "/settings", "/nonexistent"] {
+    for path in [
+        "/",
+        "/theme.js",
+        "/favicon.svg",
+        "/api/settings",
+        "/settings",
+        "/nonexistent",
+    ] {
         let response = server.get(&cookie, path).await;
         let headers = response.headers();
         let csp = headers[header::CONTENT_SECURITY_POLICY].to_str().unwrap();

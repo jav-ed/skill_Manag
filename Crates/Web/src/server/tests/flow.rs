@@ -99,14 +99,26 @@ async fn applying_a_plan_writes_exactly_it_and_keeps_a_backup() {
 async fn the_overview_looks_at_the_disk_again_after_a_write() {
     let server = Server::new(true);
     let cookie = server.login().await;
-    let before = server.page(&cookie, "/").await;
-    assert!(before.contains("coding outdated"), "{before}");
+    let outdated = |view: &serde_json::Value| -> Vec<String> {
+        view["projects"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .flat_map(|p| p["outdated"].as_array().unwrap())
+            .map(|o| o["skill"].as_str().unwrap().to_string())
+            .collect()
+    };
+    let before = server.read(&cookie, "/api/overview").await;
+    assert!(
+        outdated(&before).contains(&"coding".to_string()),
+        "{before}"
+    );
 
     let made = plan(&server, &cookie, "sync", &["coding"]).await;
     apply(&server, &cookie, &made).await;
 
-    let after = server.page(&cookie, "/").await;
-    assert!(!after.contains("coding outdated"), "{after}");
+    let after = server.read(&cookie, "/api/overview").await;
+    assert!(!outdated(&after).contains(&"coding".to_string()), "{after}");
 }
 
 #[tokio::test]
@@ -252,7 +264,7 @@ async fn a_job_that_does_not_exist_is_404() {
 async fn a_plan_looks_at_the_disk_now_not_at_the_page_that_was_open() {
     let server = Server::new(true);
     let cookie = server.login().await;
-    server.page(&cookie, "/").await;
+    server.read(&cookie, "/api/overview").await;
     // After the page was made, a skill is added to the vault and a project gets it.
     server
         .world

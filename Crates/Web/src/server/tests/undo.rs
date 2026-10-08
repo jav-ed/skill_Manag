@@ -54,11 +54,8 @@ async fn an_undo_brings_the_old_copy_back_and_can_itself_be_undone() {
     let made = plan(&server, &cookie, "sync", &["coding"]).await;
     let done = apply(&server, &cookie, &made).await;
     let run = done["backup"].as_str().unwrap().to_string();
-    let history = server.page(&cookie, "/history").await;
-    assert!(
-        history.contains(&format!("data-run=\"{run}\"")),
-        "{history}"
-    );
+    let history = server.read(&cookie, "/api/history").await;
+    assert_eq!(history["runs"][0]["id"], run.as_str(), "{history}");
 
     let (_, undo) = server
         .json(&cookie, "/api/undo-plan", &json!({ "run": run }))

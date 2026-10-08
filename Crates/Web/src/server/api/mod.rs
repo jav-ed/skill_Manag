@@ -2,6 +2,8 @@
 
 mod apply;
 mod plan;
+mod read;
+mod read_more;
 mod undo;
 
 use std::sync::Arc;
@@ -17,6 +19,8 @@ use super::state::AppState;
 
 pub(crate) use apply::{apply, job};
 pub(crate) use plan::plan;
+pub(crate) use read::{overview, push_skills, session, sync_skills};
+pub(crate) use read_more::{doctor, history, settings, vault};
 pub(crate) use undo::undo_plan;
 
 #[cfg(test)]

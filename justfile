@@ -79,6 +79,13 @@ check-deps:
 deny:
     cargo deny --locked check
 
+# Build the web interface (Ui/) and copy it to Crates/Web/assets/ui/ (needs node 22.12+); `just ui-check` fails when the committed copy is stale.
+ui:
+    bash Code/Development/Web/build_Ui.sh
+
+ui-check:
+    bash Code/Development/Web/build_Ui.sh --check
+
 # Install the skillmirror binary from this checkout into ~/.cargo/bin.
 install:
     cargo install --path Crates/Cli --locked

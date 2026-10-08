@@ -153,7 +153,7 @@ fn the_server_prints_one_link_listens_on_loopback_only_and_trades_it_for_a_sessi
         .to_string();
     let page = get(server.port, "/", &format!("Cookie: {cookie}\r\n"));
     assert!(page.starts_with("HTTP/1.1 200"), "{page}");
-    assert!(page.contains("Overview"), "{page}");
+    assert!(page.contains("<div id=\"app\">"), "{page}");
     let again = get(server.port, &format!("/?token={}", server.token), "");
     assert!(
         again.starts_with("HTTP/1.1 403"),
@@ -185,7 +185,7 @@ fn a_wrong_host_header_gets_nothing_even_with_the_session() {
     );
 
     assert!(answer.starts_with("HTTP/1.1 403"), "{answer}");
-    assert!(!answer.contains("Overview"));
+    assert!(!answer.contains("<div id=\"app\">"));
 }
 
 #[test]

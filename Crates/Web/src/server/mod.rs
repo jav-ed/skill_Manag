@@ -3,10 +3,11 @@
 //! nobody who has not been given the link; see [`guard`] for what is checked on every request.
 
 mod api;
+mod files;
 mod guard;
 mod jobs;
-mod pages;
 mod plans;
+mod report;
 mod state;
 mod views;
 
@@ -19,16 +20,12 @@ use std::time::Duration;
 
 use axum::Router;
 use axum::extract::DefaultBodyLimit;
-use axum::http::{HeaderValue, header};
 use axum::middleware;
-use axum::response::IntoResponse;
 use axum::routing::{get, post};
 
 use state::AppState;
 pub use state::Config;
 
-const CSS: &str = include_str!("assets/app.css");
-const JS: &str = include_str!("assets/app.js");
 /// A request body is a small JSON document; anything larger is not one of ours.
 const BODY_LIMIT: usize = 64 * 1024;
 
@@ -52,36 +49,24 @@ pub struct ServeConfig {
     pub idle: Option<Duration>,
 }
 
-fn asset(body: &'static str, kind: &'static str) -> impl IntoResponse {
-    (
-        [(header::CONTENT_TYPE, HeaderValue::from_static(kind))],
-        body,
-    )
-}
-
 /// Every route, behind the guard.
 pub(crate) fn router(state: Arc<AppState>) -> Router {
     Router::new()
-        .route("/", get(pages::overview))
-        .route("/sync", get(pages::sync))
-        .route("/push", get(pages::push))
-        .route("/history", get(pages::history))
-        .route("/doctor", get(pages::doctor))
-        .route("/settings", get(pages::settings))
-        .route("/report", get(pages::report))
-        .route(
-            "/app.css",
-            get(|| async { asset(CSS, "text/css; charset=utf-8") }),
-        )
-        .route(
-            "/app.js",
-            get(|| async { asset(JS, "text/javascript; charset=utf-8") }),
-        )
+        .route("/report", get(report::report))
+        .route("/api/session", get(api::session))
+        .route("/api/overview", get(api::overview))
+        .route("/api/skills/sync", get(api::sync_skills))
+        .route("/api/skills/push", get(api::push_skills))
+        .route("/api/vault", get(api::vault))
+        .route("/api/history", get(api::history))
+        .route("/api/doctor", get(api::doctor))
+        .route("/api/settings", get(api::settings))
         .route("/api/plan", post(api::plan))
         .route("/api/apply", post(api::apply))
         .route("/api/undo-plan", post(api::undo_plan))
         .route("/api/rescan", post(api::rescan))
         .route("/api/job/{id}", get(api::job))
+        .fallback(files::serve)
         .layer(DefaultBodyLimit::max(BODY_LIMIT))
         .layer(middleware::from_fn_with_state(
             Arc::clone(&state),

@@ -1,10 +1,11 @@
 //! Tests of the server, driven in-process: requests go straight into the router.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 
+mod files;
 mod flow;
 mod guard;
 mod idle;
-mod pages;
+mod read;
 mod undo;
 
 use std::sync::Arc;
@@ -97,6 +98,13 @@ impl Server {
         let response = self.get(cookie, path).await;
         assert_eq!(response.status(), 200, "{path}");
         text(response).await
+    }
+
+    /// A GET that answers JSON.
+    pub(super) async fn read(&self, cookie: &str, path: &str) -> serde_json::Value {
+        let response = self.get(cookie, path).await;
+        assert_eq!(response.status(), 200, "{path}");
+        serde_json::from_slice(&body_bytes(response).await).unwrap()
     }
 
     pub(super) async fn json(

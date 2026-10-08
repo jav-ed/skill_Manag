@@ -23,6 +23,8 @@ The number that surprised us: a `target/` folder that had been used for a few da
 
 The local web server (`skillmirror web`, cargo feature `web`, on by default) brings `axum`, `hyper` and `tokio`: about 12 s of extra compile time, 100 MB of build folder, 360 MB of peak memory in the largest compiler process and 1.6 MB of binary (measured on a hello-world server with the same features). `cargo build --no-default-features -p skillmirror` leaves them out, and `just check-features` keeps that build working.
 
+Changing the web interface (`Ui/`, only then) needs node 22.12 or newer and a `node_modules` folder of about 310 MB (255 packages, all dev-time; the built interface is 130 KB and is committed). `cargo build` and `cargo install` never touch it.
+
 ## What this repository does about it
 
 The root `Cargo.toml` turns off the two things that cost the most and help the least:

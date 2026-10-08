@@ -52,11 +52,6 @@ impl SkillRow {
     pub(crate) fn installed(&self) -> usize {
         self.current + self.outdated
     }
-
-    /// Whether a sync or push would write something for this skill.
-    pub(crate) fn changes(&self) -> usize {
-        self.outdated + self.missing
-    }
 }
 
 /// The row of a skill, made when the first project mentions it.

@@ -30,8 +30,10 @@ pnpm-debug.log*
 /dist*
 /fast*
 
-# no npm lock file
+# no npm lock file, except the one that pins the web interface build
 package-lock.json
+!/Ui/package-lock.json
+/Ui/.astro/
 
 # cursor working files
 Cursor
