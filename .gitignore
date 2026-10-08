@@ -20,21 +20,15 @@ pnpm-debug.log*
 .DS_Store
 
 
-.astro
 .venv
 .vscode
 
 **/*.pyc
 
-# build webpage: 
-# pnpm astro build
-# pnpm astro preview
-dist
-dist*
-
-stats.html
-
-fast*
+# build output at the repository root only: an unanchored `dist*` or `fast*` would hide any future
+# file or folder whose name starts with these words
+/dist*
+/fast*
 
 # no npm lock file
 package-lock.json

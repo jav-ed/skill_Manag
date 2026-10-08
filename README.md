@@ -1,214 +1,159 @@
-# skill_Manag
+# skillmirror
 
-> ⚠️ **Work in progress — not ready for production use.**
+> Work in progress. The Rust rewrite is on the branch `rust-rewrite-handoff`; the Go tool it replaces (`skill_Manag`) is still on `main` until the cutover.
 
-A CLI tool that keeps Claude Code skill files in sync across all your projects — one vault, zero drift.
+A command line tool and a full-screen interface that keep your agent skills in sync across all your projects: one vault, zero drift.
 
-Built by [javedab.com](https://javedab.com) — get in touch if you want help with your tooling.
+Built by [javedab.com](https://javedab.com). Get in touch if you want help with your tooling.
 
 ---
 
-## The Problem
+## The problem
 
-Claude Code skills live in `.agents/skills/<SkillName>/` inside each project. When you maintain multiple projects, you end up copying the same skill files everywhere. The moment you improve a skill in one project, every other project is out of date.
+Agent skills live in `.agents/skills/<name>/` inside each project. When you maintain several projects, the same skill files end up copied everywhere. The moment you improve a skill in one place, every other project is out of date.
 
-Symlinks would solve this — but they break over SSH and won't be tracked properly in git.
+Symlinks would solve this, but they break over SSH and are not tracked properly in git.
 
-## The Solution
+## The solution
 
-`skill_Manag` knows two things: your **vault** (one folder where you write and maintain your skills) and your **root** (the folder that contains all your projects).
+`skillmirror` knows two things: your **vault** (one git folder where you write and maintain your skills) and your **root** (the folder that contains all your projects).
 
-It walks every project under that root, finds every `.agents/skills/<SkillName>/` directory, and for any skill that also exists in the vault — replaces it entirely with the vault version. This is a mirror, not an overlay: the skill directory is deleted first, then copied fresh, so no stale files from older versions survive.
+It walks every project under the root, finds every `.agents/skills/<name>/` folder, and for any skill that also exists in the vault, replaces the project copy with the vault version. The copy is a mirror, not an overlay: the folder is swapped as a whole, so no stale file of an older version survives. Files are copied, never linked, so projects stay git-tracked and work over SSH.
 
-**Key rule: it only updates skills a project already has. It never installs a skill into a project that hasn't opted in.** Each project controls its own skill set by what it has in its `.agents/skills/` directory.
+**Key rule: `sync` only updates skills a project already has.** It never installs a skill into a project that has not opted in. Each project controls its own skill set by what it has in `.agents/skills/`. Installing something new is a separate, explicit act: `add`, `init` or `push`.
 
 ```
 vault/
-  coding/        ← your master copy
+  coding/        <- your master copy
   doc-start/
-  refac-cli/
+  web/
+    astro/       <- a group: a folder of skills, only in the vault
 
 projects/
   project-A/
     .agents/skills/
-      coding/    ← exists → updated from vault
-      doc-start/ ← exists → updated from vault
-                    refac-cli not here → NOT touched
-
+      coding/    <- exists, so it is updated from the vault
+                    doc-start is not here, so it is NOT touched
   project-B/
     .agents/skills/
-      refac-cli/ ← exists → updated from vault
-                    coding not here → NOT touched
+      astro/     <- exists, so it is updated from the vault
 ```
 
----
+## Install
 
-## Interactive TUI
-
-Running `skill_Manag` with no arguments opens a full-screen TUI. Every screen supports full mouse and keyboard navigation.
-
-### Navigation
-
-- **Mouse** — hover highlights items, click selects or toggles
-- **`alt+←`** or **`q`** — go back to the main menu from any screen
-- **`←`** in the header — clickable back button
-- **`?`** — toggles a keybinding reference on every screen
-
-### Main menu
-
-Five actions available from the main menu. Mouse hover moves the highlight; click or `enter` opens the screen.
-
-| Action | What it does |
-|--------|-------------|
-| **Sync** | Refresh each project's installed skills from vault |
-| **List** | Browse all skills installed across all projects |
-| **Delete** | Remove selected skills from projects |
-| **Push** | Force-install mandatory skills to every opted-in project |
-| **Setup** | Reconfigure vault and root paths |
-
-### Sync screen
-
-- Animated spinner while your project tree is scanned in the background
-- Checklist of every skill found — all pre-selected, deselect what you don't want
-- Click a row or press `space` to toggle; `a` toggles all
-- Paginated with dot indicators when you have more than 10 skills (`• · · ·`)
-- Animated progress bar fills as each skill syncs (`Syncing 3 / 7`)
-- Results screen shows per-skill outcome, file counts, errors, and the project paths that were updated
-
-### List screen
-
-- Same checklist layout as Sync with an added project-path column
-- Live filter: press `/` and type to narrow by skill name, `esc` to clear
-- Click a row or press `space` to toggle; `a` to select all visible
-- `s` syncs selected skills directly from the list (requires vault to be configured)
-- `d` deletes selected skills directly from the list
-
-### Delete screen
-
-- Same checklist layout as Sync — nothing pre-selected, opt in explicitly
-- Pressing `enter` shows a confirmation prompt before anything is deleted
-- `y` or `enter` to confirm, `n` or `esc` to go back
-- Results screen shows what was deleted and any errors
-
-### Push screen
-
-- Shows only the skills listed under `mandatory` in your vault config
-- All pre-selected by default — deselect what you don't want this run
-- Pushes to every project that has `.agents/skills/` with any skill installed — creates the skill dir if it doesn't exist yet
-- Press `e` to open the mandatory edit overlay — toggle which vault skills are mandatory, `enter` saves and re-scans, `esc/q` cancels
-- Results screen shows per-skill outcome with file counts and any errors
-
-### Setup screen
-
-- Three-step wizard: vault → root → mandatory skills
-- Filesystem picker for vault and root — no manual path typing; navigate with arrow keys, `enter` to select
-- Mandatory step shows all vault skills as a checklist — toggle with `space`, confirm with `enter`
-- Confirmation prompt before saving — writes vault pointer to `~/.config/skill_Manag/vault` and config to `<vault>/config.yaml`
-- Runs automatically on first launch if no config is found
-
----
-
-## CLI Commands
-
-All commands also work non-interactively for scripting.
-
-### Sync
+Needs Rust 1.88 or newer and `git`. Linux only.
 
 ```bash
-# Open interactive TUI
-skill_Manag
-
-# Preview all changes without applying them
-skill_Manag --dry-run
-
-# One-off run with explicit paths
-skill_Manag --vault /path/to/skill/vault --root /path/to/projects
+git clone git@github.com:jav-ed/skill_Manag.git
+cd skill_Manag
+git checkout rust-rewrite-handoff
+just install            # or: cargo install --path Crates/Cli --locked
 ```
 
-### List
+The binary lands in `~/.cargo/bin/skillmirror`. Check it with `skillmirror doctor`.
 
-```bash
-skill_Manag list
-skill_Manag list --root /path/to/projects
-```
+First run: `skillmirror` with no arguments opens the interface, and its Setup entry asks for the vault and the root and writes the configuration. Coming from the Go tool: `skillmirror migrate` copies its vault pointer.
 
-### Delete
+## Commands
 
-```bash
-# Interactive TUI — nothing pre-selected
-skill_Manag delete
+Every command accepts `--vault <DIR>` and `--root <DIR>`. Commands that write ask first, unless `--yes`; they show a plan with `--dry-run`. Commands that print results take `--json` for scripts.
 
-# Remove one skill from every project that has it
-skill_Manag delete coding
+| Command | What it does |
+|---|---|
+| `skillmirror` | Opens the interface when stdin and stdout are terminals |
+| `sync [--dry-run] [--check] [--yes] [--json] [--all]` | Updates the skills each project already has; never adds one. `--check` writes nothing and exits 1 when something differs |
+| `push` | Installs the vault's mandatory skills into every project that has a skills folder |
+| `add [SKILL...] [--group PATH] [--profile NAME] [--project DIR]` | Installs skills, whole vault folders or profiles into one existing project |
+| `init DIR [SKILL...] [--group] [--profile] [--git] [--no-mandatory]` | Makes a new project folder with the mandatory skills plus a selection |
+| `delete NAME [--project DIR]` | Removes one skill from every project, or from one |
+| `list` | Every installed skill folder, with the ones the vault lacks marked |
+| `skills [--group PATH]` | The vault as a tree of groups |
+| `status [--all]` | How every project stands against the vault: outdated, mandatory missing, not in the vault. Exit 1 when something differs |
+| `diff [SKILL] [--project DIR] [--stat]` | The lines a sync would bring in and take away, as unified diffs |
+| `report [-o FILE] [--open]` | One self-contained HTML page: skills against projects, the vault tree, diffs, a filter, dark mode |
+| `bridge [--dry-run]` | Links other agent folders such as `.claude/skills` to `.agents/skills` (see `targets` below) |
+| `doctor` | Checks the machine, the configuration, the vault and every `SKILL.md` header; writes nothing |
+| `undo [RUN]` and `history` | Brings back what a run replaced or removed; undoing is a run too, so a second `undo` redoes it |
+| `migrate`, `completions SHELL` | Copies the old tool's vault pointer; prints a shell completion script |
 
-# Remove one skill from one specific project
-skill_Manag delete coding --project /path/to/project
+Exit codes: `0` done or nothing differs, `1` drift found (`--check`, `status`, `diff`, a dry run of `bridge`), `2` the command line cannot be carried out as given, `3` a hard error (bad configuration, missing vault, unreadable root), `4` the command ran but some targets failed. A failure in one project never stops the others and never leaves a half written skill folder.
 
-# Preview what would be deleted
-skill_Manag delete coding --dry-run
-```
+## The interface
 
----
+`skillmirror` with no arguments opens a full-screen interface with full mouse and keyboard navigation. `?` shows the keys of the current screen, `q` or `alt+left` goes back, `ctrl+c` quits.
+
+| Entry | What it does |
+|---|---|
+| Sync, Push | Pick skills, see what would be written (`v` shows the changes as a diff), confirm, run |
+| List | Every installed skill; `/` filters, space selects, `s` syncs and `d` deletes the selection in place |
+| Delete | Nothing is pre-selected; you pick, then confirm |
+| Add | Pick the project folder, then vault skills to install into it |
+| Init | Pick a parent folder, name the new project, tick skills (the mandatory ones are ticked), `g` for a git repository |
+| History | The backup runs, newest first; pick one to undo it |
+| Setup | Pick the vault and the root, tick the mandatory skills, save |
+
+Every page that works out a plan shows it before anything is written. If the scan could not read something, the heading says so and `i` lists it.
 
 ## Configuration
 
-Config is split across two files so the vault is fully self-contained and portable:
+The configuration is split in two so the vault is self-contained and portable:
 
 ```
-~/.config/skill_Manag/vault   ← one line: path to your vault
-<vault>/config.yaml           ← root and mandatory skills
+~/.config/skillmirror/vault   <- one line: the path to your vault
+<vault>/config.yaml           <- everything else
 ```
 
 ```yaml
 # <vault>/config.yaml
 root: /path/to/your/projects
-mandatory:
-  - coding
-  - doc-start
-exclude_paths:
-  - /absolute/path/to/project/internal/testdata
+mandatory: [coding, doc-start]      # what `push` installs; optional
+exclude_paths:                      # skipped with everything below them
+  - /path/to/project/testdata
+exclude_dirs: [testdata]            # skipped wherever the name occurs; optional
+targets: [claude]                   # other agent folders to link; optional
+profiles:                           # named selections for add and init; optional
+  websites:
+    description: Everything for a website
+    groups: [web]
+    skills: [seo-checklist]
+  site:
+    extends: [websites]
+    exclude: [astro]
 ```
 
-`mandatory` is optional — omit it if you don't use Push. The Setup screen writes both files for you. `--vault` and `--root` flags override config for any single run. Environment variables `SKILL_MANAG_VAULT` and `SKILL_MANAG_ROOT` also work.
+Precedence, highest first: `--vault` and `--root`, the environment variables `SKILLMIRROR_VAULT` and `SKILLMIRROR_ROOT`, then the files above. The old `SKILL_MANAG_*` variables are refused with a message that names their replacement. Unknown keys in `config.yaml` are an error, not ignored.
 
-### Excluding scan paths
+Built-in skips apply on top: `.git`, `node_modules`, `vendor`, `dist`, `build`, `out`, `target`, `.next`, `.nuxt`, `.venv`, `__pycache__`, `.tox`, `.pytest_cache`, `.cache`, `.turbo`, `.parcel-cache`.
 
-Use `exclude_paths` for precise workspace exceptions and `exclude_dirs` for broad directory-name exclusions:
+### Groups and profiles
 
-```yaml
-exclude_paths:
-  - /home/jav/Schreibtisch/Javed/0_Right_Sirat/1_Code/07_Coding_Env/03_CLIs/02_Skill_Manager/internal/testdata
+A **group** is a folder in the vault that holds skills. Groups only exist in the vault: the installed layout stays flat (`.agents/skills/<name>/`), so moving a skill between groups changes no project. `skillmirror skills` shows the tree; `add --group web/seo` installs everything below a folder. A **profile** names a selection of groups and skills, can extend other profiles and can exclude names.
 
-# Optional broad directory-name exclusions:
-# exclude_dirs:
-#   - testdata
-```
+### What travels with a skill
 
-Absolute `exclude_paths` are safest for one-off project exceptions. Relative paths are also supported and resolve against `root`. Built-in technical skips like `.git`, `node_modules`, `.venv`, `dist`, and `.cache` still apply automatically.
+The vault must be a git repository. The files git tracks in a skill folder are what is copied, with their permission bits; untracked files never are, so a half finished edit does not leak out. A tracked symlink or submodule inside a skill, or a skill whose `SKILL.md` is not tracked, makes that skill fail with a hint instead of copying something wrong.
 
-### Controlling what syncs from the vault
+### Targets
 
-`skill_Manag` uses your vault's `.gitignore` to decide which files travel with a skill. Anything gitignored in the vault — virtual environments, build output, local tooling — is automatically excluded. If the vault is not a git repo, a built-in skip list (`node_modules`, `.venv`, `dist`, etc.) is used as a fallback.
+`targets: [claude]` asks for `<project>/.claude/skills` to be a relative link to `../.agents/skills`, so Claude Code sees the same skills. `skillmirror bridge` makes the links; `add` and `init` make them for their project. A link is made only where nothing is: a real folder, a link that leads elsewhere and a linked `.claude` are reported and left alone. `status` and `doctor` tell you about a missing link.
 
----
+## Safety
 
-## Install
+- A skill folder is replaced by building the new copy beside it and swapping the two folders in one step (`renameat2` exchange), so a crash never leaves a half written skill. Filesystems that cannot do this (NFS, CIFS, FUSE, FAT) are named by `doctor`.
+- Before a run replaces or removes a folder, the old copy goes to `~/.local/state/skillmirror/backups/<run>/`; the newest 30 runs are kept. `history` lists them and `undo` brings one back.
+- If a project folder changed between the plan and the write, that skill fails instead of being overwritten.
+- Links are never followed and never written through. Nothing is written into your vault by any command except the configuration file the Setup screen saves.
+- Everything the scan could not read, and every leftover of an interrupted run, is reported, never hidden.
 
-Requires Go 1.24+.
+## Development
 
 ```bash
-git clone git@github.com:jav-ed/skill_Manag.git
-cd skill_Manag
-go install .
+just check      # format, clippy, tests, file size (300 code lines), core stays synchronous
+just deny       # advisories, licences, bans
+just parity     # replay 131 scenarios of the old Go tool against this one (needs the Go oracle)
 ```
 
-The binary lands in `~/go/bin/skill_Manag`. Make sure that's on your `$PATH`:
-
-```bash
-export PATH="$PATH:$HOME/go/bin"
-```
-
----
+Crates: `Crates/Core` (the engine, no async), `Crates/Cli`, `Crates/Tui`, `Crates/Web` (the HTML report), `Crates/Testkit`. The architecture, the behaviour contract (one numbered row per rule) and the decisions behind them are under `Project_Manag/Docs/`; start at [`doc_Start.md`](Project_Manag/Docs/doc_Start.md).
 
 ## License
 

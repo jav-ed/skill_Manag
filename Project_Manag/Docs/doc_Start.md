@@ -2,14 +2,14 @@
 
 *This `doc_Start.md` is the docs entry point, structured so an agent can quickly decide what to read and what to skip. It opens with a short summary of the repo and key entry-point files, then routes to each topic area through labeled links. Open a linker only when the task calls for it; the labels are written to make that decision possible without clicking.*
 
-`skill_Manag` is a CLI and TUI that mirrors agent skill folders from one master vault into every matching `.agents/skills/` directory across a codebase: git-tracked, SSH-safe, no symlinks. The Go implementation on `main` is being rewritten in Rust on the branch `rust-rewrite-handoff` (the branch to continue on); the Go code stays as the behavior reference until cutover.
+`skillmirror` (formerly `skill_Manag`) is a command line tool and a full-screen interface that mirror agent skill folders from one master vault into every matching `.agents/skills/` directory across a codebase: git-tracked, SSH-safe, no symlinks, with backups and `undo`. It is written in Rust on the branch `rust-rewrite-handoff` (the branch to continue on); the Go tool on `main` stays as the behavior reference until the cutover.
 
-Entry point(s): `main.go`, then `cmd/root.go` (cobra setup and menu loop), then `cmd/tui/menu.go` (TUI entry). The Rust sources start at `Cargo.toml` in the repo root, then `Crates/Core/src/lib.rs` (engine) and `Crates/Cli/src/main.rs` (binary).
+Entry point(s): `Cargo.toml` in the repo root, then `Crates/Core/src/lib.rs` (engine) and `Crates/Cli/src/main.rs` (binary). The Go sources, until the cutover: `main.go`, `cmd/root.go`, `cmd/tui/menu.go`.
 
 ## Docs
 
-- [Architecture](Architecture/linker_Architecture.md): code structure of the current Go implementation: CLI wiring in `cmd/`, TUI screens and their phase models in `cmd/tui/`, scan and copy logic in `internal/`, shared styles. Open it for any change to the Go code.
-- [Descr](Descr/linker_Descr.md): what the tool does and does not do: the sync concept, the opt-in rule, vault and project relationship, push and mandatory skills, scan exclusions, config files. Open it before changing sync behaviour.
+- [Architecture](Architecture/linker_Architecture.md): code structure of the Rust tool: the five crates, the flow of a write, the rules the code keeps, every Core module, and how the command line, the interface and the HTML report use Core; the frozen Go structure is kept as a legacy page. Open it for any change to the code.
+- [Descr](Descr/linker_Descr.md): what the tool does and does not do: the sync concept, the opt-in rule, vault and project relationship, push and mandatory skills, scan exclusions, config files, and the numbered behavior contract of the Rust tool (one row per rule, with its test). Open it before changing behaviour.
 - [Setup](Setup/linker_Setup.md): the vault path on this machine, the manifest of external reference clones in `/Repos/`, and the `just scratch-clean` command for the disposable `/Scratch/` folder.
 - [Decisions](Decisions/linker_Decisions.md): why the project is built the way it is, starting with the Rust rewrite: name, workspace layout, chosen and rejected crates, feature scope, licence consequences, phase plan and rulings still open. Open it before adding a dependency or changing the architecture.
 - [Investigation](Investigation/linker_Investigation.md): dated research with measurements behind those decisions: library comparisons for the engine, CLI, TUI and web view, prior art among skill managers, naming and distribution. Open it to re-check a number or a licence.

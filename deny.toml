@@ -1,11 +1,9 @@
 # deny.toml: cargo-deny policy for the skillmirror workspace (advisories, licences, bans, sources).
 # Run with `just deny` (`cargo deny --locked check`).
 #
-# STATUS: UNVALIDATED. cargo-deny is not installed on this machine, so this file has never been
-# run through `cargo deny check` or `cargo deny check --config deny.toml` (no schema parse, no
-# real dependency graph). Every key below was checked by reading the cargo-deny 0.20.2 docs and
-# `deny.template.toml` at tag 0.20.2 (docs/src/cfg.md, docs/src/checks/{advisories,licenses,bans,
-# sources}/cfg.md). Behaviour that only a real run can confirm is flagged "unverified" in place.
+# STATUS: validated. `cargo-deny 0.20.2` runs this file in the local gate and in CI on every push; a change to the
+# dependency tree that breaks a rule fails there. Keys were first written from the cargo-deny 0.20.2 docs
+# (`deny.template.toml`, docs/src/cfg.md and docs/src/checks).
 # Decisions behind the policy: Project_Manag/Docs/Decisions/rust_Rewrite.md (section 7) and
 # Project_Manag/Docs/Investigation/Rust_Stack/cli_Stack.md ("deny.toml sketch").
 

@@ -4,6 +4,8 @@ Observable behavior of the Go `skill_Manag` tool as frozen at commit `c7310f9` (
 
 Literal output strings are in code spans and are verbatim, including the few U+2014 dashes and `…` that the Go source contains.
 
+Sections 1 to 9 describe the Go tool. The Rust tool keeps what is tagged KEEP and changes what is tagged CHANGE; the quirk table of section 9 also carries the rules that exist only in the Rust tool (from Q34 on: backups and `undo`, profiles, the interface's plan-first discipline, `status`, `diff`, `doctor`, `bridge`, the scan progress line, the interface pages for scan problems, history, add, init and changes, and `report`). Each such row names the code and the tests that hold it.
+
 ## 1. Commands, flags, exit codes
 
 `main.go:5-7` only calls `cmd.Execute()`. The CLI is built with cobra; `Execute` exits 1 on any error returned by a handler (`cmd/root.go:38-42`), otherwise 0.
