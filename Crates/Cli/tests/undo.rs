@@ -271,5 +271,6 @@ fn a_dry_run_sync_or_delete_keeps_nothing() {
         .assert()
         .success()
         .stdout(contains("Backup:").not());
-    assert!(runs(&world).is_empty());
+    let listed = runs(&world);
+    assert!(listed.is_empty(), "{listed:?}");
 }

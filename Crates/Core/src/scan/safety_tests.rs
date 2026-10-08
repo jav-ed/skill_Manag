@@ -72,7 +72,8 @@ fn the_stage_folder_of_a_run_that_is_still_going_is_not_a_leftover() {
     let live = format!("p/.agents/.stage-{}-abc-0/SKILL.md", std::process::id());
     tree.write(&live, "being built");
 
-    assert!(leftover_names(&tree).is_empty());
+    let names = leftover_names(&tree);
+    assert!(names.is_empty(), "{names:?}");
 }
 
 #[test]
@@ -81,7 +82,8 @@ fn a_file_with_a_stage_name_is_the_users_file_not_a_leftover() {
     tree.write("p/.agents/skills/ok/SKILL.md", "x");
     tree.write("p/.agents/.stage-notes", "my own file");
 
-    assert!(leftover_names(&tree).is_empty());
+    let names = leftover_names(&tree);
+    assert!(names.is_empty(), "{names:?}");
 }
 
 #[test]

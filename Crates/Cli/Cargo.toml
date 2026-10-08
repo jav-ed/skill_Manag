@@ -12,11 +12,11 @@ anstream = "1"
 anstyle = "1"
 clap = { version = "4", features = ["derive", "wrap_help"] }
 clap_complete = "4"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+serde.workspace = true
+serde_json.workspace = true
 skillmirror-core.workspace = true
 skillmirror-tui.workspace = true
-thiserror = "2"
+thiserror.workspace = true
 
 [lints]
 workspace = true
@@ -24,8 +24,7 @@ workspace = true
 [dev-dependencies]
 assert_cmd = "2"
 assert_fs = "1"
-portable-pty = "0.9"
+portable-pty.workspace = true
 predicates = "3"
-serde_json = "1"
-skillmirror-testkit = { path = "../Testkit" }
-vt100 = "0.16"
+skillmirror-testkit.workspace = true
+vt100.workspace = true

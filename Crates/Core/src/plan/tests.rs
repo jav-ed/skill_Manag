@@ -31,7 +31,7 @@ fn missing_destination_is_a_create_with_every_file_added() {
     assert_eq!(plan.kind, PlanKind::Create);
     assert_eq!(plan.file_count(), 2);
     assert!(plan.changes.iter().all(|c| c.kind == ChangeKind::Added));
-    assert!(plan.removed.is_empty());
+    assert!(plan.removed.is_empty(), "{:?}", plan.removed);
 }
 
 #[test]

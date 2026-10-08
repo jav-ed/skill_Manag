@@ -29,7 +29,11 @@ fn skills_are_folders_with_skill_md_and_groups_are_the_folders_above() {
     assert_eq!(names(&vault), ["astro", "coding", "schema"]);
     assert_eq!(vault.skills["schema"].group, ["web", "seo"]);
     assert_eq!(vault.skills["schema"].rel, PathBuf::from("web/seo/schema"));
-    assert!(vault.skills["coding"].group.is_empty());
+    assert!(
+        vault.skills["coding"].group.is_empty(),
+        "{:?}",
+        vault.skills["coding"].group
+    );
     assert_eq!(
         vault
             .groups
@@ -186,7 +190,8 @@ fn a_skill_with_no_tracked_files_is_visible_as_empty() {
     tree.git(".", &["add", "coding"]);
     tree.git(".", &["commit", "-q", "-m", "x"]);
     let files = read_files(&discover(tree.path()).unwrap()).unwrap();
-    assert!(files.get("fresh").unwrap().tracked.is_empty());
+    let tracked = &files.get("fresh").unwrap().tracked;
+    assert!(tracked.is_empty(), "{tracked:?}");
     assert_eq!(files.get("fresh").unwrap().untracked.len(), 1);
 }
 

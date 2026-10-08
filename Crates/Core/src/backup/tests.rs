@@ -82,7 +82,8 @@ fn make_run_dir(backups: &Backups, id: &str) {
 #[test]
 fn a_missing_store_is_an_empty_list() {
     let rig = Rig::new(&[("a/SKILL.md", "a")]);
-    assert!(rig.backups.run_ids().unwrap().is_empty());
+    let ids = rig.backups.run_ids().unwrap();
+    assert!(ids.is_empty(), "{ids:?}");
     assert!(rig.backups.runs().unwrap().is_empty());
     assert!(matches!(rig.backups.latest(), Err(BackupError::Empty)));
 }

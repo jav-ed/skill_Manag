@@ -12,8 +12,16 @@ license-file = "LICENSE"   # Hippocratic License 3.0 variant, no SPDX id
 publish = false
 
 [workspace.dependencies]
+fs-err = "3"
+portable-pty = "0.9"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 skillmirror-core = { path = "Crates/Core" }
+skillmirror-testkit = { path = "Crates/Testkit" }
 skillmirror-tui = { path = "Crates/Tui" }
+tempfile = "3"
+thiserror = "2"
+vt100 = "0.16"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

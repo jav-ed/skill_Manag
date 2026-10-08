@@ -11,18 +11,18 @@ publish.workspace = true
 workspace = true
 
 [dependencies]
-fs-err = "3"
+fs-err.workspace = true
 nucleo-matcher = "0.3"
 ratatui = { version = "0.30", default-features = false, features = ["std", "underline-color", "layout-cache", "macros", "all-widgets"] }
 ratatui-termina = "0.1"
 skillmirror-core.workspace = true
-thiserror = "2"
+thiserror.workspace = true
 tui-input = { version = "0.15", default-features = false }
 unicode-width = "0.2"
 
 [dev-dependencies]
 insta = "1"
-portable-pty = "0.9"
-skillmirror-testkit = { path = "../Testkit" }
-tempfile = "3"
-vt100 = "0.16"
+portable-pty.workspace = true
+skillmirror-testkit.workspace = true
+tempfile.workspace = true
+vt100.workspace = true
