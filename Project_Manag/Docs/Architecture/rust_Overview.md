@@ -59,8 +59,9 @@ Core is synchronous. The scan and the plan use `rayon` and `ignore`'s parallel w
 | Unit and integration tests | `src/*_tests.rs` beside the code, `Crates/*/tests/` | behaviour of a module or a command, run against `Testkit` worlds |
 | Snapshot tests (`insta`) | `Crates/Tui/src/tests/snapshots/` | what a screen shows; every change to a snapshot is read before it is accepted |
 | Real terminal tests | `Crates/Cli/tests/interface*.rs`, `progress.rs`, `*_terminal.rs` (`portable-pty` + `vt100`) | start-up, the prompts, the scan line, whole screens |
-| Browser check | `Code/Development/Report/` | the HTML report in Chromium |
+| Browser checks | `Code/Development/Report/`, `Code/Development/Web/` | the HTML report and the web interface in Chromium: the link and the cookie, a plan, its diff and apply, undo, the refusals, no request leaving the server, no policy violation |
+| Smoke | `Code/Development/Smoke/` | the built (or installed) binary end to end in a throwaway world: authoring, install, drift, sync, undo, adopt, and the web server over HTTP |
 | Parity | `just parity` | any unplanned difference from the frozen Go tool over 131 scenarios |
-| Gate | fmt and clippy on Rust 1.97 and 1.99 (they differ), `just loc-gate`, `just check-deps`, `just deny`, all tests | what CI also runs on every push |
+| Gate | `Code/Development/Gate/check_Gate.sh`: fmt and clippy on Rust 1.97 and 1.99 (they differ), `just loc-gate`, `just check-features`, `just check-deps`, `just deny`, all tests | what CI also runs on every push, plus the feature build and the `Ui/` checks that CI does not run yet |
 
-A fix starts as a test that fails on the old code; a guard is proved by breaking it and watching a test fail (a mutation check).
+A fix starts as a test that fails on the old code; a guard is proved by breaking it and watching a test fail (a mutation check, `Code/Development/Gate/check_Mutation.sh`).
