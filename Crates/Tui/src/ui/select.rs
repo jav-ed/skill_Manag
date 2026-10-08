@@ -9,7 +9,7 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::hit::{HitMap, Target};
 use crate::items::{Item, Mode, Tone};
-use crate::num::to_u16;
+use crate::num::{plural, to_u16};
 use crate::screens::Work;
 use crate::theme;
 
@@ -63,13 +63,17 @@ pub(super) fn draw(frame: &mut Frame, hits: &mut HitMap, work: &mut Work, area: 
         work.selected.len(),
         work.items.len()
     );
-    frame.render_widget(
-        Paragraph::new(Line::from(vec![
-            Span::styled(format!(" {}", title(work)), theme::bold()),
-            Span::styled(selected, theme::muted()),
-        ])),
-        head,
-    );
+    let mut heading = vec![
+        Span::styled(format!(" {}", title(work)), theme::bold()),
+        Span::styled(selected, theme::muted()),
+    ];
+    if !work.issues.is_empty() {
+        heading.push(Span::styled(
+            format!("   {} (i)", plural(work.issues.len(), "scan problem")),
+            theme::warning(),
+        ));
+    }
+    frame.render_widget(Paragraph::new(Line::from(heading)), head);
     draw_filter(frame, work, filter);
     let (name_w, detail_w) = widths(&work.items);
     let heading = format!("      {:<name_w$}  {:<detail_w$}", "skill", "projects");

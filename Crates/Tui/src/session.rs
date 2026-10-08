@@ -26,6 +26,13 @@ pub(crate) struct TargetState {
     pub(crate) state: State,
 }
 
+/// Something the scan could not read, for the list behind `i`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct Issue {
+    pub(crate) path: String,
+    pub(crate) message: String,
+}
+
 #[derive(Debug)]
 pub(crate) struct Session {
     pub(crate) workspace: Workspace,
@@ -35,6 +42,8 @@ pub(crate) struct Session {
     pub(crate) push: std::result::Result<Vec<TargetState>, String>,
     /// Every installed skill folder, in walk order.
     pub(crate) installed: Vec<Installed>,
+    /// What the scan and the list of installed folders could not read.
+    pub(crate) issues: Vec<Issue>,
 }
 
 /// The message and, when the error has one, its hint on a second line.
@@ -57,12 +66,22 @@ fn build(settings: Settings) -> Result<Session> {
     let push = ops::plan_push(&workspace, &report)
         .map(states)
         .map_err(|e| describe(&e));
-    let installed = ops::installed(&report, Some(&workspace.vault)).rows;
+    let set = ops::installed(&report, Some(&workspace.vault));
+    let issues = report
+        .issues
+        .iter()
+        .chain(&set.issues)
+        .map(|i| Issue {
+            path: i.path.display().to_string(),
+            message: i.message.clone(),
+        })
+        .collect();
     Ok(Session {
         workspace,
         sync,
         push,
-        installed,
+        installed: set.rows,
+        issues,
     })
 }
 

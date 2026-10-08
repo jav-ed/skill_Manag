@@ -11,7 +11,7 @@ use crate::filter::Fuzzy;
 use crate::items::{self, Item, Mode};
 use crate::preview::Preview;
 use crate::results::{Kind, Results};
-use crate::session::Session;
+use crate::session::{Issue, Session};
 
 /// A run waiting for a go-ahead or already started.
 #[derive(Debug)]
@@ -77,6 +77,9 @@ pub(crate) struct Work {
     pub(crate) scroll: usize,
     /// Results page: one line per project instead of only the failures.
     pub(crate) details: bool,
+    /// What the scan could not read, and whether the list of it is open.
+    pub(crate) issues: Vec<Issue>,
+    pub(crate) issues_open: bool,
     pub(super) fuzzy: Fuzzy,
 }
 
@@ -92,12 +95,15 @@ impl Work {
             filtering: false,
             scroll: 0,
             details: false,
+            issues: Vec::new(),
+            issues_open: false,
             fuzzy: Fuzzy::default(),
         }
     }
 
     /// Builds the rows from a finished scan.
     pub(crate) fn populate(&mut self, session: &Session) {
+        self.issues.clone_from(&session.issues);
         match items::build(self.mode, session) {
             Ok(items) => {
                 self.selected = items

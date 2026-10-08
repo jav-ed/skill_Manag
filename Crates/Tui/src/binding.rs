@@ -78,6 +78,11 @@ pub(crate) const DETAILS: Binding = Binding {
     label: "d",
     help: "details",
 };
+pub(crate) const ISSUES: Binding = Binding {
+    keys: &[(Code::Char('i'), N)],
+    label: "i",
+    help: "problems",
+};
 pub(crate) const HELP: Binding = Binding {
     keys: &[(Code::Char('?'), N), (Code::Char('?'), Mods::SHIFT)],
     label: "?",

@@ -1,8 +1,10 @@
 //! Drawing. Every clickable region is recorded in the hit map while it is drawn.
 
+mod boxed;
 mod dialog;
 mod footer;
 mod header;
+mod issues;
 mod link;
 mod menu;
 mod page;
@@ -60,7 +62,12 @@ fn draw_work(
     match &work.phase {
         Phase::Loading => page::loading(frame, tick, area),
         Phase::Failed(message) => page::failed(frame, message, area),
-        Phase::Select => select::draw(frame, hits, work, area),
+        Phase::Select => {
+            select::draw(frame, hits, work, area);
+            if work.issues_open {
+                issues::draw(frame, hits, &work.issues, area);
+            }
+        }
         Phase::Planning(kind) => page::planning(frame, *kind, tick, area),
         Phase::Confirm(_) => {
             select::draw(frame, hits, work, area);

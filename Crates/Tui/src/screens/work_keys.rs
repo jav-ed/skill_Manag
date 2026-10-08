@@ -4,7 +4,8 @@ use ratatui::layout::Position;
 
 use super::work::{Action, Phase, Work};
 use crate::binding::{
-    ALL, BACK, CANCEL, CONFIRM, DELETE, DOWN, FILTER, PAGE_DOWN, PAGE_UP, SYNC, TOGGLE, UP, YES,
+    ALL, BACK, CANCEL, CONFIRM, DELETE, DOWN, FILTER, ISSUES, PAGE_DOWN, PAGE_UP, SYNC, TOGGLE, UP,
+    YES,
 };
 use crate::hit::{HitMap, Target};
 use crate::input::{self, Button, Code, Key, KeyKind, Mouse, MouseKind};
@@ -14,6 +15,11 @@ use crate::results::Kind;
 impl Work {
     pub(crate) fn on_key(&mut self, key: Key) -> Action {
         if key.kind == KeyKind::Release {
+            return Action::None;
+        }
+        // The list of scan problems takes the next key, whatever it is.
+        if self.issues_open {
+            self.issues_open = false;
             return Action::None;
         }
         match self.phase {
@@ -46,6 +52,8 @@ impl Work {
             self.toggle_all();
         } else if FILTER.matches(key) {
             self.filtering = true;
+        } else if ISSUES.matches(key) && !self.issues.is_empty() {
+            self.issues_open = true;
         } else if key.code == Code::Esc && !self.filter.value().is_empty() {
             self.filter.reset();
             self.refilter();
@@ -147,6 +155,12 @@ impl Work {
 
     pub(crate) fn on_mouse(&mut self, mouse: Mouse, hits: &HitMap) -> Action {
         let target = hits.at(Position::new(mouse.column, mouse.row));
+        if self.issues_open {
+            if matches!(mouse.kind, MouseKind::Down(Button::Left)) {
+                self.issues_open = false;
+            }
+            return Action::None;
+        }
         match self.phase {
             Phase::Select => self.select_mouse(mouse, target, hits),
             Phase::Confirm(_) => self.confirm_mouse(mouse, target),

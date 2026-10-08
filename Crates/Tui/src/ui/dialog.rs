@@ -3,13 +3,14 @@
 use std::collections::HashSet;
 
 use ratatui::Frame;
-use ratatui::layout::{Alignment, Constraint, Flex, Layout, Margin, Rect};
+use ratatui::layout::{Alignment, Constraint, Flex, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, BorderType, Borders, Clear, Paragraph, Wrap};
+use ratatui::widgets::Paragraph;
 
+use super::boxed;
 use crate::hit::{HitMap, Target};
-use crate::num::{plural, to_u16};
+use crate::num::plural;
 use crate::results::Kind;
 use crate::screens::Pending;
 use crate::theme;
@@ -25,7 +26,6 @@ pub(super) fn draw(
     pending: &Pending,
     area: Rect,
 ) {
-    hits.push(area, Target::Dismiss);
     let (verb, color) = match pending.kind {
         Kind::Delete => ("Delete", theme::ERROR),
         Kind::Sync => ("Sync", theme::ACCENT),
@@ -37,39 +37,7 @@ pub(super) fn draw(
         plural(pending.skills, "skill"),
         plural(projects.len(), "project")
     );
-    let body = body(pending);
-    let width = 62.min(area.width);
-    // Borders, the margin and the button row take five lines; long lines wrap inside the text width.
-    let text_width = usize::from(width.saturating_sub(4)).max(1);
-    let wrapped: usize = body
-        .iter()
-        .map(|line| line.width().div_ceil(text_width).max(1))
-        .sum();
-    let height = (to_u16(wrapped) + 5).max(8).min(area.height);
-    let [row] = Layout::vertical([Constraint::Length(height)])
-        .flex(Flex::Center)
-        .areas(area);
-    let [rect] = Layout::horizontal([Constraint::Length(width)])
-        .flex(Flex::Center)
-        .areas(row);
-    hits.push(rect, Target::Overlay);
-    frame.render_widget(Clear, rect);
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .border_type(BorderType::Rounded)
-        .border_style(Style::new().fg(color))
-        .title(Span::styled(
-            format!(" {title} "),
-            Style::new().fg(color).add_modifier(Modifier::BOLD),
-        ));
-    let inner = block.inner(rect);
-    frame.render_widget(block, rect);
-    let [text, buttons] =
-        Layout::vertical([Constraint::Fill(1), Constraint::Length(1)]).areas(inner);
-    frame.render_widget(
-        Paragraph::new(body).wrap(Wrap { trim: true }),
-        text.inner(Margin::new(1, 1)),
-    );
+    let buttons = boxed::draw(frame, hits, area, &title, color, body(pending), 1);
     let [yes, no] = Layout::horizontal([Constraint::Length(18), Constraint::Length(18)])
         .flex(Flex::Center)
         .spacing(2)

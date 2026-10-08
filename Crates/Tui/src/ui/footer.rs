@@ -7,8 +7,9 @@ use ratatui::widgets::{Block, Borders, Clear, Paragraph};
 
 use crate::app::Screen;
 use crate::binding::{
-    ALL, BACK, BACK_HELP, Binding, CONFIRM_HELP, DELETE, DOWN, FILTER, HELP, MENU_HELP, MENU_QUIT,
-    OPEN, QUIT, RESULTS_HELP, RUN_DELETE, RUN_PUSH, RUN_SYNC, SELECT_COMMON, SYNC, TOGGLE, UP,
+    ALL, BACK, BACK_HELP, Binding, CONFIRM_HELP, DELETE, DOWN, FILTER, HELP, ISSUES, MENU_HELP,
+    MENU_QUIT, OPEN, QUIT, RESULTS_HELP, RUN_DELETE, RUN_PUSH, RUN_SYNC, SELECT_COMMON, SYNC,
+    TOGGLE, UP,
 };
 use crate::hit::{HitMap, Target};
 use crate::items::Mode;
@@ -42,6 +43,9 @@ fn short(screen: &Screen) -> Vec<Hint> {
             Phase::Select => {
                 let mut keys: Vec<&Binding> = vec![&TOGGLE, &ALL, &FILTER];
                 keys.extend(mode_keys(work.mode));
+                if !work.issues.is_empty() {
+                    keys.push(&ISSUES);
+                }
                 keys.extend([&HELP, &BACK]);
                 hints(&keys)
             }
@@ -95,6 +99,9 @@ fn work_full(work: &Work) -> Vec<Hint> {
         Phase::Select => {
             let mut keys = SELECT_COMMON.to_vec();
             keys.extend(mode_keys(work.mode));
+            if !work.issues.is_empty() {
+                keys.push(&ISSUES);
+            }
             keys.extend([&HELP, &BACK, &QUIT]);
             hints(&keys)
         }

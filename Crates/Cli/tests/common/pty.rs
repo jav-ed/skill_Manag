@@ -104,6 +104,18 @@ impl Terminal {
         panic!("timed out waiting for {needle:?}; screen:\n{}", self.text());
     }
 
+    /// Waits until the text is no longer on the screen.
+    pub(crate) fn wait_gone(&self, needle: &str) {
+        let end = Instant::now() + Duration::from_secs(10);
+        while Instant::now() < end {
+            if !self.text().contains(needle) {
+                return;
+            }
+            thread::sleep(Duration::from_millis(15));
+        }
+        panic!("{needle:?} did not go away; screen:\n{}", self.text());
+    }
+
     pub(crate) fn send(&mut self, bytes: &str) {
         self.writer.write_all(bytes.as_bytes()).unwrap();
         self.writer.flush().unwrap();
@@ -136,4 +148,21 @@ impl Terminal {
         fields.get(11).unwrap().parse::<u64>().unwrap()
             + fields.get(12).unwrap().parse::<u64>().unwrap()
     }
+}
+
+/// The interactive interface on the world's vault and root, 100 columns by 30 rows.
+pub(crate) fn tui(world: &World) -> Terminal {
+    let vault = world.vault();
+    let root = world.root();
+    Terminal::spawn(
+        world,
+        &[
+            "--vault",
+            vault.to_str().unwrap(),
+            "--root",
+            root.to_str().unwrap(),
+        ],
+        30,
+        100,
+    )
 }
