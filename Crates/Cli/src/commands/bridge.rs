@@ -11,7 +11,7 @@ use crate::output::{self, BridgeJson, BridgeRow, BridgeStatus};
 use crate::report::CliError;
 
 pub(super) fn run(cli: &Cli, args: &BridgeArgs) -> Result<Exit, CliError> {
-    let Context { workspace, report } = open(cli)?;
+    let Context { workspace, report } = open(cli, args.json)?;
     let targets = &workspace.settings.config().targets;
     if targets.is_empty() {
         let message = "No targets in the vault config. Add a line such as `targets: [claude]` to <vault>/config.yaml.";

@@ -14,6 +14,9 @@ pub enum Status {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Event {
+    /// The scan is under way: how many folders it has looked at and how many projects it has found. Sent
+    /// from the scan's threads, once per 256 folders, so a short scan sends none.
+    ScanProgress { directories: usize, projects: usize },
     /// The scan found every `.agents/skills` directory.
     ScanFinished { skills_dirs: usize, issues: usize },
     /// One target finished, successfully or not.

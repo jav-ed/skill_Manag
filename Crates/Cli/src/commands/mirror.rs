@@ -41,7 +41,7 @@ impl Which {
 }
 
 pub(super) fn run(cli: &Cli, args: &ApplyArgs, which: Which) -> Result<Exit, CliError> {
-    let Context { workspace, report } = open(cli)?;
+    let Context { workspace, report } = open(cli, args.json)?;
     let run = Run {
         kind: which.kind(),
         dry_run: args.dry_run,

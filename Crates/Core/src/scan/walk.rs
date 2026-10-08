@@ -2,6 +2,7 @@
 
 use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, mpsc};
 
 use ignore::{WalkBuilder, WalkState};
@@ -28,6 +29,37 @@ pub struct ScanReport {
     pub issues: Vec<ScanIssue>,
 }
 
+/// A scan tells how far it has come once per this many directories.
+const PROGRESS_STEP: usize = 256;
+
+/// How far a scan has come.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ScanCounts {
+    /// Folders looked at so far.
+    pub directories: usize,
+    /// `.agents/skills` directories found so far.
+    pub projects: usize,
+}
+
+/// What the walker threads share to count and report.
+struct Progress<'a> {
+    directories: AtomicUsize,
+    projects: AtomicUsize,
+    report: &'a (dyn Fn(ScanCounts) + Sync),
+}
+
+impl Progress<'_> {
+    fn directory(&self) {
+        let seen = self.directories.fetch_add(1, Ordering::Relaxed) + 1;
+        if seen.is_multiple_of(PROGRESS_STEP) {
+            (self.report)(ScanCounts {
+                directories: seen,
+                projects: self.projects.load(Ordering::Relaxed),
+            });
+        }
+    }
+}
+
 enum Found {
     Dir(SkillsDir),
     Issue(ScanIssue),
@@ -36,6 +68,16 @@ enum Found {
 /// Walks `root` in parallel. Symlinks are never followed, noise and excluded directories are never entered,
 /// and descent stops at the first `.agents/skills`. The result is sorted so it does not depend on thread timing.
 pub fn scan(root: &Path, options: &ScanOptions) -> Result<ScanReport, ScanError> {
+    scan_with_progress(root, options, &|_| ())
+}
+
+/// Like [`scan`], and `progress` hears from the walker threads (so it must be quick and thread safe) every
+/// 256 folders.
+pub fn scan_with_progress(
+    root: &Path,
+    options: &ScanOptions,
+    progress: &(dyn Fn(ScanCounts) + Sync),
+) -> Result<ScanReport, ScanError> {
     let meta = match fs_err::metadata(root) {
         Ok(meta) => meta,
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
@@ -57,6 +99,12 @@ pub fn scan(root: &Path, options: &ScanOptions) -> Result<ScanReport, ScanError>
     let filter = Arc::new(ScanFilter::new(root, options)?);
     let (tx, rx) = mpsc::channel::<Found>();
     let prune = Arc::clone(&filter);
+    let progress = Progress {
+        directories: AtomicUsize::new(0),
+        projects: AtomicUsize::new(0),
+        report: progress,
+    };
+    let progress = &progress;
 
     WalkBuilder::new(root)
         .standard_filters(false)
@@ -69,7 +117,7 @@ pub fn scan(root: &Path, options: &ScanOptions) -> Result<ScanReport, ScanError>
         .build_parallel()
         .run(|| {
             let tx = tx.clone();
-            Box::new(move |result| visit(result, &tx, root))
+            Box::new(move |result| visit(result, &tx, root, progress))
         });
     drop(tx);
 
@@ -89,6 +137,7 @@ fn visit(
     result: Result<ignore::DirEntry, ignore::Error>,
     tx: &mpsc::Sender<Found>,
     root: &Path,
+    progress: &Progress<'_>,
 ) -> WalkState {
     // A failed send means the receiver is gone, so there is nobody left to scan for.
     let send = |found: Found| {
@@ -109,7 +158,11 @@ fn visit(
             }));
         }
     };
-    if !entry.file_type().is_some_and(|t| t.is_dir()) || entry.file_name() != SKILLS_DIR {
+    if !entry.file_type().is_some_and(|t| t.is_dir()) {
+        return WalkState::Continue;
+    }
+    progress.directory();
+    if entry.file_name() != SKILLS_DIR {
         return WalkState::Continue;
     }
     let Some(agents) = entry
@@ -127,6 +180,7 @@ fn visit(
             return WalkState::Quit;
         }
     }
+    progress.projects.fetch_add(1, Ordering::Relaxed);
     let found = Found::Dir(SkillsDir {
         project: project.to_path_buf(),
         dir: entry.into_path(),

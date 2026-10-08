@@ -1,13 +1,13 @@
 //! Shared start-up of the commands that read the vault and scan the root.
 
 use skillmirror_core::config::{Dirs, EnvOverrides, Flags, Settings};
-use skillmirror_core::events::ignore_events;
+use skillmirror_core::events::Event;
 use skillmirror_core::ops::Workspace;
 use skillmirror_core::scan::{ScanIssue, ScanReport};
 use skillmirror_tui::Launch;
 
 use crate::args::Cli;
-use crate::output;
+use crate::output::{self, ScanLine};
 use crate::report::CliError;
 
 pub(super) fn flags(cli: &Cli) -> Flags {
@@ -47,9 +47,14 @@ pub(super) struct Context {
     pub(super) report: ScanReport,
 }
 
-pub(super) fn open(cli: &Cli) -> Result<Context, CliError> {
+/// Opens the vault and scans the root. A person at a terminal sees a live line while it runs, unless
+/// `quiet` (the command prints JSON).
+pub(super) fn open(cli: &Cli, quiet: bool) -> Result<Context, CliError> {
     let workspace = Workspace::open(load_settings(cli)?)?;
-    let report = workspace.scan(&ignore_events)?;
+    let line = ScanLine::start(quiet);
+    let scanned = workspace.scan(&|event| line.hear(&event));
+    line.clear();
+    let report = scanned?;
     warn_unreadable(&report.issues);
     Ok(Context { workspace, report })
 }
@@ -67,4 +72,21 @@ pub(super) fn warn_unreadable(issues: &[ScanIssue]) {
     if issues.len() > SHOWN {
         output::warn_line(&format!("  and {} more", issues.len() - SHOWN));
     }
+}
+
+/// Scans the configured root with the live line, for the commands that do not open a whole workspace.
+pub(super) fn scan_root(settings: &Settings, quiet: bool) -> Result<ScanReport, CliError> {
+    let line = ScanLine::start(quiet);
+    let scanned = skillmirror_core::scan::scan_with_progress(
+        &settings.root()?.value,
+        &settings.scan_options(),
+        &|counts| {
+            line.hear(&Event::ScanProgress {
+                directories: counts.directories,
+                projects: counts.projects,
+            });
+        },
+    );
+    line.clear();
+    Ok(scanned?)
 }

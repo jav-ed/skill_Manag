@@ -3,7 +3,7 @@
 use skillmirror_core::ops::installed;
 use skillmirror_core::vault::{Vault, discover};
 
-use super::context::{load_settings, warn_unreadable};
+use super::context::{load_settings, scan_root, warn_unreadable};
 use crate::args::{Cli, ListArgs};
 use crate::exit::Exit;
 use crate::output::InstalledRow;
@@ -12,7 +12,7 @@ use crate::report::CliError;
 
 pub(super) fn run(cli: &Cli, args: &ListArgs) -> Result<Exit, CliError> {
     let settings = load_settings(cli)?;
-    let report = skillmirror_core::scan::scan(&settings.root()?.value, &settings.scan_options())?;
+    let report = scan_root(&settings, args.json)?;
     let vault = open_vault(&settings)?;
     let set = installed(&report, vault.as_ref());
     warn_unreadable(&report.issues);

@@ -6,7 +6,7 @@ use skillmirror_core::ops::{self, Deleted};
 use skillmirror_core::scan::Target;
 
 use super::backup;
-use super::context::{load_settings, warn_unreadable};
+use super::context::{load_settings, scan_root, warn_unreadable};
 use crate::args::{Cli, DeleteArgs};
 use crate::exit::Exit;
 use crate::output::{self, DeleteJson};
@@ -57,7 +57,7 @@ fn find_targets(cli: &Cli, args: &DeleteArgs) -> Result<Vec<Target>, CliError> {
         return Ok(vec![ops::target_in_project(&project, &args.name)?]);
     }
     let settings = load_settings(cli)?;
-    let report = skillmirror_core::scan::scan(&settings.root()?.value, &settings.scan_options())?;
+    let report = scan_root(&settings, args.json)?;
     let set = ops::targets_named(&report, &args.name)?;
     warn_unreadable(&report.issues);
     warn_unreadable(&set.issues);

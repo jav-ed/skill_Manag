@@ -9,7 +9,7 @@ use crate::output::{self, ProjectRow, StatusJson, StatusSummary};
 use crate::report::CliError;
 
 pub(super) fn run(cli: &Cli, args: &StatusArgs) -> Result<Exit, CliError> {
-    let Context { workspace, report } = open(cli)?;
+    let Context { workspace, report } = open(cli, args.json)?;
     let status = ops::status(&workspace, &report)?;
     if args.json {
         let rows: Vec<ProjectRow> = status.projects.iter().map(ProjectRow::of).collect();

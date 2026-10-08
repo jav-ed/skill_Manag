@@ -9,7 +9,7 @@ use crate::output::{self, DiffJson};
 use crate::report::CliError;
 
 pub(super) fn run(cli: &Cli, args: &DiffArgs) -> Result<Exit, CliError> {
-    let Context { workspace, report } = open(cli)?;
+    let Context { workspace, report } = open(cli, args.json)?;
     if let Some(skill) = &args.skill {
         // A name the vault does not have is a mistake, not "no differences".
         ops::resolve_names(&workspace.vault, std::slice::from_ref(skill))?;

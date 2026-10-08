@@ -3,7 +3,7 @@
 use crate::Result;
 use crate::config::Settings;
 use crate::events::{Event, Observer};
-use crate::scan::{ScanReport, scan};
+use crate::scan::{ScanReport, scan_with_progress};
 use crate::vault::{Vault, VaultFiles, discover, read_files};
 
 /// Everything read from the vault side: settings, discovered skills and git's file lists.
@@ -28,7 +28,16 @@ impl Workspace {
 
     /// Scans the configured root for `.agents/skills` directories.
     pub fn scan(&self, observer: Observer<'_>) -> Result<ScanReport> {
-        let report = scan(&self.settings.root()?.value, &self.settings.scan_options())?;
+        let report = scan_with_progress(
+            &self.settings.root()?.value,
+            &self.settings.scan_options(),
+            &|counts| {
+                observer(Event::ScanProgress {
+                    directories: counts.directories,
+                    projects: counts.projects,
+                });
+            },
+        )?;
         observer(Event::ScanFinished {
             skills_dirs: report.skills_dirs.len(),
             issues: report.issues.len(),

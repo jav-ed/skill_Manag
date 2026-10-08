@@ -10,8 +10,10 @@ pub use error::{ScanError, ScanIssue};
 pub use links::{first_link_above, same_folder};
 pub use prune::{NOISE_DIRS, ScanOptions};
 pub use targets::{Target, TargetSet, all_targets, push_targets, sync_targets};
-pub use walk::{ScanReport, SkillsDir, scan};
+pub use walk::{ScanCounts, ScanReport, SkillsDir, scan, scan_with_progress};
 
+#[cfg(test)]
+mod progress_tests;
 #[cfg(test)]
 mod safety_tests;
 #[cfg(test)]

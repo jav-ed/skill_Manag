@@ -13,6 +13,8 @@ pub(crate) struct Terminal {
     writer: Box<dyn Write + Send>,
     child: Box<dyn Child + Send + Sync>,
     screen: Arc<Mutex<vt100::Parser>>,
+    /// Everything the process wrote, including what it painted over later.
+    raw: Arc<Mutex<Vec<u8>>>,
 }
 
 impl Drop for Terminal {
@@ -24,6 +26,17 @@ impl Drop for Terminal {
 impl Terminal {
     /// Starts `skillmirror <args>` with the world's isolated environment.
     pub(crate) fn spawn(world: &World, args: &[&str], rows: u16, cols: u16) -> Self {
+        Self::spawn_with(world, args, rows, cols, &[])
+    }
+
+    /// Like [`Terminal::spawn`], with more environment variables (they win over the defaults).
+    pub(crate) fn spawn_with(
+        world: &World,
+        args: &[&str],
+        rows: u16,
+        cols: u16,
+        env: &[(&str, &str)],
+    ) -> Self {
         let pair = native_pty_system()
             .openpty(PtySize {
                 rows,
@@ -38,6 +51,9 @@ impl Terminal {
             cmd.env(key, value);
         }
         cmd.env("TERM", "xterm-256color");
+        for (key, value) in env {
+            cmd.env(key, value);
+        }
         cmd.args(args);
         let child = pair.slave.spawn_command(cmd).unwrap();
         drop(pair.slave);
@@ -45,12 +61,18 @@ impl Terminal {
         let writer = pair.master.take_writer().unwrap();
         let screen = Arc::new(Mutex::new(vt100::Parser::new(rows, cols, 0)));
         let sink = Arc::clone(&screen);
+        let raw = Arc::new(Mutex::new(Vec::new()));
+        let record = Arc::clone(&raw);
         thread::spawn(move || {
             let mut buf = [0u8; 8192];
             while let Ok(n) = reader.read(&mut buf) {
                 if n == 0 {
                     break;
                 }
+                record
+                    .lock()
+                    .unwrap()
+                    .extend_from_slice(buf.get(..n).unwrap());
                 sink.lock().unwrap().process(buf.get(..n).unwrap());
             }
         });
@@ -58,7 +80,13 @@ impl Terminal {
             writer,
             child,
             screen,
+            raw,
         }
+    }
+
+    /// Every byte written so far, as text.
+    pub(crate) fn raw_text(&self) -> String {
+        String::from_utf8_lossy(&self.raw.lock().unwrap()).into_owned()
     }
 
     pub(crate) fn text(&self) -> String {

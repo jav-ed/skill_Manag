@@ -10,6 +10,7 @@ mod doctor;
 mod human;
 mod json;
 mod lossy;
+mod progress;
 mod status;
 mod style;
 mod view;
@@ -26,6 +27,7 @@ pub(crate) use human::{
     render_delete, render_installed, render_rows, render_summary, render_vault,
 };
 pub(crate) use json::{DeleteJson, ListJson, RunJson, VaultJson};
+pub(crate) use progress::ScanLine;
 pub(crate) use status::{ProjectRow, StatusJson, StatusSummary, render_status};
 pub(crate) use view::{DeleteRow, DeleteStatus, InstalledRow, Row, SkillRow, Summary, Tense};
 
