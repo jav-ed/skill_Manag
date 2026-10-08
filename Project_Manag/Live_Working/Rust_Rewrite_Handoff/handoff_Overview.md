@@ -15,23 +15,23 @@ State on 2026-10-08, after the second working day on the branch.
 | Area | State |
 |---|---|
 | Core engine (`Crates/Core`) | done; reviewed in rounds 1 to 4 |
-| CLI (`Crates/Cli`) | all commands: `sync push add init delete list skills status diff doctor report bridge undo history migrate completions tui`; `--json`, exit codes 0 to 4, scan progress line |
-| TUI (`Crates/Tui`) | menu, sync, push, delete, list, add, init, history with undo, setup wizard, scan problems, changes page; plan first, job ids, snapshot tests and a real-terminal test per page |
-| Web (`Crates/Web`) | the static HTML report (`report`); the loopback server is not started (needs the user's decision) |
+| CLI (`Crates/Cli`) | all commands: `sync push add init delete list skills info new adopt vault config mandatory status diff doctor report web bridge undo history migrate completions tui`; scope words on sync, push and status; `--json`, exit codes 0 to 4, scan progress line |
+| TUI (`Crates/Tui`) | menu, sync, push, delete, list, skills (vault browser with a detail card), add, init, history with undo, setup wizard, scan problems, changes page; plan first, job ids, snapshot tests and a real-terminal test per page |
+| Web (`Crates/Web`) | the static HTML report (`report`) and the local server (`web`, `axum`, guarded; sync, push and undo behind `--allow-write` with a plan first; checked in Chromium by `Code/Development/Web/check_Web.sh`) |
 | Parity against the Go tool (oracle, 131 scenarios) | 90 match, 41 expected divergences, 0 unexpected (the container runs as root) |
 | Backup store, `undo`, `history` | done in Core, CLI and TUI |
 | Review | rounds 1 to 3 fixed; round 4 (self) fixed; a fresh pair of eyes on backup and undo is still welcome |
-| Docs pass | done: README, architecture docs, concept, contract rows Q34 to Q50 |
+| Docs pass | done: README, architecture docs, concept, contract rows Q34 to Q56 |
 | CI | green on every commit since `3172930` |
-| Cutover | not started; waits for the user, runbook in [cutover_Runbook.md](cutover_Runbook.md) |
+| Cutover | the Go tree is removed on the branch; the tag, the merge and the clean-up wait for the user, runbook in [cutover_Runbook.md](cutover_Runbook.md) |
 
-Totals: 463 tests pass; fmt and clippy `-D warnings` are clean on rustc 1.97 and 1.99; `cargo deny`, `just loc-gate` and `just check-deps` pass. `Scratch/gate.sh` (local, not committed) runs all of it.
+Totals: 633 tests pass; fmt and clippy `-D warnings` are clean on rustc 1.97 and 1.99; `cargo deny`, `just loc-gate` and `just check-deps` pass. `Scratch/gate.sh` (local, not committed) runs all of it.
 
 ## Branches
 
 - `rust-rewrite-handoff`: the branch to clone and continue on. It holds the Rust workspace, the docs and this handoff. The user chose a separate branch on 2026-10-08 to keep the history clean.
 - `rust-rewrite`: the lead's local branch at the same code without the handoff commits. It was never pushed; ignore it.
-- `main`: the Go implementation, frozen until cutover. Its local tip `c7310f9` ("skills added") was pushed together with the handoff branch because it is the base of the branch.
+- `main`: the Go implementation, untouched until the merge (its sources are no longer in the branch; commit `c7310f9` holds them). Its local tip `c7310f9` ("skills added") was pushed together with the handoff branch because it is the base of the branch.
 - CI (`.github/workflows/ci.yml`) triggers on pushes to `main` and `rust-rewrite` and on pull requests, so pushing `rust-rewrite-handoff` alone does not run it. Add the branch name to the workflow, or open a pull request, to get the first CI run (expect fixes).
 
 ## What happens to this handoff branch

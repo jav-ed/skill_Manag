@@ -2,9 +2,9 @@
 
 *This `doc_Start.md` is the docs entry point, structured so an agent can quickly decide what to read and what to skip. It opens with a short summary of the repo and key entry-point files, then routes to each topic area through labeled links. Open a linker only when the task calls for it; the labels are written to make that decision possible without clicking.*
 
-`skillmirror` (formerly `skill_Manag`) is a command line tool and a full-screen interface that mirror agent skill folders from one master vault into every matching `.agents/skills/` directory across a codebase: git-tracked, SSH-safe, no symlinks, with backups and `undo`. It is written in Rust on the branch `rust-rewrite-handoff` (the branch to continue on); the Go tool on `main` stays as the behavior reference until the cutover.
+`skillmirror` (formerly `skill_Manag`) is a command line tool and a full-screen interface that mirror agent skill folders from one master vault into every matching `.agents/skills/` directory across a codebase: git-tracked, SSH-safe, no symlinks, with backups and `undo`. It is written in Rust on the branch `rust-rewrite-handoff` (the branch to continue on). The Go tool it replaces is still on `main` until the merge; its sources were removed from this branch on 2026-10-08 and live in the history at commit `c7310f9` (the behavior contract and the parity harness refer to it).
 
-Entry point(s): `Cargo.toml` in the repo root, then `Crates/Core/src/lib.rs` (engine) and `Crates/Cli/src/main.rs` (binary). The Go sources, until the cutover: `main.go`, `cmd/root.go`, `cmd/tui/menu.go`.
+Entry point(s): `Cargo.toml` in the repo root, then `Crates/Core/src/lib.rs` (engine) and `Crates/Cli/src/main.rs` (binary).
 
 ## Docs
 

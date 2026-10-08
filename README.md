@@ -1,6 +1,6 @@
 # skillmirror
 
-> Work in progress. The Rust rewrite is on the branch `rust-rewrite-handoff`; the Go tool it replaces (`skill_Manag`) is still on `main` until the cutover.
+> The Rust rewrite is on the branch `rust-rewrite-handoff` (draft pull request); `main` still holds the Go tool it replaces (`skill_Manag`) until the merge. The Go sources are no longer in this branch; they are in the history at commit `c7310f9`.
 
 A command line tool and a full-screen interface that keep your agent skills in sync across all your projects: one vault, zero drift.
 

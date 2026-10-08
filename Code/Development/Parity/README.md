@@ -45,4 +45,4 @@ Rust binary under test: `PARITY_RUST_BIN`, the first argument of `check_Parity.s
 | `translate.sh` | maps Go calls and `SKILL_MANAG_*` variables to the `skillmirror` grammar |
 | `run_Parity.sh`, `compare.py`, `check_Parity.sh` | replay, classification, both in one |
 
-The golden tree and the replay output are not committed (11 MB, derived from the scenarios and the frozen commit). Keep commit `c7310f9` reachable and keep this folder when the Go sources are deleted at cutover.
+The golden tree and the replay output are not committed (11 MB, derived from the scenarios and the frozen commit). Keep commit `c7310f9` reachable (the Go sources were deleted from the branch on 2026-10-08; the harness builds the oracle from that commit in a git worktree, never from the working tree) and keep this folder.

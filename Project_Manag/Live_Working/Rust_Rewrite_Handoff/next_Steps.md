@@ -47,9 +47,9 @@ Done on 2026-10-08: stage 0, `skillmirror report` (Q50): `Crates/Web` with `maud
 
 Done on 2026-10-08: README rewritten for the Rust tool (install, commands, interface, configuration, safety, development); architecture docs for the crates (`Docs/Architecture/rust_Overview.md`, `core_Modules.md`, `front_Ends.md`, with the Go structure kept as `go_Legacy.md`); `sync_Concept.md` rewritten; the Descr linker and `doc_Start.md` updated; the five Astro folders under `Docs/Architecture/` removed (they described a website that is not this repository; nothing linked to them); `deny.toml` header no longer says "unvalidated"; `.gitignore` anchors `dist*` and `fast*` to the root and drops the Astro lines. The empty `AI/` and `Matters/` folders do not exist in a checkout (git does not track empty folders); delete them on the machines that have them. `grep` finds the old names only in the legacy detector, its tests, the `migrate` command, the parity harness and the Go tree itself. Left for the cutover: the README install section changes from the branch to `main`, the handoff folder is promoted into the docs and deleted.
 
-## 7. [ ] Phase 8: cutover (needs the user's explicit yes)
+## 7. [~] Phase 8: cutover (the Go tree is removed on the branch; tag, merge and branch deletion need the user)
 
-Prepared, not done: the exact steps, the checks before and after, and the way back are in [cutover_Runbook.md](cutover_Runbook.md). Nothing in the Rust build depends on the Go tree (checked by grep), so deleting it breaks no Rust check. Each step that leaves the machine (a tag, a push to `main`, a branch deletion) needs the user.
+Done on 2026-10-08, on the branch: the Go tree (`main.go`, `cmd/`, `internal/`, `go.mod`, `go.sum`, `styles/`) is deleted, the Go lines of `.gitignore` and the Cargo comment are gone, the docs say where the Go sources live now (commit `c7310f9`), and the parity run (90 match, 41 expected, 0 unexpected) and the whole gate pass without the tree. Not done, and needing the user: the tag `go-oracle` (`git tag go-oracle c7310f9 && git push origin go-oracle`), the merge into `main`, and deleting the branch; the steps, the checks and the way back are in [cutover_Runbook.md](cutover_Runbook.md).
 
 ## 8. [ ] Separate track: skills (not part of the rewrite)
 

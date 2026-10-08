@@ -1,6 +1,6 @@
 # go_Legacy
 
-Code structure of the Go tool `skill_Manag`, frozen at commit `c7310f9` (tag `go-oracle` after the cutover). It is kept because the behavior contract and the parity harness refer to it; the Rust tool that replaces it is described in [rust_Overview.md](rust_Overview.md). Two packages (`cmd/` and `internal/`) plus shared styles.
+Code structure of the Go tool `skill_Manag`, frozen at commit `c7310f9` (tag `go-oracle` once the maintainer has pushed it). The Go sources were removed from the `rust-rewrite-handoff` branch on 2026-10-08, so every path below (`cmd/`, `internal/`, `styles/`) exists only at that commit: `git show c7310f9:cmd/root.go`, or `git worktree add --detach /tmp/go c7310f9`. This page is kept because the behavior contract and the parity harness refer to it; the Rust tool that replaces it is described in [rust_Overview.md](rust_Overview.md). Two packages (`cmd/` and `internal/`) plus shared styles.
 
 ## CLI wiring - `cmd/`
 

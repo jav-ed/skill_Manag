@@ -56,17 +56,23 @@ Global options on every command: `--vault <DIR>`, `--root <DIR>`. No subcommand:
 
 | Command | Does |
 |---|---|
-| `sync [--dry-run] [--check] [-y] [--json] [--all]` | Update the skills a project already has (opt-in rule: never adds one) |
-| `push [same flags]` | Install the `mandatory` skills into every project that has a skills directory |
+| `sync [SKILL]... [--group P] [--profile N] [--project DIR] [--dry-run] [--check] [-y] [--json] [--all]` | Update the skills a project already has (opt-in rule: never adds one); the scope words limit it (contract Q51) |
+| `push [SKILL]... [--project DIR] [same flags]` | Install the `mandatory` skills into every project that has a skills directory; a named skill must be mandatory |
 | `list [--json]` | Every installed skill folder |
 | `delete <NAME> [--project DIR] [--dry-run] [-y] [--json]` | Remove one skill from one or all projects |
 | `skills [--group PATH] [--json]` | The vault's skills grouped by folder |
+| `info SKILL [--json]` | One skill from every side: group, description, copied and untracked files, profiles, and its state in each project (contract Q52) |
+| `new NAME [--group P] [--description T] [--dry-run] [--json]` | Create a skill in the vault from a template, staged in git, never committed (contract Q53) |
+| `adopt NAME --from PROJECT [--group P] [--dry-run] [--json]` | Copy a project's skill folder into the vault, staged, never committed (Q53) |
+| `vault init DIR [--root DIR] [--use] [--dry-run] [--json]` | Make a new vault (git repository plus `config.yaml`) and the default-vault pointer when there is none (Q53) |
+| `config show [--json]`, `config path`, `config root DIR [--dry-run]` | The settings and where each came from; the config path; set `root:` (contract Q54) |
+| `mandatory list`, `mandatory add SKILL...`, `mandatory remove SKILL...` | Show or edit the mandatory list without rewriting the rest of `config.yaml` (Q54) |
 | `doctor [--json]` | Read-only health check of the machine, configuration, vault, skill headers and scan root; exit 0 / 1 warnings / 3 errors (contract Q43) |
 | `web [--allow-write] [--port N] [--open] [--idle-timeout M]` | Serves the views live on 127.0.0.1 behind a one-time link; with `--allow-write` sync, push and undo from the browser, each with its plan first (contract Q56) |
 | `report [-o FILE] [--open]` | Writes one self-contained HTML report: matrix, vault tree, skill cards with diffs, filter, dark mode (contract Q50) |
 | `bridge [--dry-run] [--yes] [--all] [--json]` | Links `.claude/skills` to `../.agents/skills` in every project where the vault config lists `targets: [claude]`; never replaces anything; `add` and `init` do it for their project (contract Q44) |
 | `diff [SKILL] [--project DIR] [--stat] [--json]` | Read-only: the lines a sync would bring in and take away, per file (contract Q42) |
-| `status [--all] [--json]` | Read-only: how every project stands against the vault (outdated, mandatory missing, not in the vault, failed); exit like `--check` (contract Q41) |
+| `status [SKILL]... [--group P] [--profile N] [--project DIR] [--all] [--json]` | Read-only: how every project stands against the vault (outdated, mandatory missing, not in the vault, failed); exit like `--check` (contract Q41) |
 | `add [SKILL]... [--group P] [--profile N] [--project DIR] [--dry-run] [-y] [--json]` | Install skills, groups or profiles into an existing project |
 | `init <DIR> [SKILL]... [--group] [--profile] [--git] [--no-mandatory] ...` | Create a project directory and install mandatory skills plus a selection |
 | `undo [RUN] [--project DIR] [--skill NAME] [--dry-run] [-y] [--json]` | Bring a run back (default: the newest); undoing is a run too, so a second `undo` redoes it |

@@ -1,6 +1,6 @@
 # Cutover runbook
 
-The steps that replace the Go tool on `main` by the Rust tool. Every step that leaves the machine (a tag, a push to `main`, deleting a branch) needs the user's explicit yes; the checks and the local commit do not. Nothing here has been done.
+The steps that replace the Go tool on `main` by the Rust tool. Every step that leaves the machine (a tag, a push to `main`, deleting a branch) needs the user's explicit yes; the checks and the local commit do not. Status on 2026-10-08: the commit that deletes the Go tree is done on the branch (see "The commit"); the tag, the merge and the clean-up are not.
 
 ## Before
 
@@ -12,7 +12,7 @@ The steps that replace the Go tool on `main` by the Rust tool. Every step that l
 
 ## The commit
 
-One commit on `rust-rewrite-handoff` that deletes the Go tree: `main.go`, `cmd/`, `internal/`, `go.mod`, `go.sum`, `styles/`. Then:
+Done on the branch (the user allowed it): the Go tree is deleted, `main.go`, `cmd/`, `internal/`, `go.mod`, `go.sum`, `styles/`. The same commit did what this list says:
 
 - `Cargo.toml` line 1 (the comment about Go sources) goes.
 - `.gitignore`: the Go lines (`skill_Manag`, `skill_manag`, `*.test`, `*.out`, `go.work*`) go; keep `target/`.

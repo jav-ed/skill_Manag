@@ -33,4 +33,4 @@ Permissions already given: commit and push of the branch `rust-rewrite-handoff` 
 - Web view in stages (static report, loopback server, guarded writes), after the TUI.
 - Provenance lock: later, only if the user asks.
 - Licence: Hippocratic License 3.0; dependency allow-list in `deny.toml`.
-- The Go tree is frozen until cutover; the oracle is built from commit `c7310f9`.
+- The Go tree was removed from the branch on 2026-10-08 (user: "if you need to remove the Go code, I don't care"); the oracle is built from commit `c7310f9`, which must stay reachable.

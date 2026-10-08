@@ -1,4 +1,4 @@
-# Virtual workspace. Go sources (cmd/, internal/, main.go, go.mod) stay beside it until the cutover.
+# Virtual workspace.
 [workspace]
 resolver = "3"
 members = ["Crates/*"]
