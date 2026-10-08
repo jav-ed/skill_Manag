@@ -2,6 +2,7 @@
 
 mod clock;
 mod error;
+mod pathjson;
 mod store;
 mod tree;
 mod undo;

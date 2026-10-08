@@ -16,6 +16,7 @@ use skillmirror_core::ops;
 use skillmirror_core::plan::Plan;
 
 use crate::event::{Event, Job, JobId};
+use crate::preview::Preview;
 use crate::results::{Kind, Results};
 use crate::screens::{Pending, check_vault};
 use crate::session::{Session, describe, load};
@@ -48,8 +49,10 @@ pub(crate) fn spawn_plan(tx: Sender<Event>, id: JobId, session: Arc<Session>, pe
             &session.workspace.files,
             pending.targets.clone(),
         );
+        let preview = Preview::of(&plan);
         let planned = Pending {
             plan: Some(plan),
+            preview: Some(preview),
             ..pending
         };
         send(&tx, id, Job::Planned(Box::new(planned)));

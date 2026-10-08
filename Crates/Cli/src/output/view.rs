@@ -39,6 +39,7 @@ pub(crate) struct ErrorRow {
 /// One skill in one project.
 #[derive(Debug, Clone, Serialize)]
 pub(crate) struct Row {
+    #[serde(serialize_with = "super::lossy::path")]
     pub(crate) project: PathBuf,
     pub(crate) skill: String,
     pub(crate) status: Kind,
@@ -195,6 +196,7 @@ pub(crate) enum DeleteStatus {
 
 #[derive(Debug, Clone, Serialize)]
 pub(crate) struct DeleteRow {
+    #[serde(serialize_with = "super::lossy::path")]
     pub(crate) project: PathBuf,
     pub(crate) skill: String,
     pub(crate) status: DeleteStatus,
@@ -202,6 +204,7 @@ pub(crate) struct DeleteRow {
 
 #[derive(Debug, Clone, Serialize)]
 pub(crate) struct InstalledRow {
+    #[serde(serialize_with = "super::lossy::path")]
     pub(crate) project: PathBuf,
     pub(crate) skill: String,
     pub(crate) in_vault: Option<bool>,

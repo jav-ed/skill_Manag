@@ -22,7 +22,7 @@ The previous lead (a Claude Code session) stopped on 2026-10-08 at the user's re
 | Web report, TUI add/init/history screens | not started |
 | Docs pass (README, architecture docs), cutover | not started |
 
-Totals at hand-off: 186 tests pass (291 after the work of 2026-10-08), `cargo clippy --workspace --all-targets -- -D warnings` is clean, `cargo fmt --check` is clean, no Rust file is over 300 lines of code (my own count; `tokei` is not installed, so `just loc-gate` has never run).
+Totals at hand-off: 186 tests pass (297 after the work of 2026-10-08), `cargo clippy --workspace --all-targets -- -D warnings` is clean, `cargo fmt --check` is clean, no Rust file is over 300 lines of code (my own count; `tokei` is not installed, so `just loc-gate` has never run).
 
 ## Branches
 

@@ -6,6 +6,7 @@ mod macros;
 mod backup;
 mod human;
 mod json;
+mod lossy;
 mod style;
 mod view;
 

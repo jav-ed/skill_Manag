@@ -184,3 +184,47 @@ fn one_target_that_cannot_be_stored_does_not_stop_the_others() {
     no_leftovers(&first.project);
     no_leftovers(&second.project);
 }
+
+#[test]
+fn a_project_whose_path_is_not_valid_utf8_can_still_be_synced_with_a_backup() {
+    use std::ffi::OsStr;
+    use std::os::unix::ffi::OsStrExt;
+
+    let rig = Rig::new(&[("coding/SKILL.md", "new")]);
+    let project = rig.f.tree.path().join(OsStr::from_bytes(b"caf\xe9-app"));
+    let skills = project.join(".agents/skills");
+    std::fs::create_dir_all(skills.join("coding")).unwrap();
+    std::fs::write(skills.join("coding/SKILL.md"), "old").unwrap();
+    let target = crate::scan::Target {
+        project: project.clone(),
+        skill: "coding".to_string(),
+        path: skills.join("coding"),
+    };
+
+    let (report, saved) = rig.apply(RunKind::Sync, vec![target.clone()]);
+
+    assert!(
+        matches!(report.applied[0].outcome, Outcome::Updated),
+        "{:?}",
+        report.applied[0].outcome
+    );
+    assert_eq!(saved.stored, 1);
+    let run = rig.backups.load(&saved.id).unwrap();
+    assert_eq!(
+        run.entries[0].entry.project, project,
+        "the path survives the note"
+    );
+    let undone = undo(
+        &rig.backups,
+        None,
+        &Filter::default(),
+        false,
+        &ignore_events,
+    )
+    .unwrap();
+    assert!(matches!(undone.entries[0].result, Ok(Undone::Restored)));
+    assert_eq!(
+        std::fs::read_to_string(target.path.join("SKILL.md")).unwrap(),
+        "old"
+    );
+}

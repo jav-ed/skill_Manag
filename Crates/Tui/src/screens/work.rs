@@ -9,6 +9,7 @@ use tui_input::Input as TextInput;
 use super::list_view::ListView;
 use crate::filter::Fuzzy;
 use crate::items::{self, Item, Mode};
+use crate::preview::Preview;
 use crate::results::{Kind, Results};
 use crate::session::Session;
 
@@ -22,6 +23,9 @@ pub(crate) struct Pending {
     /// What a sync or push will write. The run applies exactly this plan, so a folder edited after it
     /// was made fails instead of being overwritten. A delete has none.
     pub(crate) plan: Option<Plan>,
+    /// The numbers and names the confirmation page shows, worked out with the plan so that drawing
+    /// never has to look at the disk.
+    pub(crate) preview: Option<Preview>,
 }
 
 // The plan is a large value without equality; it only matters whether there is one.
@@ -163,6 +167,7 @@ impl Work {
             targets,
             skills,
             plan: None,
+            preview: None,
         })
     }
 

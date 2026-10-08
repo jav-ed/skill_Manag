@@ -87,6 +87,29 @@ fn push_asks_as_well_and_a_clean_plan_goes_straight_through() {
 }
 
 #[test]
+fn a_second_enter_while_the_plan_is_made_does_not_cancel_it() {
+    let mut ui = Harness::new(world());
+    ui.open("Sync").wait_select();
+
+    ui.code(Code::Enter);
+    assert_eq!(phase(&ui), "planning");
+    ui.code(Code::Enter);
+
+    assert_eq!(phase(&ui), "planning", "a double tap is not a way back");
+    ui.wait_confirm();
+    let crate::app::Screen::Work(work) = &ui.app.screen else {
+        panic!("work page")
+    };
+    let Phase::Confirm(pending) = &work.phase else {
+        panic!("confirm")
+    };
+    assert!(
+        pending.preview.is_some(),
+        "the numbers are worked out once, by the job"
+    );
+}
+
+#[test]
 fn the_header_arrow_does_not_leave_a_job_that_is_writing() {
     let mut ui = Harness::new(world());
     ui.open("Sync").wait_select();

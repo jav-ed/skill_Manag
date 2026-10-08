@@ -90,11 +90,7 @@ impl App {
 
     /// The plan is ready: a run that would write something is shown first, one that would not goes on.
     fn on_planned(&mut self, pending: Pending) {
-        let writes = pending
-            .plan
-            .as_ref()
-            .map(Preview::of)
-            .is_some_and(|p| p.writes());
+        let writes = pending.preview.as_ref().is_some_and(Preview::writes);
         if !writes {
             self.start(pending);
         } else if let Some(work) = self.work_mut() {

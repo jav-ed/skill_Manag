@@ -10,7 +10,6 @@ use ratatui::widgets::{Block, BorderType, Borders, Clear, Paragraph, Wrap};
 
 use crate::hit::{HitMap, Target};
 use crate::num::{plural, to_u16};
-use crate::preview::Preview;
 use crate::results::Kind;
 use crate::screens::Pending;
 use crate::theme;
@@ -81,12 +80,11 @@ pub(super) fn draw(
 
 /// The text between the title and the buttons.
 fn body(pending: &Pending) -> Vec<Line<'static>> {
-    let Some(plan) = &pending.plan else {
+    let Some(preview) = &pending.preview else {
         return vec![Line::raw(
             "This will inshallah permanently remove the selected skills from all matching projects.",
         )];
     };
-    let preview = Preview::of(plan);
     let mut doing = Vec::new();
     if preview.created > 0 {
         doing.push(format!(

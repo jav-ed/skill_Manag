@@ -106,6 +106,25 @@ fn a_created_skill_that_is_gone_is_not_an_error() {
 }
 
 #[test]
+fn a_note_for_a_skill_that_is_already_gone_does_not_block_older_runs() {
+    let rig = Rig::new(&[("coding/SKILL.md", "new"), ("web/SKILL.md", "new")]);
+    let updated = old_copy(&rig, "p1");
+    rig.apply(RunKind::Sync, vec![updated.clone()]);
+    let created = rig.target("p2", "web");
+    rig.apply(RunKind::Push, vec![created.clone()]);
+    std::fs::remove_dir_all(&created.path).unwrap();
+
+    // The newest run only holds the note for the skill the user already removed.
+    let first = undo_all(&rig);
+    assert!(matches!(first.entries[0].result, Ok(Undone::AlreadyGone)));
+
+    // Nothing is left of it, so the next plain undo reaches the sync before it.
+    let second = undo_all(&rig);
+    assert!(matches!(second.entries[0].result, Ok(Undone::Restored)));
+    assert_eq!(files_of(&updated.path)["SKILL.md"].0, "old");
+}
+
+#[test]
 fn a_filter_undoes_only_the_chosen_project_and_keeps_the_rest_of_the_run() {
     let rig = Rig::new(&[("coding/SKILL.md", "new")]);
     let (one, two) = (old_copy(&rig, "p1"), old_copy(&rig, "p2"));
@@ -286,4 +305,25 @@ fn a_poisoned_note_cannot_reach_outside_the_skills_folder() {
         Err(UndoError::Backup(BackupError::BadEntry { .. }))
     ));
     assert_eq!(files_of(&target.project), synced);
+}
+
+#[test]
+fn a_project_filter_given_through_a_symlink_still_finds_the_project() {
+    let rig = Rig::new(&[("coding/SKILL.md", "new")]);
+    let target = old_copy(&rig, "real/proj");
+    rig.apply(RunKind::Sync, vec![target.clone()]);
+    std::os::unix::fs::symlink(
+        rig.f.tree.path().join("real"),
+        rig.f.tree.path().join("link"),
+    )
+    .unwrap();
+    let filter = Filter {
+        project: Some(rig.f.tree.path().join("link/proj")),
+        skill: None,
+    };
+
+    let report = undo_run(&rig, None, &filter, false);
+
+    assert_eq!(report.entries.len(), 1);
+    assert!(matches!(report.entries[0].result, Ok(Undone::Restored)));
 }

@@ -60,6 +60,7 @@ pub enum Change {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Entry {
     pub kind: RunKind,
+    #[serde(with = "super::pathjson")]
     pub project: PathBuf,
     pub skill: String,
     pub change: Change,

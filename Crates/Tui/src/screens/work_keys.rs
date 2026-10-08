@@ -17,11 +17,13 @@ impl Work {
             return Action::None;
         }
         match self.phase {
-            Phase::Loading | Phase::Failed(_) | Phase::Planning(_) => back_only(key),
+            Phase::Loading | Phase::Failed(_) => back_only(key),
+            Phase::Planning(_) if BACK.matches(key) || key.code == Code::Esc => Action::Back,
             Phase::Select if self.filtering => self.filter_key(key),
             Phase::Select => self.select_key(key),
             Phase::Confirm(_) => self.confirm_key(key),
-            Phase::Running { .. } => Action::None,
+            // Nothing else leaves a plan being made or a job that writes: a double tap must not.
+            Phase::Planning(_) | Phase::Running { .. } => Action::None,
             Phase::Done(_) => self.done_key(key),
         }
     }

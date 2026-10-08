@@ -24,9 +24,14 @@ impl Filter {
     fn accepts(&self, entry: &LoadedEntry) -> bool {
         self.project
             .as_ref()
-            .is_none_or(|p| *p == entry.entry.project)
+            .is_none_or(|p| same_folder(p, &entry.entry.project))
             && self.skill.as_ref().is_none_or(|s| *s == entry.entry.skill)
     }
+}
+
+/// The same folder, whether it is named directly or through a link or a relative path.
+fn same_folder(left: &Path, right: &Path) -> bool {
+    left == right || matches!((left.canonicalize(), right.canonicalize()), (Ok(a), Ok(b)) if a == b)
 }
 
 /// What happened to one skill folder.
@@ -146,7 +151,14 @@ fn restore(
     let current = current_state(&target)?;
     let dry = new_run.is_none();
     match (entry.entry.change, &current) {
-        (Change::Created, Current::Missing) => Ok(Undone::AlreadyGone),
+        (Change::Created, Current::Missing) => {
+            // Nothing is left to undo, so the note goes too: a stale note would stay the newest run and
+            // hide every older one from a plain `undo`.
+            if !dry {
+                spend(entry)?;
+            }
+            Ok(Undone::AlreadyGone)
+        }
         (Change::Created, Current::Folder) => {
             if let Some(run) = new_run {
                 remove_created(entry, &target, run, index, token)?;

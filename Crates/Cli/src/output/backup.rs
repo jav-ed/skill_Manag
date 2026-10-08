@@ -23,6 +23,7 @@ pub(crate) enum UndoStatus {
 
 #[derive(Debug, Clone, Serialize)]
 pub(crate) struct UndoRow {
+    #[serde(serialize_with = "super::lossy::path")]
     pub(crate) project: PathBuf,
     pub(crate) skill: String,
     /// What the undone run had done to the folder: `created`, `updated` or `deleted`.

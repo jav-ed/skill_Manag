@@ -8,7 +8,7 @@ use crate::Hint;
 pub enum BackupError {
     #[error("{0}")]
     Io(#[from] std::io::Error),
-    #[error("cannot read the backup note {path}: {reason}")]
+    #[error("cannot write the backup note {path}: {reason}")]
     Note { path: PathBuf, reason: String },
     #[error("no backup run named {id:?}")]
     NoSuchRun { id: String },
