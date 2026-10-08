@@ -1,0 +1,28 @@
+---
+source: Crates/Tui/src/tests/render.rs
+expression: ui.screen()
+---
+ ← skillmirror  ·  javedab.com  ·  sync
+
+ Select skills to sync   2 / 2 selected
+ / to filter
+      skill               projects
+> [✓] astro               1 project   1 to update
+  [✓] coding              2 projects  2 to update
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ rows 1–2 of 2
+ space toggle • a all • / filter • enter sync • ? help • q/alt+← back

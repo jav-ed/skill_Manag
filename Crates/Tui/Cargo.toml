@@ -1,0 +1,28 @@
+[package]
+name = "skillmirror-tui"
+description = "Terminal UI of skillmirror: menu, sync, push, list and delete screens on top of the engine."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license-file.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+fs-err = "3"
+nucleo-matcher = "0.3"
+ratatui = { version = "0.30", default-features = false, features = ["std", "underline-color", "layout-cache", "macros", "all-widgets"] }
+ratatui-termina = "0.1"
+skillmirror-core.workspace = true
+thiserror = "2"
+tui-input = { version = "0.15", default-features = false }
+unicode-width = "0.2"
+
+[dev-dependencies]
+insta = "1"
+portable-pty = "0.9"
+skillmirror-testkit = { path = "../Testkit" }
+tempfile = "3"
+vt100 = "0.16"

@@ -1,0 +1,28 @@
+---
+source: Crates/Tui/src/tests/render.rs
+expression: ui.screen()
+---
+ ← skillmirror  ·  javedab.com  ·  delete
+
+ Select skills to delete   1 / 3 selected
+ / to filter
+      skill               projects
+> [✗] astro               1 project
+  [ ] coding              2 projects
+  [ ] local-only          1 project   not in the vault
+
+         ╭ Delete 1 skill in 1 project? ──────────────────────────────╮
+         │                                                            │
+         │ This will inshallah permanently remove the selected skills │
+         │ from all matching projects.                                │
+         │                                                            │
+         │                                                            │
+         │              [ y  Delete ]       [ n  Cancel ]             │
+         ╰────────────────────────────────────────────────────────────╯
+
+
+
+
+
+ rows 1–3 of 3
+ y/enter confirm • n/esc cancel • ctrl+c quit
