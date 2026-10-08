@@ -1,0 +1,31 @@
+[package]
+name = "skillmirror"
+description = "Mirror agent skills from one vault into every project that uses them."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license-file.workspace = true
+publish.workspace = true
+
+[dependencies]
+anstream = "1"
+anstyle = "1"
+clap = { version = "4", features = ["derive", "wrap_help"] }
+clap_complete = "4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+skillmirror-core.workspace = true
+skillmirror-tui.workspace = true
+thiserror = "2"
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+assert_cmd = "2"
+assert_fs = "1"
+portable-pty = "0.9"
+predicates = "3"
+serde_json = "1"
+skillmirror-testkit = { path = "../Testkit" }
+vt100 = "0.16"
