@@ -9,6 +9,7 @@ mod migrate;
 mod mirror;
 mod pipeline;
 mod skills;
+mod status;
 
 use std::io::IsTerminal;
 
@@ -48,6 +49,7 @@ fn dispatch(cli: &Cli, command: &Command) -> Result<Exit, CliError> {
         Command::List(args) => list::run(cli, args),
         Command::Delete(args) => delete::run(cli, args),
         Command::Skills(args) => skills::run(cli, args),
+        Command::Status(args) => status::run(cli, args),
         Command::Add(args) => install::add(cli, args),
         Command::Init(args) => install::init(cli, args),
         Command::Undo(args) => backup::run_undo(args),

@@ -40,6 +40,8 @@ pub(crate) enum Command {
     List(ListArgs),
     /// Remove one skill from projects
     Delete(DeleteArgs),
+    /// Show how every project stands against the vault; writes nothing, exit 1 when something differs
+    Status(StatusArgs),
     /// Show the skills in the vault, grouped by folder
     Skills(SkillsArgs),
     /// Install skills, groups or profiles into an existing project
@@ -83,6 +85,16 @@ pub(crate) struct ApplyArgs {
 
 #[derive(Debug, Args)]
 pub(crate) struct ListArgs {
+    /// Print one JSON document instead of text
+    #[arg(long)]
+    pub(crate) json: bool,
+}
+
+#[derive(Debug, Args)]
+pub(crate) struct StatusArgs {
+    /// Also list the projects that are fully up to date, with their skills
+    #[arg(long)]
+    pub(crate) all: bool,
     /// Print one JSON document instead of text
     #[arg(long)]
     pub(crate) json: bool,
