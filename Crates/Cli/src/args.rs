@@ -42,6 +42,8 @@ pub(crate) enum Command {
     Delete(DeleteArgs),
     /// Show how every project stands against the vault; writes nothing, exit 1 when something differs
     Status(StatusArgs),
+    /// Show the lines a sync would bring in and take away; writes nothing, exit 1 when something differs
+    Diff(DiffArgs),
     /// Show the skills in the vault, grouped by folder
     Skills(SkillsArgs),
     /// Install skills, groups or profiles into an existing project
@@ -95,6 +97,22 @@ pub(crate) struct StatusArgs {
     /// Also list the projects that are fully up to date, with their skills
     #[arg(long)]
     pub(crate) all: bool,
+    /// Print one JSON document instead of text
+    #[arg(long)]
+    pub(crate) json: bool,
+}
+
+#[derive(Debug, Args)]
+pub(crate) struct DiffArgs {
+    /// Only this skill
+    #[arg(value_name = "SKILL")]
+    pub(crate) skill: Option<String>,
+    /// Only this project
+    #[arg(long, value_name = "DIR")]
+    pub(crate) project: Option<PathBuf>,
+    /// Only the lines added and removed per file, not the lines themselves
+    #[arg(long)]
+    pub(crate) stat: bool,
     /// Print one JSON document instead of text
     #[arg(long)]
     pub(crate) json: bool,

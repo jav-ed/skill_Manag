@@ -4,6 +4,7 @@
 #[macro_use]
 mod macros;
 mod backup;
+mod diff;
 mod human;
 mod json;
 mod lossy;
@@ -16,6 +17,7 @@ use std::io::{BufRead, IsTerminal, Write};
 pub(crate) use backup::{
     HistoryJson, HistoryRow, UndoJson, UndoRow, UndoStatus, render_history, render_undo,
 };
+pub(crate) use diff::{DiffJson, render_diff};
 pub(crate) use human::{
     render_delete, render_installed, render_rows, render_summary, render_vault,
 };

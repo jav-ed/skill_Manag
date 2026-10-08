@@ -3,6 +3,7 @@
 mod backup;
 mod context;
 mod delete;
+mod diff;
 mod install;
 mod list;
 mod migrate;
@@ -50,6 +51,7 @@ fn dispatch(cli: &Cli, command: &Command) -> Result<Exit, CliError> {
         Command::Delete(args) => delete::run(cli, args),
         Command::Skills(args) => skills::run(cli, args),
         Command::Status(args) => status::run(cli, args),
+        Command::Diff(args) => diff::run(cli, args),
         Command::Add(args) => install::add(cli, args),
         Command::Init(args) => install::init(cli, args),
         Command::Undo(args) => backup::run_undo(args),

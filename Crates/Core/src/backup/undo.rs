@@ -11,7 +11,7 @@ use crate::apply::{Keep, Replaces, discard, place};
 use crate::events::{Event, Observer, Status};
 use crate::ops::validate_name;
 use crate::runid::run_id;
-use crate::scan::{Target, first_link_above};
+use crate::scan::{Target, first_link_above, same_folder};
 
 /// Which entries of the run are undone. An empty filter takes all of them.
 #[derive(Debug, Default, Clone)]
@@ -27,11 +27,6 @@ impl Filter {
             .is_none_or(|p| same_folder(p, &entry.entry.project))
             && self.skill.as_ref().is_none_or(|s| *s == entry.entry.skill)
     }
-}
-
-/// The same folder, whether it is named directly or through a link or a relative path.
-fn same_folder(left: &Path, right: &Path) -> bool {
-    left == right || matches!((left.canonicalize(), right.canonicalize()), (Ok(a), Ok(b)) if a == b)
 }
 
 /// What happened to one skill folder.

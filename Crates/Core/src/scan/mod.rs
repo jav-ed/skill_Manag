@@ -7,7 +7,7 @@ mod targets;
 mod walk;
 
 pub use error::{ScanError, ScanIssue};
-pub use links::first_link_above;
+pub use links::{first_link_above, same_folder};
 pub use prune::{NOISE_DIRS, ScanOptions};
 pub use targets::{Target, TargetSet, all_targets, push_targets, sync_targets};
 pub use walk::{ScanReport, SkillsDir, scan};

@@ -1,6 +1,7 @@
 //! The operations front ends call: open a workspace, scan, then plan and apply sync, push, list and delete.
 
 mod delete;
+mod diff;
 mod list;
 mod project;
 mod push;
@@ -12,6 +13,7 @@ mod workspace;
 pub use delete::{
     DeleteError, DeleteReport, Deleted, delete, target_in_project, targets_named, validate_name,
 };
+pub use diff::{DiffFilter, DiffKind, DiffReport, FileDiff, SkillDiff, Skipped, diff};
 pub use list::{Installed, InstalledSet, installed};
 pub use project::{NewProject, ProjectError, check_existing, check_new, create_new, plan_install};
 pub use push::plan as plan_push;
@@ -20,6 +22,8 @@ pub use status::{Outdated, Problem, ProjectStatus, StatusReport, status};
 pub use sync::plan as plan_sync;
 pub use workspace::Workspace;
 
+#[cfg(test)]
+mod diff_tests;
 #[cfg(test)]
 mod profile_tests;
 #[cfg(test)]

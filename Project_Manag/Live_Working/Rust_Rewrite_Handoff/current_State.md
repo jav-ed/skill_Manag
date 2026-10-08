@@ -23,7 +23,7 @@ Cargo virtual workspace, edition 2024, `rust-version = 1.88`, resolver 3, strict
 | `plan/` | Per target: compare size, then bytes, then mode; remember a destination `Snapshot` (length, mode, mtime per entry). Errors per target (`SkillFileNotTracked`, `SkillFolderIsLink`, ...) never stop the others. |
 | `apply/` | Writes the plan with a bounded rayon pool. See "How a write flows". |
 | `backup/` | Backup store (`Backups`, `Run`, `Entry`) and `undo`. Every writing command keeps what it replaces or removes in `<state>/backups/<run-id>/<n>/`; `undo` is itself a run, so a second `undo` redoes it. Contract Q34. |
-| `ops/` | What front ends call: `Workspace::open/scan`, `plan_sync`, `plan_push`, `plan_install` (add/init), `delete` (takes an optional backup `Run`), `installed`, `status`, `resolve` (names, groups, profiles to skills). |
+| `ops/` | What front ends call: `Workspace::open/scan`, `plan_sync`, `plan_push`, `plan_install` (add/init), `delete` (takes an optional backup `Run`), `installed`, `status`, `diff`, `resolve` (names, groups, profiles to skills). |
 | `events.rs` | `Observer` callback with `Event::{ScanFinished, TargetDone}`; the CLI, the TUI and a future web view share it. |
 | `error.rs` | `Error` (one variant per module) and the `Hint` trait (a second line telling the user what to do). |
 
@@ -60,6 +60,7 @@ Global options on every command: `--vault <DIR>`, `--root <DIR>`. No subcommand:
 | `list [--json]` | Every installed skill folder |
 | `delete <NAME> [--project DIR] [--dry-run] [-y] [--json]` | Remove one skill from one or all projects |
 | `skills [--group PATH] [--json]` | The vault's skills grouped by folder |
+| `diff [SKILL] [--project DIR] [--stat] [--json]` | Read-only: the lines a sync would bring in and take away, per file (contract Q42) |
 | `status [--all] [--json]` | Read-only: how every project stands against the vault (outdated, mandatory missing, not in the vault, failed); exit like `--check` (contract Q41) |
 | `add [SKILL]... [--group P] [--profile N] [--project DIR] [--dry-run] [-y] [--json]` | Install skills, groups or profiles into an existing project |
 | `init <DIR> [SKILL]... [--group] [--profile] [--git] [--no-mandatory] ...` | Create a project directory and install mandatory skills plus a selection |

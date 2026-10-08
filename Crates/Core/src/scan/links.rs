@@ -1,4 +1,4 @@
-//! Refusing to work through symlinks above a skill folder.
+//! Symlinks around skill folders: refusing to work through them, and telling two spellings of a folder apart.
 
 use std::path::{Path, PathBuf};
 
@@ -17,4 +17,9 @@ pub fn first_link_above(skill_path: &Path) -> std::io::Result<Option<PathBuf>> {
         }
     }
     Ok(None)
+}
+
+/// Whether both paths are the same folder, written directly or through a link or a relative path.
+pub fn same_folder(left: &Path, right: &Path) -> bool {
+    left == right || matches!((left.canonicalize(), right.canonicalize()), (Ok(a), Ok(b)) if a == b)
 }
