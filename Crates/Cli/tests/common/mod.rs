@@ -34,3 +34,17 @@ pub(crate) fn json_of(cmd: &mut Command) -> serde_json::Value {
     serde_json::from_slice(&out.stdout)
         .unwrap_or_else(|e| panic!("not JSON ({e}): {}", String::from_utf8_lossy(&out.stdout)))
 }
+
+/// The standard world with `targets: [claude]` in the vault config.
+pub(crate) fn world_with_claude_target() -> World {
+    let world = World::standard();
+    world
+        .vault_config_with(&["coding", "tmux"], "targets: [claude]")
+        .commit_vault();
+    world
+}
+
+/// Where `<project>/.claude/skills` points, if it is a link.
+pub(crate) fn claude_link(world: &World, project: &str) -> Option<std::path::PathBuf> {
+    std::fs::read_link(world.root().join(project).join(".claude/skills")).ok()
+}

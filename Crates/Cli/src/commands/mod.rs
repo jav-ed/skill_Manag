@@ -1,6 +1,7 @@
 //! One module per command.
 
 mod backup;
+mod bridge;
 mod context;
 mod delete;
 mod diff;
@@ -51,6 +52,7 @@ fn dispatch(cli: &Cli, command: &Command) -> Result<Exit, CliError> {
         Command::List(args) => list::run(cli, args),
         Command::Delete(args) => delete::run(cli, args),
         Command::Skills(args) => skills::run(cli, args),
+        Command::Bridge(args) => bridge::run(cli, args),
         Command::Status(args) => status::run(cli, args),
         Command::Diff(args) => diff::run(cli, args),
         Command::Doctor(args) => doctor::run(cli, args),

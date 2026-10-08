@@ -32,6 +32,8 @@ pub(crate) struct ProjectRow {
     up_to_date: Vec<String>,
     outdated: Vec<OutdatedRow>,
     missing_mandatory: Vec<String>,
+    /// Targets of the vault config whose link to `.agents/skills` is not made yet.
+    missing_bridges: Vec<String>,
     not_in_vault: Vec<String>,
     failed: Vec<ProblemRow>,
 }
@@ -51,6 +53,7 @@ impl ProjectRow {
             up_to_date: project.up_to_date.clone(),
             outdated: project.outdated.iter().map(outdated_row).collect(),
             missing_mandatory: project.missing_mandatory.clone(),
+            missing_bridges: project.missing_bridges.clone(),
             not_in_vault: project.not_in_vault.clone(),
             failed: project
                 .failed
@@ -81,6 +84,7 @@ pub(crate) struct StatusSummary {
     drift: usize,
     outdated_skills: usize,
     missing_mandatory: usize,
+    missing_bridges: usize,
     not_in_vault: usize,
     failed: usize,
 }
@@ -98,6 +102,7 @@ impl StatusSummary {
             drift: report.drifting(),
             outdated_skills: sum(|p| p.outdated.len()),
             missing_mandatory: sum(|p| p.missing_mandatory.len()),
+            missing_bridges: sum(|p| p.missing_bridges.len()),
             not_in_vault: sum(|p| p.not_in_vault.len()),
             failed: report.failed(),
         }
@@ -145,6 +150,13 @@ pub(crate) fn render_status(report: &StatusReport, show_all: bool) -> String {
                 pad(skill)
             );
         }
+        for name in &project.missing_bridges {
+            putln!(
+                out,
+                "  {WARNING}+{WARNING:#} {NAME}{}{NAME:#} {MUTED}bridge to .agents/skills not made (`skillmirror bridge`){MUTED:#}",
+                pad(name)
+            );
+        }
         for problem in &project.failed {
             putln!(
                 out,
@@ -182,14 +194,19 @@ pub(crate) fn render_status(report: &StatusReport, show_all: bool) -> String {
     let mut parts = vec![format!("{} in sync", summary.in_sync)];
     if summary.drift > 0 {
         parts.push(format!(
-            "{} differ ({} outdated, {} mandatory missing)",
+            "{} differ ({} outdated, {} mandatory missing{})",
             summary.drift,
             plural(summary.outdated_skills, "skill folder"),
-            summary.missing_mandatory
+            summary.missing_mandatory,
+            if summary.missing_bridges > 0 {
+                format!(", {} missing", plural(summary.missing_bridges, "bridge"))
+            } else {
+                String::new()
+            }
         ));
     }
     if summary.failed > 0 {
-        parts.push(format!("{} could not be compared", summary.failed));
+        parts.push(format!("{} with a problem", summary.failed));
     }
     put!(
         out,

@@ -79,7 +79,7 @@ Opt-in rule (unchanged): `sync` updates only skills a project already has; `push
 |---|---|---|
 | groups (vault-only), profiles with `extends`, `add`, `init`, `status`, `diff`, change-aware sync, backup and `undo`, `--json`, `--check`, `doctor` with SKILL.md lint, `targets` (`agents` canonical, `claude` symlink bridge) | provenance lock with three-way drift states (user: "maybe later"), `adopt`, `hold`, dependency closure for `add`, web stage 1 and 2 | commit-after-sync, watch mode, enable and disable, version pinning, merge with conflict markers, marketplace, security audit of skill text |
 
-`.agents/skills` is the only discovered location. Other agent directories (`.claude/skills`, `.kiro/skills`) are created as relative symlinks to it when a project asks for them, are never read as sources, never replace a real directory, and are recreated by `sync` when missing (a gitignored bridge vanishes on clone). The kernel enforces "never replace a real directory": `rename` of a link onto a directory fails with `EISDIR`.
+`.agents/skills` is the only discovered location. Other agent directories (`.claude/skills`, `.kiro/skills`) are created as relative symlinks to it when a project asks for them, are never read as sources, never replace a real directory, and are recreated by `sync` when missing (a gitignored bridge vanishes on clone). The kernel enforces "never replace a real directory": `rename` of a link onto a directory fails with `EISDIR`. Decided later (contract Q44): `sync` does not recreate a missing bridge; the `bridge` command does, `add` and `init` call it for their project, and `status` and `doctor` report a missing one.
 
 ### 7. Quality, licence, supply chain
 

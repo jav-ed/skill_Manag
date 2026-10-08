@@ -16,7 +16,7 @@ pub use paths::Dirs;
 pub use pointer::{read_pointer, write_pointer};
 pub use save::{ConfigUpdate, save_config};
 pub use settings::{Flags, Settings, Source, Sourced};
-pub use vault_config::{Profile, VaultConfig};
+pub use vault_config::{KNOWN_TARGETS, Profile, VaultConfig};
 
 #[cfg(test)]
 mod migrate_tests;

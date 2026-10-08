@@ -6,7 +6,7 @@ use skillmirror_core::plan::Plan;
 use skillmirror_core::scan::ScanReport;
 
 use super::context::{Context, open};
-use super::pipeline::{Run, execute};
+use super::pipeline::{Hooks, Run, execute};
 use crate::args::{ApplyArgs, Cli};
 use crate::exit::Exit;
 use crate::report::CliError;
@@ -55,7 +55,7 @@ pub(super) fn run(cli: &Cli, args: &ApplyArgs, which: Which) -> Result<Exit, Cli
         return finish_without_plan(&run, message);
     }
     let plan = which.plan(&workspace, &report)?;
-    execute(plan, &report.issues, &run, &|| Ok(())).map(|done| done.exit)
+    execute(plan, &report.issues, &run, &Hooks::NONE).map(|done| done.exit)
 }
 
 /// Why there is nothing to plan, when the vault side is empty.
@@ -74,5 +74,5 @@ fn finish_without_plan(run: &Run<'_>, message: &str) -> Result<Exit, CliError> {
         empty_message: message,
         ..*run
     };
-    execute(Plan::default(), &[], &run, &|| Ok(())).map(|done| done.exit)
+    execute(Plan::default(), &[], &run, &Hooks::NONE).map(|done| done.exit)
 }

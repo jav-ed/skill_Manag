@@ -167,6 +167,7 @@ pub(super) fn root(report: &mut Report, settings: &Settings) {
                 );
             }
             report.ran("leftovers");
+            bridges(report, settings, &found.skills_dirs);
         }
         Err(error) => report.add(
             Severity::Error,
@@ -188,6 +189,25 @@ pub(super) fn root(report: &mut Report, settings: &Settings) {
             ),
             Some("keep the projects on a local filesystem such as ext4, xfs or btrfs".to_string()),
         );
+    }
+}
+
+/// The links from other agent folders to `.agents/skills` that the vault config asks for.
+fn bridges(report: &mut Report, settings: &Settings, dirs: &[crate::scan::SkillsDir]) {
+    report.ran("bridges");
+    for bridge in crate::ops::plan_bridges(&settings.config().targets, dirs) {
+        let subject = Some(bridge.link.display().to_string());
+        if bridge.state == crate::ops::BridgeState::Missing {
+            report.add(
+                Severity::Warning,
+                "bridges",
+                subject,
+                format!("the {} bridge is missing", bridge.name),
+                Some("`skillmirror bridge` makes it".to_string()),
+            );
+        } else if let Some((message, hint)) = bridge.problem() {
+            report.add(Severity::Warning, "bridges", subject, message, Some(hint));
+        }
     }
 }
 

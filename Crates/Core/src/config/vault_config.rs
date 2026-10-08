@@ -10,6 +10,10 @@ use super::ConfigError;
 /// Name of the config file inside the vault.
 pub(super) const FILE_NAME: &str = "config.yaml";
 
+/// The other agent folders a project can be linked to, by the name used in `targets:` and the folder
+/// (relative to the project) that becomes a link to `.agents/skills`.
+pub const KNOWN_TARGETS: &[(&str, &str)] = &[("claude", ".claude/skills")];
+
 /// Contents of the vault config. Unknown keys are a hard error, a missing file is an empty config.
 #[derive(Debug, Default, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields, default)]
@@ -20,6 +24,8 @@ pub struct VaultConfig {
     pub exclude_paths: Vec<PathBuf>,
     /// Named selections of skills for `init` and `add`.
     pub profiles: BTreeMap<String, Profile>,
+    /// Other agent folders to link to `.agents/skills`, by name; see [`KNOWN_TARGETS`].
+    pub targets: Vec<String>,
 }
 
 /// A named selection: groups (vault folder paths), skills (names) and other profiles, minus `exclude`.
@@ -87,7 +93,25 @@ impl VaultConfig {
         if self.exclude_paths.iter().any(|p| p.as_os_str().is_empty()) {
             return Err("exclude_paths has an empty entry".to_string());
         }
+        self.validate_targets()?;
         self.validate_profiles()
+    }
+
+    fn validate_targets(&self) -> Result<(), String> {
+        let mut seen = std::collections::BTreeSet::new();
+        for name in &self.targets {
+            if !KNOWN_TARGETS.iter().any(|(known, _)| known == name) {
+                let known: Vec<&str> = KNOWN_TARGETS.iter().map(|(known, _)| *known).collect();
+                return Err(format!(
+                    "targets entry {name:?} is not a known agent folder (known: {})",
+                    known.join(", ")
+                ));
+            }
+            if !seen.insert(name) {
+                return Err(format!("targets lists {name:?} twice"));
+            }
+        }
+        Ok(())
     }
 
     /// Structure only: names are plain, `extends` points at existing profiles and never loops.

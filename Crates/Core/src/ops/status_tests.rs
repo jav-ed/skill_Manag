@@ -181,3 +181,64 @@ fn an_unknown_mandatory_name_is_a_hard_error_as_for_push() {
         "{err}"
     );
 }
+
+/// The same world with `targets: [claude]` in the vault config, committed and reopened.
+fn with_claude_target(tree: &TempTree) -> Workspace {
+    let config = std::fs::read_to_string(tree.path().join("vault/config.yaml")).unwrap();
+    tree.write("vault/config.yaml", &format!("{config}targets: [claude]\n"));
+    tree.git("vault", &["commit", "-aqm", "targets"]);
+    let flags = Flags {
+        vault: Some(tree.path().join("vault")),
+        root: None,
+    };
+    let dirs = Dirs::under(&tree.path().join("home"));
+    Workspace::open(Settings::load(&flags, &EnvOverrides::default(), &dirs).unwrap()).unwrap()
+}
+
+#[test]
+fn a_missing_bridge_is_drift_and_a_blocked_one_is_a_problem() {
+    let (tree, _) = world("tmux");
+    let ws = with_claude_target(&tree);
+    // b has a real folder where the link should go.
+    tree.write("projects/b/.claude/skills/mine/SKILL.md", "mine\n");
+    let scanned = ws.scan(&ignore_events).unwrap();
+
+    let report = status(&ws, &scanned).unwrap();
+
+    let a = project(&report, "a");
+    assert_eq!(names(&a.missing_bridges), ["claude"]);
+    assert!(a.drifts(), "the bridge command would change this project");
+    let b = project(&report, "b");
+    assert!(
+        b.missing_bridges.is_empty(),
+        "a blocked bridge is a problem, not a missing one"
+    );
+    let blocked = b
+        .failed
+        .iter()
+        .find(|p| p.skill == "bridge claude")
+        .unwrap();
+    assert!(
+        blocked.message.contains("real folder"),
+        "{}",
+        blocked.message
+    );
+}
+
+#[test]
+fn a_bridge_in_place_is_no_drift() {
+    let (tree, _) = world("");
+    let ws = with_claude_target(&tree);
+    for project in ["a", "b", "c", "d"] {
+        let bridges = plan_project_bridges(
+            &["claude".to_string()],
+            &tree.path().join("projects").join(project),
+        );
+        create_bridge(&bridges[0]).unwrap();
+    }
+    let scanned = ws.scan(&ignore_events).unwrap();
+
+    let report = status(&ws, &scanned).unwrap();
+
+    assert!(report.projects.iter().all(|p| p.missing_bridges.is_empty()));
+}

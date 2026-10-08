@@ -2,6 +2,7 @@
 
 use serde::Serialize;
 
+use super::BridgeRow;
 use super::view::{DeleteRow, InstalledRow, Row, SkillRow, Summary};
 
 #[derive(Serialize)]
@@ -21,6 +22,9 @@ pub(crate) struct RunJson<'a> {
     scan_issues: Vec<Issue>,
     /// The backup run that holds what this run replaced; `skillmirror undo` brings it back.
     backup: Option<String>,
+    /// The links to `.agents/skills` that `add` or `init` made or could not make; left out when none.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    bridges: Vec<BridgeRow>,
 }
 
 impl<'a> RunJson<'a> {
@@ -43,11 +47,17 @@ impl<'a> RunJson<'a> {
                 })
                 .collect(),
             backup: None,
+            bridges: Vec::new(),
         }
     }
 
     pub(crate) fn with_backup(mut self, backup: Option<&str>) -> Self {
         self.backup = backup.map(str::to_string);
+        self
+    }
+
+    pub(crate) fn with_bridges(mut self, bridges: &[BridgeRow]) -> Self {
+        self.bridges = bridges.to_vec();
         self
     }
 

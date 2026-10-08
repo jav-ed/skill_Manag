@@ -8,7 +8,7 @@ use skillmirror_core::scan::ScanIssue;
 
 use super::backup;
 use crate::exit::Exit;
-use crate::output::{self, Row, RunJson, Summary, Tense};
+use crate::output::{self, BridgeRow, Row, RunJson, Summary, Tense};
 use crate::report::CliError;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -68,12 +68,27 @@ impl Executed {
     }
 }
 
-/// Plans are shown, confirmed and written here. `before_write` runs once, after the user agreed and before the first byte is written.
+/// What a command does around the write.
+pub(super) struct Hooks<'a> {
+    /// Runs once, after the user agreed and before the first byte is written.
+    pub(super) before_write: &'a dyn Fn() -> Result<(), CliError>,
+    /// Runs after a write that created or updated skill folders, with how many; what it returns is reported.
+    pub(super) after_write: &'a dyn Fn(usize) -> Vec<BridgeRow>,
+}
+
+impl Hooks<'_> {
+    pub(super) const NONE: Hooks<'static> = Hooks {
+        before_write: &|| Ok(()),
+        after_write: &|_| Vec::new(),
+    };
+}
+
+/// Plans are shown, confirmed and written here.
 pub(super) fn execute(
     plan: Plan,
     issues: &[ScanIssue],
     run: &Run<'_>,
-    before_write: &dyn Fn() -> Result<(), CliError>,
+    hooks: &Hooks<'_>,
 ) -> Result<Executed, CliError> {
     let mode = run.mode();
     let rows: Vec<Row> = plan.entries.iter().map(Row::from_plan).collect();
@@ -82,7 +97,7 @@ pub(super) fn execute(
     }
     let summary = Summary::of(&rows);
     // Nothing to write, whether the plan is clean or only holds failures: show it like a dry run, never ask,
-    // and never run `before_write` (`init` would create a directory for nothing).
+    // and never run the hooks (`init` would create a directory for nothing).
     if mode != Mode::Apply || summary.changes() == 0 {
         show_plan(run, mode, &rows, issues)?;
         return Ok(Executed::nothing(exit_for_plan(mode, &summary)));
@@ -92,7 +107,7 @@ pub(super) fn execute(
         return Ok(Executed::nothing(Exit::Clean));
     }
     let (backups, backup_run) = backup::begin(run.kind)?;
-    before_write()?;
+    (hooks.before_write)()?;
     let options = ApplyOptions {
         backup: Some(&backup_run),
         ..ApplyOptions::default()
@@ -107,13 +122,18 @@ pub(super) fn execute(
         ));
     }
     let rows: Vec<Row> = done.applied.iter().map(Row::from_applied).collect();
-    show_done(run, &rows, issues, backup::saved(&finished))?;
-    backup::announce(&finished, run.json);
     let wrote = done
         .applied
         .iter()
         .filter(|a| matches!(a.outcome, Outcome::Created | Outcome::Updated))
         .count();
+    let bridges = if wrote > 0 {
+        (hooks.after_write)(wrote)
+    } else {
+        Vec::new()
+    };
+    show_done(run, &rows, issues, backup::saved(&finished), &bridges)?;
+    backup::announce(&finished, run.json);
     let exit = if done.failed() > 0 {
         Exit::Partial
     } else {
@@ -166,14 +186,21 @@ fn show_done(
     rows: &[Row],
     issues: &[ScanIssue],
     backup: Option<&str>,
+    bridges: &[BridgeRow],
 ) -> Result<(), CliError> {
     if run.json {
         let document = RunJson::new(run.kind.name(), Mode::Apply.name(), rows, issues);
-        output::line(&document.with_backup(backup).render()?);
+        output::line(
+            &document
+                .with_backup(backup)
+                .with_bridges(bridges)
+                .render()?,
+        );
         return Ok(());
     }
     output::print(&output::render_rows(rows, Tense::Done, run.all));
     output::print(&output::render_summary(&Summary::of(rows), Tense::Done, ""));
+    output::print(&output::render_bridge_notes(bridges));
     Ok(())
 }
 

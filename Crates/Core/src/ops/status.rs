@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
-use super::{Workspace, installed, plan_push, plan_sync};
+use super::{BridgeState, Workspace, installed, plan_bridges, plan_push, plan_sync};
 use crate::Hint;
 use crate::plan::{ChangeKind, PlanError, PlanKind, SkillPlan};
 use crate::scan::ScanReport;
@@ -34,6 +34,8 @@ pub struct ProjectStatus {
     pub missing_mandatory: Vec<String>,
     /// Installed folders the vault has no skill for; `sync` leaves them alone.
     pub not_in_vault: Vec<String>,
+    /// Targets from the vault config whose link to `.agents/skills` does not exist yet; `bridge` makes it.
+    pub missing_bridges: Vec<String>,
     pub failed: Vec<Problem>,
 }
 
@@ -45,6 +47,7 @@ impl ProjectStatus {
             outdated: Vec::new(),
             missing_mandatory: Vec::new(),
             not_in_vault: Vec::new(),
+            missing_bridges: Vec::new(),
             failed: Vec::new(),
         }
     }
@@ -52,7 +55,9 @@ impl ProjectStatus {
     /// Whether `sync` or `push` would change something here. A skill the vault lacks is no drift: nothing
     /// the tool does could fix it.
     pub fn drifts(&self) -> bool {
-        !self.outdated.is_empty() || !self.missing_mandatory.is_empty()
+        !self.outdated.is_empty()
+            || !self.missing_mandatory.is_empty()
+            || !self.missing_bridges.is_empty()
     }
 }
 
@@ -120,7 +125,23 @@ pub fn status(workspace: &Workspace, report: &ScanReport) -> Result<StatusReport
             status.not_in_vault.push(row.target.skill);
         }
     }
+    let targets = &workspace.settings.config().targets;
+    for bridge in plan_bridges(targets, &report.skills_dirs) {
+        let Some(status) = at(&position, &mut projects, &bridge.project) else {
+            continue;
+        };
+        if bridge.state == BridgeState::Missing {
+            status.missing_bridges.push(bridge.name.clone());
+        } else if let Some((message, hint)) = bridge.problem() {
+            status.failed.push(Problem {
+                skill: format!("bridge {}", bridge.name),
+                message,
+                hint: Some(hint),
+            });
+        }
+    }
     for status in &mut projects {
+        status.missing_bridges.sort();
         status.up_to_date.sort();
         status.outdated.sort_by(|a, b| a.skill.cmp(&b.skill));
         status.missing_mandatory.sort();

@@ -40,6 +40,8 @@ pub(crate) enum Command {
     List(ListArgs),
     /// Remove one skill from projects
     Delete(DeleteArgs),
+    /// Link the agent folders named in the vault config (`targets:`) to .agents/skills in every project
+    Bridge(BridgeArgs),
     /// Show how every project stands against the vault; writes nothing, exit 1 when something differs
     Status(StatusArgs),
     /// Show the lines a sync would bring in and take away; writes nothing, exit 1 when something differs
@@ -89,6 +91,24 @@ pub(crate) struct ApplyArgs {
 
 #[derive(Debug, Args)]
 pub(crate) struct ListArgs {
+    /// Print one JSON document instead of text
+    #[arg(long)]
+    pub(crate) json: bool,
+}
+
+// The flags mirror independent command-line switches.
+#[allow(clippy::struct_excessive_bools)]
+#[derive(Debug, Args)]
+pub(crate) struct BridgeArgs {
+    /// Show what would be linked and write nothing
+    #[arg(long)]
+    pub(crate) dry_run: bool,
+    /// Link without asking
+    #[arg(short, long)]
+    pub(crate) yes: bool,
+    /// Also list the bridges that are already in place
+    #[arg(long)]
+    pub(crate) all: bool,
     /// Print one JSON document instead of text
     #[arg(long)]
     pub(crate) json: bool,

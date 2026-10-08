@@ -1,6 +1,6 @@
 //! `doctor` on the machine and the configuration: git, config, pointer, leftovers, backups, the root.
 
-use super::doctor_tests::{about, healthy, listing, run, run_with, single, skill_md};
+use super::doctor_tests::{about, healthy, listing, of, run, run_with, single, skill_md};
 use super::*;
 use crate::config::{ConfigError, Dirs, Flags};
 use crate::testutil::TempTree;
@@ -160,4 +160,40 @@ fn doctor_writes_nothing() {
     );
 
     assert_eq!(listing(tree.path()), before);
+}
+
+#[test]
+fn a_missing_or_blocked_bridge_is_a_warning() {
+    let tree = healthy();
+    let config = std::fs::read_to_string(tree.path().join("vault/config.yaml")).unwrap();
+    tree.write("vault/config.yaml", &format!("{config}targets: [claude]\n"));
+    tree.git("vault", &["commit", "-aqm", "targets"]);
+    tree.write(
+        "projects/two/.agents/skills/coding/SKILL.md",
+        &skill_md("coding"),
+    );
+    tree.write("projects/two/.claude/skills/mine/SKILL.md", "mine\n");
+
+    let report = run_with(
+        &tree,
+        &Flags {
+            vault: Some(tree.path().join("vault")),
+            root: Some(tree.path().join("projects")),
+        },
+    );
+
+    let found = of(&report, "bridges");
+    assert_eq!(found.len(), 2, "{found:?}");
+    let missing = found
+        .iter()
+        .find(|f| f.message.contains("missing"))
+        .unwrap();
+    assert_eq!(missing.severity, Severity::Warning);
+    assert!(
+        missing
+            .subject
+            .as_deref()
+            .is_some_and(|s| s.contains("/one/"))
+    );
+    assert!(found.iter().any(|f| f.message.contains("real folder")));
 }

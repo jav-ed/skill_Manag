@@ -222,3 +222,30 @@ fn profiles_parse_and_are_checked_for_unknown_parents_and_loops() {
         );
     }
 }
+
+#[test]
+fn targets_name_known_agent_folders_and_nothing_else() {
+    let ok = VaultConfig::parse("targets: [claude]\n", Path::new("config.yaml")).unwrap();
+    assert_eq!(ok.targets, ["claude"]);
+    assert!(
+        VaultConfig::default().targets.is_empty(),
+        "no targets unless the config names them"
+    );
+
+    for (bad, wanted) in [
+        ("targets: [cursor]\n", "cursor"),
+        ("targets: [claude, claude]\n", "twice"),
+        ("targets: [\"\"]\n", "\"\""),
+    ] {
+        let err = VaultConfig::parse(bad, Path::new("config.yaml")).unwrap_err();
+        assert!(
+            matches!(&err, ConfigError::InvalidVaultConfig { message, .. } if message.contains(wanted)),
+            "{bad}: {err}"
+        );
+    }
+    let err = VaultConfig::parse("targets: [cursor]\n", Path::new("config.yaml")).unwrap_err();
+    assert!(
+        err.to_string().contains("claude"),
+        "the message lists the known names: {err}"
+    );
+}

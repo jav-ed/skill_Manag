@@ -146,5 +146,5 @@ fn a_skill_that_cannot_be_compared_is_a_partial_result() {
         .arg("status")
         .assert()
         .code(4)
-        .stdout(contains("1 could not be compared"));
+        .stdout(contains("1 with a problem"));
 }

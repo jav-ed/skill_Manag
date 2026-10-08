@@ -1,5 +1,6 @@
 //! The operations front ends call: open a workspace, scan, then plan and apply sync, push, list and delete.
 
+mod bridge;
 mod delete;
 mod diff;
 mod doctor;
@@ -11,6 +12,10 @@ mod status;
 mod sync;
 mod workspace;
 
+pub use bridge::{
+    Bridge, BridgeError, BridgeState, create as create_bridge, plan as plan_bridges,
+    plan_project as plan_project_bridges,
+};
 pub use delete::{
     DeleteError, DeleteReport, Deleted, delete, target_in_project, targets_named, validate_name,
 };
@@ -24,6 +29,8 @@ pub use status::{Outdated, Problem, ProjectStatus, StatusReport, status};
 pub use sync::plan as plan_sync;
 pub use workspace::Workspace;
 
+#[cfg(test)]
+mod bridge_tests;
 #[cfg(test)]
 mod diff_tests;
 #[cfg(test)]
