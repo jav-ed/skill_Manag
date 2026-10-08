@@ -8,13 +8,13 @@ use ratatui::widgets::{Block, Borders, Clear, Paragraph};
 use crate::app::Screen;
 use crate::binding::{
     ALL, BACK, BACK_HELP, Binding, CONFIRM_HELP, DELETE, DOWN, FILTER, HELP, ISSUES, MENU_HELP,
-    MENU_QUIT, OPEN, QUIT, RESULTS_HELP, RUN_DELETE, RUN_PUSH, RUN_SYNC, SELECT_COMMON, SYNC,
-    TOGGLE, UP,
+    MENU_QUIT, OPEN, QUIT, RESULTS_HELP, RUN_DELETE, RUN_PUSH, RUN_SYNC, SCROLL, SELECT_COMMON,
+    SYNC, TOGGLE, UP,
 };
 use crate::hit::{HitMap, Target};
 use crate::items::Mode;
 use crate::num::to_u16;
-use crate::screens::{Phase, Setup, Step, Work};
+use crate::screens::{History, HistoryPhase, Phase, Setup, Step, Work};
 use crate::theme;
 
 /// A key as written, and what it does.
@@ -39,6 +39,7 @@ fn short(screen: &Screen) -> Vec<Hint> {
     match screen {
         Screen::Menu(_) => hints(&[&UP, &DOWN, &OPEN, &HELP, &MENU_QUIT]),
         Screen::Setup(setup) => setup_hints(setup),
+        Screen::History(history) => history_hints(history),
         Screen::Work(work) => match &work.phase {
             Phase::Select => {
                 let mut keys: Vec<&Binding> = vec![&TOGGLE, &ALL, &FILTER];
@@ -55,6 +56,23 @@ fn short(screen: &Screen) -> Vec<Hint> {
                 hints(BACK_HELP)
             }
         },
+    }
+}
+
+fn history_hints(history: &History) -> Vec<Hint> {
+    match history.phase {
+        HistoryPhase::List => vec![
+            ("↑/↓", "move"),
+            ("enter", "undo this run"),
+            ("?", "help"),
+            ("esc", "back"),
+        ],
+        HistoryPhase::Confirm(_) => hints(CONFIRM_HELP),
+        HistoryPhase::Done(_) => hints(&[&SCROLL, &BACK, &QUIT]),
+        HistoryPhase::Loading
+        | HistoryPhase::Failed(_)
+        | HistoryPhase::Planning
+        | HistoryPhase::Running { .. } => hints(BACK_HELP),
     }
 }
 
@@ -87,6 +105,11 @@ fn full(screen: &Screen) -> Vec<Hint> {
         Screen::Menu(_) => hints(MENU_HELP),
         Screen::Setup(setup) => {
             let mut keys = setup_hints(setup);
+            keys.push(("ctrl+c", "quit"));
+            keys
+        }
+        Screen::History(history) => {
+            let mut keys = history_hints(history);
             keys.push(("ctrl+c", "quit"));
             keys
         }

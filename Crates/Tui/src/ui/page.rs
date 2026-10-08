@@ -12,26 +12,52 @@ use crate::theme;
 const SPINNER: [&str; 10] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 
 pub(super) fn loading(frame: &mut Frame, tick: usize, area: Rect) {
+    waiting(frame, tick, "Scanning projects…", area);
+}
+
+/// A spinner and a line of what is being waited for.
+pub(super) fn waiting(frame: &mut Frame, tick: usize, what: &str, area: Rect) {
     let glyph = SPINNER.get(tick % SPINNER.len()).copied().unwrap_or("·");
     let line = Line::from(vec![
         Span::styled(format!("  {glyph}  "), theme::accent()),
-        Span::styled("Scanning projects…", theme::muted()),
+        Span::styled(what.to_string(), theme::muted()),
     ]);
     frame.render_widget(Paragraph::new(line), area);
 }
 
+/// A gauge with a verb and the count, for the jobs that write.
+pub(super) fn progress(frame: &mut Frame, verb: &str, done: usize, total: usize, area: Rect) {
+    let [label, gauge] =
+        Layout::vertical([Constraint::Length(2), Constraint::Length(1)]).areas(area);
+    frame.render_widget(
+        Paragraph::new(Line::from(Span::styled(
+            format!("  {verb}  {done} / {total}"),
+            theme::bold(),
+        ))),
+        label,
+    );
+    frame.render_widget(
+        LineGauge::default()
+            .filled_style(theme::accent())
+            .unfilled_style(theme::muted())
+            .label("")
+            .ratio(ratio(done, total)),
+        gauge,
+    );
+}
+
 pub(super) fn planning(frame: &mut Frame, kind: Kind, tick: usize, area: Rect) {
-    let glyph = SPINNER.get(tick % SPINNER.len()).copied().unwrap_or("·");
     let what = match kind {
         Kind::Sync => "the sync",
         Kind::Push => "the push",
         Kind::Delete => "the delete",
     };
-    let line = Line::from(vec![
-        Span::styled(format!("  {glyph}  "), theme::accent()),
-        Span::styled(format!("Checking what {what} will change…"), theme::muted()),
-    ]);
-    frame.render_widget(Paragraph::new(line), area);
+    waiting(
+        frame,
+        tick,
+        &format!("Checking what {what} will change…"),
+        area,
+    );
 }
 
 pub(super) fn failed(frame: &mut Frame, message: &str, area: Rect) {
@@ -59,21 +85,5 @@ pub(super) fn running(frame: &mut Frame, kind: Kind, done: usize, total: usize, 
         Kind::Push => "Pushing",
         Kind::Delete => "Deleting",
     };
-    let [label, gauge] =
-        Layout::vertical([Constraint::Length(2), Constraint::Length(1)]).areas(area);
-    frame.render_widget(
-        Paragraph::new(Line::from(Span::styled(
-            format!("  {verb}  {done} / {total}"),
-            theme::bold(),
-        ))),
-        label,
-    );
-    frame.render_widget(
-        LineGauge::default()
-            .filled_style(theme::accent())
-            .unfilled_style(theme::muted())
-            .label("")
-            .ratio(ratio(done, total)),
-        gauge,
-    );
+    progress(frame, verb, done, total, area);
 }

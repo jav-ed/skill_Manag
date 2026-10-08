@@ -14,6 +14,7 @@ fn phase(ui: &Harness) -> &'static str {
     match &ui.app.screen {
         crate::app::Screen::Menu(_) => "menu",
         crate::app::Screen::Setup(_) => "setup",
+        crate::app::Screen::History(_) => "history",
         crate::app::Screen::Work(w) => match w.phase {
             Phase::Loading => "loading",
             Phase::Failed(_) => "failed",

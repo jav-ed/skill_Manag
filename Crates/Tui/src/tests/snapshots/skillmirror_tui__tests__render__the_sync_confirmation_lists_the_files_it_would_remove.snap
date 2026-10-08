@@ -14,8 +14,8 @@ expression: ui.screen()
          │                                                            │
          │ Updates 3 skill folders: 1 file added, 3 files changed, 2  │
          │ files removed.                                             │
-         │ removes astro/my_notes.md in projects/one                  │
-         │ removes coding/old/draft.md in projects/two                │
+         │   removes astro/my_notes.md in projects/one                │
+         │   removes coding/old/draft.md in projects/two              │
          │                                                            │
          │               [ y  Sync ]        [ n  Cancel ]             │
          ╰────────────────────────────────────────────────────────────╯

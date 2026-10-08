@@ -20,6 +20,7 @@ use crate::preview::Preview;
 use crate::results::{Kind, Results};
 use crate::screens::{Pending, check_vault};
 use crate::session::{Session, describe, load};
+use crate::undo::{do_undo, list_runs, plan_undo};
 
 fn send(tx: &Sender<Event>, id: JobId, job: Job) {
     // A closed channel means the UI has ended; there is nobody left to tell.
@@ -125,5 +126,33 @@ pub(crate) fn spawn_delete(tx: Sender<Event>, id: JobId, dirs: Dirs, pending: Pe
         let report = ops::delete(targets, false, Some(&backup), &progress);
         let results = Results::from_deleted(report).with_backup(&backup.finish(&backups));
         send(&tx, id, Job::Finished(Box::new(results)));
+    });
+}
+
+/// Reads the backup store.
+pub(crate) fn spawn_runs(tx: Sender<Event>, id: JobId, dirs: Dirs) {
+    thread::spawn(move || send(&tx, id, Job::Runs(Box::new(list_runs(&dirs)))));
+}
+
+/// Checks what undoing a run would do, without changing anything.
+pub(crate) fn spawn_undo_plan(tx: Sender<Event>, id: JobId, dirs: Dirs, run: String) {
+    thread::spawn(move || {
+        let planned = plan_undo(&dirs, &run);
+        send(&tx, id, Job::UndoPlanned(Box::new(planned)));
+    });
+}
+
+/// Undoes a run the user confirmed. `total` is how many folders the confirmation listed.
+pub(crate) fn spawn_undo(tx: Sender<Event>, id: JobId, dirs: Dirs, run: String, total: usize) {
+    thread::spawn(move || {
+        let done = AtomicUsize::new(0);
+        let progress = |event: CoreEvent| {
+            if matches!(event, CoreEvent::TargetDone { .. }) {
+                let now = done.fetch_add(1, Ordering::Relaxed) + 1;
+                send(&tx, id, Job::Progress { done: now, total });
+            }
+        };
+        let undone = do_undo(&dirs, &run, &progress);
+        send(&tx, id, Job::Undone(Box::new(undone)));
     });
 }

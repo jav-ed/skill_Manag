@@ -145,3 +145,71 @@ fn an_empty_vault_selection_explains_itself() {
             .contains("No matching skills found in any project.")
     );
 }
+
+/// Whether `text` starts with the pattern, where `d` stands for one digit and any other character for itself.
+fn starts_like(text: &[char], pattern: &str) -> Option<usize> {
+    let mut length = 0;
+    for (have, want) in text.iter().zip(pattern.chars()) {
+        let fits = if want == 'd' {
+            have.is_ascii_digit()
+        } else {
+            *have == want
+        };
+        if !fits {
+            return None;
+        }
+        length += 1;
+    }
+    (length == pattern.chars().count()).then_some(length)
+}
+
+/// Run ids and their dates change with the clock; a snapshot keeps their place and hides the value.
+fn without_times(screen: &str) -> String {
+    let chars: Vec<char> = screen.chars().collect();
+    let mut out = String::new();
+    let mut at = 0;
+    while at < chars.len() {
+        let rest = &chars[at..];
+        if let Some(length) = starts_like(rest, "dddd-dd-dd dd:dd:dd UTC") {
+            out.push_str("YYYY-MM-DD hh:mm:ss UTC");
+            at += length;
+        } else if let Some(length) = starts_like(rest, "dddddddd-dddddd-ddd-") {
+            // The rest of an id: the process id and the counter.
+            let tail = rest[length..]
+                .iter()
+                .take_while(|c| c.is_ascii_digit() || **c == '-')
+                .count();
+            out.push_str("[RUN]");
+            at += length + tail;
+        } else {
+            out.push(chars[at]);
+            at += 1;
+        }
+    }
+    out
+}
+
+#[test]
+fn the_history_page_the_undo_question_and_the_results() {
+    let mut ui = Harness::new(world());
+    ui.open("Sync").wait_select();
+    ui.run_confirmed();
+    ui.press('q');
+    ui.open("History");
+    ui.wait_for("the list", |app| {
+        matches!(&app.screen, crate::app::Screen::History(h) if matches!(h.phase, crate::screens::HistoryPhase::List))
+    });
+    insta::assert_snapshot!("history_list", without_times(&ui.screen()));
+
+    ui.code(Code::Enter);
+    ui.wait_for("the question", |app| {
+        matches!(&app.screen, crate::app::Screen::History(h) if matches!(h.phase, crate::screens::HistoryPhase::Confirm(_)))
+    });
+    insta::assert_snapshot!("history_question", without_times(&ui.screen()));
+
+    ui.press('y');
+    ui.wait_for("the results", |app| {
+        matches!(&app.screen, crate::app::Screen::History(h) if matches!(h.phase, crate::screens::HistoryPhase::Done(_)))
+    });
+    insta::assert_snapshot!("history_results", without_times(&ui.screen()));
+}

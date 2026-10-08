@@ -51,7 +51,7 @@ pub(super) fn draw(
     let [text, below] =
         Layout::vertical([Constraint::Fill(1), Constraint::Length(rows_below)]).areas(inner);
     frame.render_widget(
-        Paragraph::new(body).wrap(Wrap { trim: true }),
+        Paragraph::new(body).wrap(Wrap { trim: false }),
         text.inner(Margin::new(1, 1)),
     );
     below

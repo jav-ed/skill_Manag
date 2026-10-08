@@ -2,6 +2,7 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 
 mod flow;
+mod history;
 mod issues;
 mod mouse;
 mod render;

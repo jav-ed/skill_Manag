@@ -1,0 +1,28 @@
+---
+source: Crates/Tui/src/tests/render.rs
+expression: without_times(&ui.screen())
+---
+ ← skillmirror  ·  javedab.com  ·  history
+
+ History   1 run
+    when                    command  skills      projects
+>   YYYY-MM-DD hh:mm:ss UTC sync     3           2
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ runs 1–1 of 1
+ ↑/↓ move • enter undo this run • ? help • esc back

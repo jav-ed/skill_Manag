@@ -1,12 +1,13 @@
 //! The selection table of sync, push, delete and list.
 
+use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState};
-use ratatui::{Frame, symbols};
+use ratatui::widgets::Paragraph;
 use unicode_width::UnicodeWidthStr;
 
+use super::scroll;
 use crate::hit::{HitMap, Target};
 use crate::items::{Item, Mode, Tone};
 use crate::num::{plural, to_u16};
@@ -191,21 +192,8 @@ fn draw_rows(
         hits.push(rect, Target::Row(position));
     }
     if work.view.len() > usize::from(area.height) {
-        draw_scrollbar(frame, hits, work, area);
+        scroll::bar(frame, hits, &work.view, area);
     }
-}
-
-fn draw_scrollbar(frame: &mut Frame, hits: &mut HitMap, work: &Work, area: Rect) {
-    let track = Rect::new(area.right().saturating_sub(1), area.y, 1, area.height);
-    hits.push(track, Target::ScrollTrack);
-    let mut state = ScrollbarState::new(work.view.len())
-        .position(work.view.offset)
-        .viewport_content_length(usize::from(area.height));
-    let bar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
-        .begin_symbol(None)
-        .end_symbol(None)
-        .track_symbol(Some(symbols::line::VERTICAL));
-    frame.render_stateful_widget(bar, track, &mut state);
 }
 
 fn tone_style(tone: Tone) -> Style {

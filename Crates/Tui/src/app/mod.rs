@@ -12,7 +12,7 @@ use skillmirror_core::config::{ConfigError, Dirs, Settings, Source};
 use crate::event::{Event, JobId};
 use crate::hit::{HitMap, Target};
 use crate::items::Mode;
-use crate::screens::{Dest, ENTRIES, Menu, Phase, Setup, SetupStart, Work};
+use crate::screens::{Dest, ENTRIES, History, HistoryPhase, Menu, Phase, Setup, SetupStart, Work};
 use crate::session::Session;
 
 pub(crate) const SITE_URL: &str = "https://javedab.com";
@@ -20,6 +20,7 @@ pub(crate) const SITE_URL: &str = "https://javedab.com";
 pub(crate) enum Screen {
     Menu(Menu),
     Work(Box<Work>),
+    History(Box<History>),
     Setup(Box<Setup>),
 }
 
@@ -54,6 +55,8 @@ pub(crate) struct App {
     loading: Option<JobId>,
     /// The planning, applying or deleting job whose reports the work page waits for.
     running: Option<JobId>,
+    /// The read of the backup store that the history page waits for.
+    listing: Option<JobId>,
     /// The look at a vault folder the setup wizard waits for.
     checking: Option<JobId>,
     next_job: JobId,
@@ -84,6 +87,7 @@ impl App {
             session: None,
             loading: None,
             running: None,
+            listing: None,
             checking: None,
             next_job: 0,
             settings,
@@ -113,14 +117,28 @@ impl App {
 
     /// A job is writing to the disk. The page cannot be left and a second job cannot start meanwhile.
     pub(crate) fn writing(&self) -> bool {
-        matches!(&self.screen, Screen::Work(w) if matches!(w.phase, Phase::Running { .. }))
+        match &self.screen {
+            Screen::Work(w) => matches!(w.phase, Phase::Running { .. }),
+            Screen::History(h) => matches!(h.phase, HistoryPhase::Running { .. }),
+            Screen::Menu(_) | Screen::Setup(_) => false,
+        }
     }
 
     /// Spinner and progress need ticks; everything else is event driven, so an idle UI uses no CPU.
     pub(crate) fn animating(&self) -> bool {
         self.loading.is_some()
             || self.checking.is_some()
-            || matches!(&self.screen, Screen::Work(w) if matches!(w.phase, Phase::Running { .. } | Phase::Loading | Phase::Planning(_)))
+            || match &self.screen {
+                Screen::Work(w) => matches!(
+                    w.phase,
+                    Phase::Running { .. } | Phase::Loading | Phase::Planning(_)
+                ),
+                Screen::History(h) => matches!(
+                    h.phase,
+                    HistoryPhase::Running { .. } | HistoryPhase::Loading | HistoryPhase::Planning
+                ),
+                Screen::Menu(_) | Screen::Setup(_) => false,
+            }
     }
 
     pub(crate) fn on_tick(&mut self) {
@@ -136,6 +154,7 @@ impl App {
         match &self.screen {
             Screen::Menu(_) => None,
             Screen::Setup(_) => Some("setup"),
+            Screen::History(_) => Some("history"),
             Screen::Work(work) => Some(match work.mode {
                 Mode::Sync => "sync",
                 Mode::Push => "push",
@@ -157,6 +176,13 @@ impl App {
         self.screen = Screen::Work(Box::new(work));
     }
 
+    pub(crate) fn open_history(&mut self) {
+        let id = self.new_job();
+        self.listing = Some(id);
+        crate::jobs::spawn_runs(self.tx.clone(), id, self.dirs.clone());
+        self.screen = Screen::History(Box::new(History::new()));
+    }
+
     /// Back to the menu with the cursor on the entry the user came from.
     pub(crate) fn back_to_menu(&mut self) {
         let cursor = match &self.screen {
@@ -167,6 +193,10 @@ impl App {
             Screen::Setup(_) => ENTRIES
                 .iter()
                 .position(|e| e.dest == Dest::Setup)
+                .unwrap_or(0),
+            Screen::History(_) => ENTRIES
+                .iter()
+                .position(|e| e.dest == Dest::History)
                 .unwrap_or(0),
             Screen::Menu(menu) => menu.cursor,
         };

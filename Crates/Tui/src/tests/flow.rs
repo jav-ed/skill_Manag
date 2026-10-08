@@ -7,6 +7,7 @@ fn phase_name(app: &crate::app::App) -> &'static str {
     match &app.screen {
         Screen::Menu(_) => "menu",
         Screen::Setup(_) => "setup",
+        Screen::History(_) => "history",
         Screen::Work(w) => match w.phase {
             Phase::Loading => "loading",
             Phase::Failed(_) => "failed",
@@ -98,9 +99,10 @@ fn delete_asks_before_it_removes_and_cancel_keeps_everything() {
     assert_eq!(phase_name(&ui.app), "confirm");
     let page = ui.screen();
     assert!(
-        page.contains("This will inshallah permanently remove"),
-        "{page}"
+        page.contains("A copy is kept first"),
+        "deleting is not permanent, the backups hold it: {page}"
     );
+    assert!(!page.contains("permanently"), "{page}");
     ui.press('n');
     assert_eq!(phase_name(&ui.app), "select");
     assert!(ui.world.exists("projects/one/.agents/skills/astro"));

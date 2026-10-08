@@ -1,0 +1,28 @@
+---
+source: Crates/Tui/src/tests/render.rs
+expression: without_times(&ui.screen())
+---
+ ← skillmirror  ·  javedab.com  ·  history
+
+ History   1 run
+    when                    command  skills      projects
+>   YYYY-MM-DD hh:mm:ss UTC sync     3           2
+
+
+         ╭ Undo the sync of YYYY-MM-DD hh:mm:ss UTC? ─────────────────╮
+         │                                                            │
+         │ Puts back 3 skill folders in 2 projects.                   │
+         │   restores astro in projects/one                           │
+         │   restores coding in projects/one                          │
+         │   restores coding in projects/two                          │
+         │ What the undo replaces is saved first, so undoing it again │
+         │ brings it back.                                            │
+         │                                                            │
+         │               [ y  Undo ]        [ n  Cancel ]             │
+         ╰────────────────────────────────────────────────────────────╯
+
+
+
+
+ runs 1–1 of 1
+ y/enter confirm • n/esc cancel • ctrl+c quit

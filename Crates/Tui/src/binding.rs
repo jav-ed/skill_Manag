@@ -73,6 +73,11 @@ pub(crate) const DELETE: Binding = Binding {
     label: "d",
     help: "delete",
 };
+pub(crate) const UNDO: Binding = Binding {
+    keys: &[(Code::Char('u'), N)],
+    label: "u",
+    help: "undo",
+};
 pub(crate) const DETAILS: Binding = Binding {
     keys: &[(Code::Char('d'), N)],
     label: "d",

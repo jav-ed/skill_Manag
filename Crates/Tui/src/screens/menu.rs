@@ -16,10 +16,11 @@ pub(crate) struct Entry {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Dest {
     Work(Mode),
+    History,
     Setup,
 }
 
-pub(crate) const ENTRIES: [Entry; 5] = [
+pub(crate) const ENTRIES: [Entry; 6] = [
     Entry {
         label: "Sync",
         blurb: "Refresh the skills each project already has; never adds one",
@@ -43,6 +44,12 @@ pub(crate) const ENTRIES: [Entry; 5] = [
         blurb: "Install the mandatory skills into every opted-in project",
         detail: "Reads the mandatory list from your vault config and pushes those skills to every project that already has .agents/skills/, bypassing the opt-in rule. Configure mandatory skills by adding 'mandatory: [skill-name]' to <vault>/config.yaml.",
         dest: Dest::Work(Mode::Push),
+    },
+    Entry {
+        label: "History",
+        blurb: "Undo a sync, push or delete from the backups",
+        detail: "Every sync, push, add, init and delete that replaces or removes a skill folder keeps the old copy first. This page lists those runs, newest first. Pick one and confirm to put its folders back (a skill the run created goes again). Undoing is a run of its own, so you can undo the undo.",
+        dest: Dest::History,
     },
     Entry {
         label: "Setup",

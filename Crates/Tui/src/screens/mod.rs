@@ -1,5 +1,6 @@
 //! The screens' state and input handling. Drawing lives in `ui`.
 
+mod history;
 mod list_view;
 mod menu;
 mod picker;
@@ -8,6 +9,8 @@ mod setup_keys;
 mod work;
 mod work_keys;
 
+pub(crate) use history::{Action as HistoryAction, History, Phase as HistoryPhase};
+pub(crate) use list_view::ListView;
 pub(crate) use menu::{Dest, ENTRIES, Menu, MenuAction};
 pub(crate) use picker::Picker;
 pub(crate) use setup::{

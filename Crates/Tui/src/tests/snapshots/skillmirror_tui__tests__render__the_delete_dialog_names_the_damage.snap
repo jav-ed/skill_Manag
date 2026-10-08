@@ -10,12 +10,12 @@ expression: ui.screen()
 > [✗] astro               1 project
   [ ] coding              2 projects
   [ ] local-only          1 project   not in the vault
-
          ╭ Delete 1 skill in 1 project? ──────────────────────────────╮
          │                                                            │
-         │ This will inshallah permanently remove the selected skills │
-         │ from all matching projects.                                │
-         │                                                            │
+         │ The selected skills are removed from all matching          │
+         │ projects.                                                  │
+         │ A copy is kept first: History (or skillmirror undo) puts   │
+         │ it back.                                                   │
          │                                                            │
          │              [ y  Delete ]       [ n  Cancel ]             │
          ╰────────────────────────────────────────────────────────────╯

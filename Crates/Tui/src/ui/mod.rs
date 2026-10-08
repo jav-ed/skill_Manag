@@ -4,12 +4,14 @@ mod boxed;
 mod dialog;
 mod footer;
 mod header;
+mod history;
 mod issues;
 mod link;
 mod menu;
 mod page;
 mod picker;
 mod results;
+mod scroll;
 mod select;
 mod setup;
 
@@ -42,6 +44,7 @@ pub(crate) fn draw(frame: &mut Frame, app: &mut App) {
     match screen {
         Screen::Menu(menu_state) => menu::draw(frame, hits, menu_state, body),
         Screen::Work(work) => draw_work(frame, hits, *hover, *tick, work, body),
+        Screen::History(history) => history::draw(frame, hits, *hover, *tick, history, body),
         Screen::Setup(setup_state) => setup::draw(frame, hits, *hover, setup_state, body),
     }
     let notice = quit_warned.then_some("A job is writing. Press ctrl+c again to quit anyway.");

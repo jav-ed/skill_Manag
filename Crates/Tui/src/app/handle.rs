@@ -7,7 +7,9 @@ use crate::binding::{HELP, QUIT};
 use crate::event::Event;
 use crate::hit::Target;
 use crate::input::{Button, Input, Key, KeyKind, Mouse, MouseKind};
-use crate::screens::{Action, Dest, ENTRIES, MenuAction, Phase, SetupAction};
+use crate::screens::{
+    Action, Dest, ENTRIES, HistoryAction, HistoryPhase, MenuAction, Phase, SetupAction,
+};
 
 impl App {
     pub(crate) fn handle(&mut self, event: Event) {
@@ -65,6 +67,10 @@ impl App {
                 let action = work.on_key(key);
                 self.act(action);
             }
+            Screen::History(history) => {
+                let action = history.on_key(key);
+                self.history_act(action);
+            }
             Screen::Setup(setup) => {
                 let action = setup.on_key(key);
                 self.setup_act(action);
@@ -91,6 +97,7 @@ impl App {
     fn open_entry(&mut self, index: usize) {
         match ENTRIES.get(index).map(|e| e.dest) {
             Some(Dest::Work(mode)) => self.open(mode),
+            Some(Dest::History) => self.open_history(),
             Some(Dest::Setup) => self.open_setup(),
             None => {}
         }
@@ -110,6 +117,20 @@ impl App {
             }
             Action::Plan(pending) => self.plan(pending),
             Action::Run(pending) => self.start(pending),
+        }
+    }
+
+    fn history_act(&mut self, action: HistoryAction) {
+        match action {
+            HistoryAction::None => {}
+            HistoryAction::Back => {
+                // Leaving drops a read or a plan that is still on its way.
+                self.running = None;
+                self.listing = None;
+                self.back_to_menu();
+            }
+            HistoryAction::Plan(run) => self.plan_undo(run),
+            HistoryAction::Run(run) => self.start_undo(run),
         }
     }
 
@@ -143,6 +164,10 @@ impl App {
                 let action = work.on_mouse(mouse, &self.hits);
                 self.act(action);
             }
+            Screen::History(history) => {
+                let action = history.on_mouse(mouse, &self.hits);
+                self.history_act(action);
+            }
             Screen::Setup(setup) => {
                 let action = setup.on_mouse(mouse, target);
                 self.setup_act(action);
@@ -160,9 +185,15 @@ impl App {
             Some(Target::HeaderBack) if self.writing() => true,
             Some(Target::HeaderBack) => {
                 self.running = None;
+                self.listing = None;
                 match &mut self.screen {
                     Screen::Work(work) if matches!(work.phase, Phase::Confirm(_)) => {
                         work.phase = Phase::Select;
+                    }
+                    Screen::History(history)
+                        if matches!(history.phase, HistoryPhase::Confirm(_)) =>
+                    {
+                        history.phase = HistoryPhase::List;
                     }
                     _ => self.back_to_menu(),
                 }

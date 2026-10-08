@@ -49,9 +49,10 @@ pub(super) fn draw(
 /// The text between the title and the buttons.
 fn body(pending: &Pending) -> Vec<Line<'static>> {
     let Some(preview) = &pending.preview else {
-        return vec![Line::raw(
-            "This will inshallah permanently remove the selected skills from all matching projects.",
-        )];
+        return vec![
+            Line::raw("The selected skills are removed from all matching projects."),
+            Line::raw("A copy is kept first: History (or skillmirror undo) puts it back."),
+        ];
     };
     let mut doing = Vec::new();
     if preview.created > 0 {
@@ -117,7 +118,7 @@ fn capitalized(text: &str) -> String {
         .unwrap_or_default()
 }
 
-fn draw_button(
+pub(super) fn draw_button(
     frame: &mut Frame,
     hits: &mut HitMap,
     hover: Option<Target>,

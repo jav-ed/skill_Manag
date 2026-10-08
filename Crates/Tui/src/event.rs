@@ -11,6 +11,7 @@ use crate::input::Input;
 use crate::results::Results;
 use crate::screens::{Pending, VaultCheck};
 use crate::session::Session;
+use crate::undo::{RunRow, UndoView};
 
 /// Names one background job. Every report carries the id of the job it belongs to, so a report that
 /// arrives after the screen moved on is recognised and dropped.
@@ -24,6 +25,12 @@ pub(crate) enum Job {
     Planned(Box<Pending>),
     /// The setup wizard looked at the chosen vault folder.
     Checked(Box<Result<VaultCheck, String>>),
+    /// The runs in the backup store.
+    Runs(Box<Result<Vec<RunRow>, String>>),
+    /// What undoing a run would do, checked against the disk.
+    UndoPlanned(Box<Result<UndoView, String>>),
+    /// An undo finished.
+    Undone(Box<Result<UndoView, String>>),
     /// A run advanced.
     Progress {
         done: usize,

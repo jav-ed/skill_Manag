@@ -14,6 +14,7 @@ mod results;
 mod screens;
 mod session;
 mod theme;
+mod undo;
 
 mod app;
 mod event;

@@ -12,6 +12,8 @@ use crate::theme;
 
 const TAGLINE: &str = "Sync agent skills across all your projects from a single vault.";
 const ROWS_PER_ENTRY: u16 = 3;
+/// Lines the long text under the entries needs: the divider and a few lines of text.
+const DETAIL_ROWS: u16 = 5;
 
 pub(super) fn draw(frame: &mut Frame, hits: &mut HitMap, menu: &Menu, area: Rect) {
     frame.render_widget(
@@ -19,12 +21,16 @@ pub(super) fn draw(frame: &mut Frame, hits: &mut HitMap, menu: &Menu, area: Rect
         Rect::new(area.x, area.y, area.width, 1),
     );
     let top = area.y + 2;
+    // Two lines per entry when the long text below still fits, else one line each.
+    let roomy = area.height >= 2 + ROWS_PER_ENTRY * to_u16(ENTRIES.len()) + DETAIL_ROWS;
+    let rows_per_entry = if roomy { ROWS_PER_ENTRY } else { 1 };
+    let label_w = ENTRIES.iter().map(|e| e.label.len()).max().unwrap_or(0) + 2;
     for (i, entry) in ENTRIES.iter().enumerate() {
         let row = Rect::new(
             area.x + 2,
-            top + to_u16(i) * ROWS_PER_ENTRY,
+            top + to_u16(i) * rows_per_entry,
             area.width.saturating_sub(4),
-            2,
+            if roomy { 2 } else { 1 },
         );
         if row.bottom() > area.bottom() {
             break;
@@ -41,10 +47,20 @@ pub(super) fn draw(frame: &mut Frame, hits: &mut HitMap, menu: &Menu, area: Rect
         } else {
             (Span::raw("  "), Span::raw(entry.label))
         };
-        let lines = vec![
-            Line::from(vec![bar.clone(), label]),
-            Line::from(vec![bar, Span::styled(entry.blurb, theme::muted())]),
-        ];
+        let lines = if roomy {
+            vec![
+                Line::from(vec![bar.clone(), label]),
+                Line::from(vec![bar, Span::styled(entry.blurb, theme::muted())]),
+            ]
+        } else {
+            let pad = " ".repeat(label_w.saturating_sub(entry.label.len()));
+            vec![Line::from(vec![
+                bar,
+                label,
+                Span::raw(pad),
+                Span::styled(entry.blurb, theme::muted()),
+            ])]
+        };
         frame.render_widget(Paragraph::new(lines), row);
         hits.push(row, Target::MenuItem(i));
     }
@@ -52,7 +68,7 @@ pub(super) fn draw(frame: &mut Frame, hits: &mut HitMap, menu: &Menu, area: Rect
         frame,
         menu,
         area,
-        top + to_u16(ENTRIES.len()) * ROWS_PER_ENTRY,
+        top + to_u16(ENTRIES.len()) * rows_per_entry,
     );
 }
 

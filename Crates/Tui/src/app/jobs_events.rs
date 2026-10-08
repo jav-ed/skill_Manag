@@ -7,7 +7,7 @@ use crate::event::{Job, JobId};
 use crate::jobs;
 use crate::preview::Preview;
 use crate::results::Kind;
-use crate::screens::{Pending, Phase, Work};
+use crate::screens::{History, HistoryPhase, Pending, Phase, Work};
 
 impl App {
     /// A report counts only while the screen still waits for that job. Anything else is the late word of
@@ -22,11 +22,45 @@ impl App {
                 }
             }
             Job::Planned(pending) if self.running == Some(id) => self.on_planned(*pending),
+            Job::Runs(result) if self.listing == Some(id) => {
+                self.listing = None;
+                if let Some(history) = self.history_mut() {
+                    match *result {
+                        Ok(runs) => history.loaded(runs),
+                        Err(message) => history.phase = HistoryPhase::Failed(message),
+                    }
+                }
+            }
+            Job::UndoPlanned(result) if self.running == Some(id) => {
+                if let Some(history) = self.history_mut() {
+                    history.phase = match *result {
+                        // Nothing that could be put right: the page says why, and there is nothing to ask.
+                        Ok(view) if view.actionable() == 0 => HistoryPhase::Done(Box::new(view)),
+                        Ok(view) => HistoryPhase::Confirm(Box::new(view)),
+                        Err(message) => HistoryPhase::Failed(message),
+                    };
+                }
+            }
+            Job::Undone(result) if self.running == Some(id) => {
+                self.job_ended();
+                if let Some(history) = self.history_mut() {
+                    history.scroll = 0;
+                    history.phase = match *result {
+                        Ok(view) => HistoryPhase::Done(Box::new(view)),
+                        Err(message) => HistoryPhase::Failed(message),
+                    };
+                }
+            }
             Job::Progress { done, total } if self.running == Some(id) => {
                 if let Some(work) = self.work_mut()
                     && let Phase::Running { kind, .. } = work.phase
                 {
                     work.phase = Phase::Running { kind, done, total };
+                }
+                if let Some(history) = self.history_mut()
+                    && matches!(history.phase, HistoryPhase::Running { .. })
+                {
+                    history.phase = HistoryPhase::Running { done, total };
                 }
             }
             Job::Finished(results) if self.running == Some(id) => {
@@ -40,6 +74,8 @@ impl App {
                 self.job_ended();
                 if let Some(work) = self.work_mut() {
                     work.phase = Phase::Failed(message);
+                } else if let Some(history) = self.history_mut() {
+                    history.phase = HistoryPhase::Failed(message);
                 }
             }
             _ => {}
@@ -128,7 +164,39 @@ impl App {
     pub(super) fn work_mut(&mut self) -> Option<&mut Work> {
         match &mut self.screen {
             Screen::Work(work) => Some(work),
-            Screen::Menu(_) | Screen::Setup(_) => None,
+            Screen::Menu(_) | Screen::Setup(_) | Screen::History(_) => None,
         }
+    }
+
+    fn history_mut(&mut self) -> Option<&mut History> {
+        match &mut self.screen {
+            Screen::History(history) => Some(history),
+            Screen::Menu(_) | Screen::Setup(_) | Screen::Work(_) => None,
+        }
+    }
+
+    /// Checks what undoing a run would do. Nothing is changed until the user has seen it.
+    pub(super) fn plan_undo(&mut self, run: String) {
+        let id = self.new_job();
+        self.running = Some(id);
+        if let Some(history) = self.history_mut() {
+            history.phase = HistoryPhase::Planning;
+        }
+        jobs::spawn_undo_plan(self.tx.clone(), id, self.dirs.clone(), run);
+    }
+
+    /// The user said yes: bring the run back.
+    pub(super) fn start_undo(&mut self, run: String) {
+        let id = self.new_job();
+        let Some(history) = self.history_mut() else {
+            return;
+        };
+        let HistoryPhase::Confirm(view) = &history.phase else {
+            return;
+        };
+        let total = view.lines.len();
+        history.phase = HistoryPhase::Running { done: 0, total };
+        self.running = Some(id);
+        jobs::spawn_undo(self.tx.clone(), id, self.dirs.clone(), run, total);
     }
 }
