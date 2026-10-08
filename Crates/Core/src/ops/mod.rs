@@ -7,12 +7,14 @@ mod created;
 mod delete;
 mod diff;
 mod doctor;
+mod history;
 mod info;
 mod list;
 mod mandatory;
 mod project;
 mod push;
 mod report;
+mod run;
 mod scope;
 mod select;
 mod status;
@@ -33,6 +35,7 @@ pub use diff::{
     DiffFilter, DiffKind, DiffReport, FileDiff, SkillDiff, Skipped, diff, diff_of_plan,
 };
 pub use doctor::{Finding, Report as DoctorReport, Severity, doctor};
+pub use history::{RunRow, Step, UndoLine, UndoView, do_undo, list_runs, plan_undo};
 pub use info::{
     ProjectState, SkillDetail, SkillInfo, SkillState, profiles_of, skill_detail, skill_info,
 };
@@ -41,6 +44,7 @@ pub use mandatory::{Change as MandatoryChange, MandatoryError, change_mandatory}
 pub use project::{NewProject, ProjectError, check_existing, check_new, create_new, plan_install};
 pub use push::{plan as plan_push, plan_scoped as plan_push_scoped};
 pub use report::{Cell, ReportData, report_data};
+pub use run::{RunOutcome, run_plan};
 pub use scope::{Scope, ScopeError};
 pub use select::{SelectError, Selection, resolve, resolve_names};
 pub use status::{Outdated, Problem, ProjectStatus, StatusReport, status, status_scoped};
@@ -60,6 +64,8 @@ mod diff_tests;
 mod doctor_machine_tests;
 #[cfg(test)]
 mod doctor_tests;
+#[cfg(test)]
+mod history_tests;
 #[cfg(test)]
 mod info_tests;
 #[cfg(test)]

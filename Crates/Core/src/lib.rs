@@ -23,4 +23,4 @@ pub mod vault;
 #[cfg(test)]
 mod testutil;
 
-pub use error::{Error, Hint, Result};
+pub use error::{Error, Hint, Result, describe};

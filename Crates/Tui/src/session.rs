@@ -1,13 +1,11 @@
 //! What one scan produces: the opened vault, the installed skills and what each target needs.
 
-use std::fmt::Display;
-
+use skillmirror_core::Result;
 use skillmirror_core::config::Settings;
 use skillmirror_core::events::ignore_events;
 use skillmirror_core::ops::{self, Installed, Workspace};
 use skillmirror_core::plan::{Plan, PlanKind};
 use skillmirror_core::scan::Target;
-use skillmirror_core::{Hint, Result};
 
 /// What applying the vault copy to one target would do.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -46,13 +44,7 @@ pub(crate) struct Session {
     pub(crate) issues: Vec<Issue>,
 }
 
-/// The message and, when the error has one, its hint on a second line.
-pub(crate) fn describe<E: Display + Hint>(error: &E) -> String {
-    match error.hint() {
-        Some(hint) => format!("{error}\n{hint}"),
-        None => error.to_string(),
-    }
-}
+pub(crate) use skillmirror_core::describe;
 
 /// Opens the vault, scans the root and plans sync and push, all read-only.
 pub(crate) fn load(settings: Settings) -> std::result::Result<Session, String> {

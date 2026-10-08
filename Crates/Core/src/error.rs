@@ -66,4 +66,12 @@ impl Hint for Error {
     }
 }
 
+/// The message and, when the error has one, its hint on a second line.
+pub fn describe<E: std::fmt::Display + Hint>(error: &E) -> String {
+    match error.hint() {
+        Some(hint) => format!("{error}\n{hint}"),
+        None => error.to_string(),
+    }
+}
+
 pub type Result<T> = std::result::Result<T, Error>;
