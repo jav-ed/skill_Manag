@@ -44,8 +44,8 @@ fn history_undoes_a_sync() {
     term.send("q");
     term.wait_for("Refresh the skills each project already has");
 
-    // History is the seventh entry of the menu.
-    term.send("jjjjjj\r");
+    // History is the eighth entry of the menu.
+    term.send("jjjjjjj\r");
     term.wait_for("1 run");
     term.wait_for("sync");
     term.send("\r");
@@ -75,8 +75,8 @@ fn add_installs_a_skill_into_a_project() {
     let world = World::standard();
     let mut term = tui(&world);
     term.wait_for("skillmirror");
-    // Add is the fifth entry of the menu.
-    term.send("jjjj\r");
+    // Add is the sixth entry of the menu.
+    term.send("jjjjj\r");
     term.wait_for("The project that gets the skills.");
     // The picker starts in the root: one, plain, three, two. Walk into `two` and choose it.
     term.send("jjjl");
@@ -107,8 +107,8 @@ fn init_makes_a_new_project() {
     let world = World::standard();
     let mut term = tui(&world);
     term.wait_for("skillmirror");
-    // Init is the sixth entry of the menu.
-    term.send("jjjjj\r");
+    // Init is the seventh entry of the menu.
+    term.send("jjjjjj\r");
     term.wait_for("The folder the new project goes in.");
     term.send("\r");
     term.wait_for("The name of the new project folder:");
@@ -165,6 +165,31 @@ fn the_question_shows_the_changes_before_anything_is_written() {
     );
     term.send("q");
     term.wait_for("Refresh the skills each project already has");
+    term.send("q");
+    assert_eq!(term.exit_code(), 0);
+}
+
+#[test]
+fn skills_browses_the_vault_with_a_card_and_writes_nothing() {
+    let world = World::standard();
+    let mut term = tui(&world);
+    term.wait_for("skillmirror");
+    // Skills is the third entry of the menu.
+    term.send("jj\r");
+    term.wait_for("Vault — 3 skills");
+    term.send("/astro\r");
+    term.wait_for("Vault — 1 matching");
+    term.wait_for("outdated (2 files)");
+    term.wait_for("files (2): SKILL.md, ref.md");
+    // Space and enter have nothing to select or to run here.
+    term.send(" \r");
+    term.send("q");
+    term.wait_for("Browse the vault");
+    assert_eq!(
+        world.read("projects/one/.agents/skills/astro/SKILL.md"),
+        "astro v1",
+        "browsing writes nothing"
+    );
     term.send("q");
     assert_eq!(term.exit_code(), 0);
 }

@@ -160,13 +160,14 @@ pub fn skill_detail(
     Ok(SkillDetail {
         name: name.to_string(),
         info,
-        profiles: profiles_naming(workspace, name),
+        profiles: profiles_of(workspace, name),
         projects,
         total_projects: report.skills_dirs.len(),
     })
 }
 
-fn profiles_naming(workspace: &Workspace, skill: &str) -> Vec<String> {
+/// The profiles of the vault config that select the skill, sorted by name.
+pub fn profiles_of(workspace: &Workspace, skill: &str) -> Vec<String> {
     let config = workspace.settings.config();
     config
         .profiles

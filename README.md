@@ -92,6 +92,7 @@ Exit codes: `0` done or nothing differs, `1` drift found (`--check`, `status`, `
 |---|---|
 | Sync, Push | Pick skills, see what would be written (`v` shows the changes as a diff), confirm, run |
 | List | Every installed skill; `/` filters, space selects, `s` syncs and `d` deletes the selection in place |
+| Skills | The vault's skills with a detail card for the one under the cursor: description, files, profiles, and what it is in each project. Read-only; `/` filters |
 | Delete | Nothing is pre-selected; you pick, then confirm |
 | Add | Pick the project folder, then vault skills to install into it |
 | Init | Pick a parent folder, name the new project, tick skills (the mandatory ones are ticked), `g` for a git repository |

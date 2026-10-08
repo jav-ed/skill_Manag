@@ -16,6 +16,8 @@ pub(crate) enum Mode {
     Push,
     Delete,
     List,
+    /// Browse the vault's skills with a detail pane; nothing is selected and nothing is written.
+    Skills,
     /// Pick vault skills to install into one project that exists.
     Add,
     /// Pick vault skills for a new project.
@@ -25,6 +27,10 @@ pub(crate) enum Mode {
 /// How a note next to a row is coloured.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Tone {
+    /// A heading line of a detail pane.
+    Heading,
+    /// Ordinary text of a detail pane.
+    Plain,
     /// Something will change.
     Change,
     /// Nothing to do.
@@ -47,6 +53,8 @@ pub(crate) struct Item {
     pub(crate) note: Option<Note>,
     pub(crate) targets: Vec<Target>,
     pub(crate) preselected: bool,
+    /// The detail pane of the skills page; empty on the other pages.
+    pub(crate) card: Vec<Note>,
 }
 
 pub(crate) fn build(mode: Mode, session: &Session) -> Result<Vec<Item>, String> {
@@ -59,6 +67,7 @@ pub(crate) fn build(mode: Mode, session: &Session) -> Result<Vec<Item>, String> 
             .map_err(Clone::clone),
         Mode::Delete => Ok(installed_groups(session)),
         Mode::List => Ok(installed_rows(session)),
+        Mode::Skills => Ok(crate::items_skills::vault_rows(session)),
         Mode::Add | Mode::Init => Err("internal error: no project was chosen".to_string()),
     }
 }
@@ -108,6 +117,7 @@ pub(crate) fn for_install(mode: Mode, session: &Session, project: &Project) -> V
                     path: skills_dir.join(&skill.name),
                 }],
                 preselected: mode == Mode::Init && is_mandatory,
+                card: Vec::new(),
             }
         })
         .collect()
@@ -136,6 +146,7 @@ fn planned(states: &[TargetState]) -> Vec<Item> {
                 note: Some(planned_note(changing, failing)),
                 targets: members.iter().map(|m| m.target.clone()).collect(),
                 preselected: changing > 0,
+                card: Vec::new(),
             }
         })
         .collect()
@@ -180,6 +191,7 @@ fn installed_groups(session: &Session) -> Vec<Item> {
                 }),
             targets: members.iter().map(|m| m.target.clone()).collect(),
             preselected: false,
+            card: Vec::new(),
         })
         .collect()
 }
@@ -198,6 +210,7 @@ fn installed_rows(session: &Session) -> Vec<Item> {
             }),
             targets: vec![row.target.clone()],
             preselected: false,
+            card: Vec::new(),
         })
         .collect()
 }

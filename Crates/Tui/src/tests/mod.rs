@@ -12,6 +12,7 @@ mod place_support;
 mod render;
 mod round2_jobs;
 mod round2_wizard;
+mod skills;
 mod wizard;
 
 use std::sync::mpsc::{self, Receiver};

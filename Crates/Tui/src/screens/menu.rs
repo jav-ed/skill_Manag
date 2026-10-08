@@ -23,7 +23,7 @@ pub(crate) enum Dest {
     Setup,
 }
 
-pub(crate) const ENTRIES: [Entry; 8] = [
+pub(crate) const ENTRIES: [Entry; 9] = [
     Entry {
         label: "Sync",
         blurb: "Refresh the skills each project already has; never adds one",
@@ -35,6 +35,12 @@ pub(crate) const ENTRIES: [Entry; 8] = [
         blurb: "Every installed skill; filter, then sync or delete in place",
         detail: "A searchable table of every skill installed across all your projects. Filter by name with /, select rows with space, then sync or delete the selection directly without leaving the screen.",
         dest: Dest::Work(Mode::List),
+    },
+    Entry {
+        label: "Skills",
+        blurb: "Browse the vault: what each skill is and where it is installed",
+        detail: "Every skill of your vault with its group and a detail pane for the one under the cursor: the description from SKILL.md, the files that get copied (and the ones git does not track), the profiles that name it, and what it is in each project. Filter with /. Nothing is selected and nothing is written here.",
+        dest: Dest::Work(Mode::Skills),
     },
     Entry {
         label: "Delete",

@@ -167,6 +167,10 @@ impl Work {
     }
 
     pub(crate) fn toggle(&mut self, item: usize) {
+        // The skills page only looks; there is nothing to select.
+        if self.mode == Mode::Skills {
+            return;
+        }
         if !self.selected.remove(&item) {
             self.selected.insert(item);
         }
@@ -174,6 +178,9 @@ impl Work {
 
     /// Selects every visible row, or clears them when all of them are already selected.
     pub(crate) fn toggle_all(&mut self) {
+        if self.mode == Mode::Skills {
+            return;
+        }
         let all_on = self
             .view
             .filtered
@@ -235,7 +242,7 @@ impl Work {
                 "No mandatory skills configured in vault config, or no opted-in projects found."
             }
             Mode::Delete | Mode::List => "No skills found in any project.",
-            Mode::Add | Mode::Init => "The vault has no skills.",
+            Mode::Add | Mode::Init | Mode::Skills => "The vault has no skills.",
         }
     }
 }

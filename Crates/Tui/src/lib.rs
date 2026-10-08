@@ -8,6 +8,7 @@ mod error;
 mod filter;
 mod hit;
 mod items;
+mod items_skills;
 mod jobs;
 mod jobs_install;
 mod num;

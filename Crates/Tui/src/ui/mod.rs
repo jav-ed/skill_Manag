@@ -16,6 +16,7 @@ mod results;
 mod scroll;
 mod select;
 mod setup;
+mod skill_card;
 
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout};

@@ -185,7 +185,11 @@ fn q_in_the_menu_quits_and_the_results_page_goes_back_to_the_menu_entry() {
     let Screen::Menu(menu) = &ui.app.screen else {
         panic!("back at the menu")
     };
-    assert_eq!(menu.cursor, 2, "the cursor stays on Delete");
+    assert_eq!(
+        crate::screens::ENTRIES[menu.cursor].label,
+        "Delete",
+        "the cursor stays on Delete"
+    );
     ui.press('q');
     assert!(ui.app.should_quit());
 }

@@ -8,6 +8,7 @@ expression: ui.screen()
 
   │ Sync     Refresh the skills each project already has; never adds one
     List     Every installed skill; filter, then sync or delete in place
+    Skills   Browse the vault: what each skill is and where it is installed
     Delete   Nothing pre-selected; you pick, then confirm
     Push     Install the mandatory skills into every opted-in project
     Add      Install chosen vault skills into one project
@@ -19,7 +20,6 @@ expression: ui.screen()
   installed, pulling the latest from your vault. The opt-in rule: if a project
   doesn't have a skill, it will inshallah never be added. Only what's already
   there gets refreshed.
-
 
 
 

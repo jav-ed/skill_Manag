@@ -83,7 +83,7 @@ impl Work {
             Mode::Delete => self.ask(Kind::Delete),
             Mode::Add => self.plan(Kind::Add),
             Mode::Init => self.plan(Kind::Init),
-            Mode::List => Action::None,
+            Mode::List | Mode::Skills => Action::None,
         }
     }
 

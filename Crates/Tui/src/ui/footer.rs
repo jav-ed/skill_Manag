@@ -31,6 +31,7 @@ fn mode_keys(mode: Mode) -> Vec<&'static Binding> {
         Mode::Push => vec![&RUN_PUSH],
         Mode::Delete => vec![&RUN_DELETE],
         Mode::List => vec![&SYNC, &DELETE],
+        Mode::Skills => Vec::new(),
         Mode::Add => vec![&RUN_ADD],
         Mode::Init => vec![&GIT, &RUN_INIT],
     }
@@ -45,7 +46,11 @@ fn short(screen: &Screen) -> Vec<Hint> {
         Screen::Place(place) => place_hints(place),
         Screen::Work(work) => match &work.phase {
             Phase::Select => {
-                let mut keys: Vec<&Binding> = vec![&TOGGLE, &ALL, &FILTER];
+                let mut keys: Vec<&Binding> = if work.mode == Mode::Skills {
+                    vec![&UP, &DOWN, &FILTER]
+                } else {
+                    vec![&TOGGLE, &ALL, &FILTER]
+                };
                 keys.extend(mode_keys(work.mode));
                 if !work.issues.is_empty() {
                     keys.push(&ISSUES);
@@ -157,6 +162,9 @@ fn work_full(work: &Work) -> Vec<Hint> {
     match &work.phase {
         Phase::Select => {
             let mut keys = SELECT_COMMON.to_vec();
+            if work.mode == Mode::Skills {
+                keys.retain(|b| !std::ptr::eq(*b, &TOGGLE) && !std::ptr::eq(*b, &ALL));
+            }
             keys.extend(mode_keys(work.mode));
             if !work.issues.is_empty() {
                 keys.push(&ISSUES);

@@ -7,7 +7,7 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
 use unicode_width::UnicodeWidthStr;
 
-use super::scroll;
+use super::{scroll, skill_card};
 use crate::hit::{HitMap, Target};
 use crate::items::{Item, Mode, Tone};
 use crate::num::{plural, to_u16};
@@ -24,7 +24,7 @@ fn mode_style(mode: Mode) -> Style {
         Mode::Sync | Mode::Add | Mode::Init => Style::new().fg(theme::SUCCESS),
         Mode::Push => theme::warning(),
         Mode::Delete => Style::new().fg(theme::ERROR),
-        Mode::List => theme::accent(),
+        Mode::List | Mode::Skills => theme::accent(),
     }
 }
 
@@ -42,6 +42,14 @@ fn title(work: &Work) -> String {
             } else {
                 ""
             }
+        ),
+        Mode::Skills if work.filter.value().is_empty() => {
+            format!("Vault — {} skills", work.items.len())
+        }
+        Mode::Skills => format!(
+            "Vault — {} matching {:?}",
+            work.view.len(),
+            work.filter.value()
         ),
         Mode::List if work.filter.value().is_empty() => {
             format!("Skills — {} installed", work.items.len())
@@ -63,6 +71,14 @@ fn project_label(work: &Work) -> String {
 }
 
 pub(super) fn draw(frame: &mut Frame, hits: &mut HitMap, work: &mut Work, area: Rect) {
+    let (area, card) = if work.mode == Mode::Skills {
+        skill_card::split(area)
+    } else {
+        (area, None)
+    };
+    if let Some((card_area, place)) = card {
+        skill_card::draw(frame, work, card_area, place);
+    }
     let [head, filter, columns, rows, status] = Layout::vertical([
         Constraint::Length(1),
         Constraint::Length(1),
@@ -77,11 +93,15 @@ pub(super) fn draw(frame: &mut Frame, hits: &mut HitMap, work: &mut Work, area: 
     } else {
         String::new()
     };
-    let selected = format!(
-        "   {} / {} selected{hidden_note}",
-        work.selected.len(),
-        work.items.len()
-    );
+    let selected = if work.mode == Mode::Skills {
+        String::new()
+    } else {
+        format!(
+            "   {} / {} selected{hidden_note}",
+            work.selected.len(),
+            work.items.len()
+        )
+    };
     let mut heading = vec![
         Span::styled(format!(" {}", title(work)), theme::bold()),
         Span::styled(selected, theme::muted()),
@@ -98,7 +118,7 @@ pub(super) fn draw(frame: &mut Frame, hits: &mut HitMap, work: &mut Work, area: 
     let heading = format!("      {:<name_w$}  {:<detail_w$}", "skill", "projects");
     let heading = match work.mode {
         Mode::List => heading.replace("projects", "project "),
-        Mode::Add | Mode::Init => heading.replace("projects", "group   "),
+        Mode::Add | Mode::Init | Mode::Skills => heading.replace("projects", "group   "),
         _ => heading,
     };
     frame.render_widget(
@@ -164,6 +184,7 @@ fn draw_rows(
     } else {
         "[✓]"
     };
+    let browsing = work.mode == Mode::Skills;
     let offset = work.view.offset;
     for (slot, (index, matched)) in work
         .view
@@ -188,7 +209,13 @@ fn draw_rows(
         let mut spans = vec![
             Span::styled(if at_cursor { "> " } else { "  " }, accent),
             Span::styled(
-                if on { mark } else { "[ ]" },
+                if browsing {
+                    "   "
+                } else if on {
+                    mark
+                } else {
+                    "[ ]"
+                },
                 if on { accent } else { Style::new() },
             ),
             Span::raw(" "),
@@ -216,6 +243,8 @@ fn draw_rows(
 
 fn tone_style(tone: Tone) -> Style {
     match tone {
+        Tone::Plain => Style::new(),
+        Tone::Heading => theme::bold(),
         Tone::Change => theme::accent(),
         Tone::Quiet => theme::muted(),
         Tone::Problem => theme::error(),
