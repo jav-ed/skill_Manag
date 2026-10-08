@@ -71,6 +71,12 @@ pub(super) fn lines(results: &Results, details: bool) -> Vec<Line<'static>> {
             theme::warning(),
         )));
     }
+    if let Some(id) = &results.backup {
+        out.push(Line::from(Span::styled(
+            format!("  Backup: run {id} (undo with: skillmirror undo)"),
+            theme::muted(),
+        )));
+    }
     let failed = results.failed();
     if failed > 0 {
         out.push(Line::from(Span::styled(

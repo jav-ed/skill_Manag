@@ -1,6 +1,6 @@
 ---
 source: Crates/Tui/src/tests/render.rs
-expression: ui.screen()
+expression: without_run_id(&ui.screen())
 ---
  ← skillmirror  ·  javedab.com  ·  list
 
@@ -11,8 +11,8 @@ expression: ui.screen()
   ✗ local-only            1 failed
     ✗ projects/one  skill "local-only" is not in the vault
 
+  Backup: run [RUN] (undo with: skillmirror undo)
   1 project failed; nothing was left half written.
-
 
 
 

@@ -200,3 +200,73 @@ fn q_in_the_menu_quits_and_the_results_page_goes_back_to_the_menu_entry() {
     ui.press('q');
     assert!(ui.app.should_quit());
 }
+
+/// The run folders in the isolated state directory the harness uses.
+fn backup_runs(ui: &Harness) -> Vec<String> {
+    let store = ui.world.path().join("home/state/skillmirror/backups");
+    let mut ids: Vec<_> = std::fs::read_dir(store)
+        .map(|entries| {
+            entries
+                .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+                .collect()
+        })
+        .unwrap_or_default();
+    ids.sort();
+    ids
+}
+
+#[test]
+fn a_sync_keeps_the_old_copies_and_the_results_page_names_the_run() {
+    let mut ui = Harness::new(world());
+    ui.open("Sync").wait_select();
+
+    ui.code(Code::Enter).wait_done();
+
+    let ids = backup_runs(&ui);
+    assert_eq!(ids.len(), 1, "{ids:?}");
+    let page = ui.screen();
+    assert!(page.contains(&format!("Backup: run {}", ids[0])), "{page}");
+    let kept = ui
+        .world
+        .path()
+        .join("home/state/skillmirror/backups")
+        .join(&ids[0])
+        .join("0/tree/SKILL.md");
+    assert!(
+        std::fs::read_to_string(kept).unwrap().ends_with("v1"),
+        "the old copy is in the store"
+    );
+}
+
+#[test]
+fn a_delete_keeps_the_folder_in_the_store() {
+    let mut ui = Harness::new(world());
+    ui.open("Delete").wait_select();
+
+    ui.press(' ')
+        .code(Code::Enter)
+        .code(Code::Enter)
+        .wait_done();
+
+    let ids = backup_runs(&ui);
+    assert_eq!(ids.len(), 1, "{ids:?}");
+    assert!(
+        ui.screen().contains("Backup: run "),
+        "the page names the run"
+    );
+}
+
+#[test]
+fn a_job_that_changes_nothing_leaves_no_backup() {
+    let mut ui = Harness::new(world());
+    ui.open("Sync").wait_select();
+    ui.code(Code::Enter).wait_done();
+    let first = backup_runs(&ui);
+    ui.press('q');
+    ui.open("Sync").wait_select();
+
+    // Nothing is selected when everything is up to date, so select all to run the job anyway.
+    ui.press('a').code(Code::Enter).wait_done();
+
+    assert_eq!(backup_runs(&ui), first, "an up-to-date sync stores nothing");
+}

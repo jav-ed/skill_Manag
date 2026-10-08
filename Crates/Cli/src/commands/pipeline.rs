@@ -1,10 +1,12 @@
 //! The shared flow of every command that writes skills: show the plan, ask, apply, show the result.
 
 use skillmirror_core::apply::{ApplyOptions, apply};
+use skillmirror_core::backup::RunKind;
 use skillmirror_core::events::ignore_events;
 use skillmirror_core::plan::Plan;
 use skillmirror_core::scan::ScanIssue;
 
+use super::backup;
 use crate::exit::Exit;
 use crate::output::{self, Row, RunJson, Summary, Tense};
 use crate::report::CliError;
@@ -31,7 +33,7 @@ impl Mode {
 #[allow(clippy::struct_excessive_bools, clippy::struct_field_names)]
 #[derive(Clone, Copy)]
 pub(super) struct Run<'a> {
-    pub(super) command: &'a str,
+    pub(super) kind: RunKind,
     pub(super) dry_run: bool,
     pub(super) check: bool,
     pub(super) yes: bool,
@@ -78,8 +80,14 @@ pub(super) fn execute(
         output::line("Cancelled, nothing was written.");
         return Ok(Exit::Clean);
     }
+    let (backups, backup_run) = backup::begin(run.kind)?;
     before_write()?;
-    let done = apply(plan, ApplyOptions::default(), &ignore_events)?;
+    let options = ApplyOptions {
+        backup: Some(&backup_run),
+        ..ApplyOptions::default()
+    };
+    let done = apply(plan, options, &ignore_events)?;
+    let finished = backup_run.finish(&backups);
     for left in done.applied.iter().filter_map(|a| a.leftover.as_ref()) {
         output::warn_line(&format!(
             "the update is done, but the old copy {} could not be removed ({}); delete it by hand",
@@ -88,7 +96,8 @@ pub(super) fn execute(
         ));
     }
     let rows: Vec<Row> = done.applied.iter().map(Row::from_applied).collect();
-    show_done(run, &rows, issues)?;
+    show_done(run, &rows, issues, backup::saved(&finished))?;
+    backup::announce(&finished, run.json);
     Ok(if done.failed() > 0 {
         Exit::Partial
     } else {
@@ -98,7 +107,7 @@ pub(super) fn execute(
 
 fn finish_empty(run: &Run<'_>, mode: Mode) -> Result<Exit, CliError> {
     if run.json {
-        output::line(&RunJson::new(run.command, mode.name(), &[], &[]).render()?);
+        output::line(&RunJson::new(run.kind.name(), mode.name(), &[], &[]).render()?);
     } else {
         output::line(run.empty_message);
     }
@@ -122,7 +131,7 @@ fn show_plan(
     issues: &[ScanIssue],
 ) -> Result<(), CliError> {
     if run.json {
-        output::line(&RunJson::new(run.command, mode.name(), rows, issues).render()?);
+        output::line(&RunJson::new(run.kind.name(), mode.name(), rows, issues).render()?);
         return Ok(());
     }
     output::print(&output::render_rows(rows, Tense::Plan, run.all));
@@ -135,9 +144,15 @@ fn show_plan(
     Ok(())
 }
 
-fn show_done(run: &Run<'_>, rows: &[Row], issues: &[ScanIssue]) -> Result<(), CliError> {
+fn show_done(
+    run: &Run<'_>,
+    rows: &[Row],
+    issues: &[ScanIssue],
+    backup: Option<&str>,
+) -> Result<(), CliError> {
     if run.json {
-        output::line(&RunJson::new(run.command, Mode::Apply.name(), rows, issues).render()?);
+        let document = RunJson::new(run.kind.name(), Mode::Apply.name(), rows, issues);
+        output::line(&document.with_backup(backup).render()?);
         return Ok(());
     }
     output::print(&output::render_rows(rows, Tense::Done, run.all));

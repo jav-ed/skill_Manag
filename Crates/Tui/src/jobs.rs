@@ -7,7 +7,8 @@ use std::sync::mpsc::Sender;
 use std::thread;
 
 use skillmirror_core::apply::{ApplyOptions, apply};
-use skillmirror_core::config::Settings;
+use skillmirror_core::backup::{Backups, Run, RunKind};
+use skillmirror_core::config::{Dirs, Settings};
 use skillmirror_core::events::Event as CoreEvent;
 use skillmirror_core::ops;
 use skillmirror_core::plan::Plan;
@@ -29,14 +30,33 @@ pub(crate) fn spawn_load(tx: Sender<Event>, settings: Settings) {
     });
 }
 
+/// Starts the backup run that keeps what a job replaces or removes.
+fn begin(dirs: &Dirs, kind: RunKind) -> Result<(Backups, Run), String> {
+    let backups = Backups::in_dirs(dirs);
+    let run = backups
+        .begin(kind)
+        .map_err(|e| describe(&skillmirror_core::Error::from(e)))?;
+    Ok((backups, run))
+}
+
 /// Applies the vault copy to the targets (sync and push).
 pub(crate) fn spawn_apply(
     tx: Sender<Event>,
     session: Arc<Session>,
+    dirs: Dirs,
     kind: Kind,
     targets: Vec<Target>,
 ) {
     thread::spawn(move || {
+        let run_kind = if kind == Kind::Push {
+            RunKind::Push
+        } else {
+            RunKind::Sync
+        };
+        let (backups, backup) = match begin(&dirs, run_kind) {
+            Ok(started) => started,
+            Err(message) => return send(&tx, Job::Failed(message)),
+        };
         let total = targets.len();
         let done = AtomicUsize::new(0);
         let plan = Plan::for_targets(&session.workspace.vault, &session.workspace.files, targets);
@@ -46,11 +66,16 @@ pub(crate) fn spawn_apply(
                 send(&tx, Job::Progress { done: now, total });
             }
         };
-        match apply(plan, ApplyOptions::default(), &progress) {
-            Ok(report) => send(
-                &tx,
-                Job::Finished(Box::new(Results::from_applied(report, kind))),
-            ),
+        let options = ApplyOptions {
+            backup: Some(&backup),
+            ..ApplyOptions::default()
+        };
+        match apply(plan, options, &progress) {
+            Ok(report) => {
+                let results = Results::from_applied(report, kind);
+                let results = results.with_backup(&backup.finish(&backups));
+                send(&tx, Job::Finished(Box::new(results)));
+            }
             Err(e) => send(
                 &tx,
                 Job::Failed(describe(&skillmirror_core::Error::from(e))),
@@ -59,8 +84,12 @@ pub(crate) fn spawn_apply(
     });
 }
 
-pub(crate) fn spawn_delete(tx: Sender<Event>, targets: Vec<Target>) {
+pub(crate) fn spawn_delete(tx: Sender<Event>, dirs: Dirs, targets: Vec<Target>) {
     thread::spawn(move || {
+        let (backups, backup) = match begin(&dirs, RunKind::Delete) {
+            Ok(started) => started,
+            Err(message) => return send(&tx, Job::Failed(message)),
+        };
         let total = targets.len();
         let done = AtomicUsize::new(0);
         let progress = |event: CoreEvent| {
@@ -69,7 +98,8 @@ pub(crate) fn spawn_delete(tx: Sender<Event>, targets: Vec<Target>) {
                 send(&tx, Job::Progress { done: now, total });
             }
         };
-        let report = ops::delete(targets, false, &progress);
-        send(&tx, Job::Finished(Box::new(Results::from_deleted(report))));
+        let report = ops::delete(targets, false, Some(&backup), &progress);
+        let results = Results::from_deleted(report).with_backup(&backup.finish(&backups));
+        send(&tx, Job::Finished(Box::new(results)));
     });
 }

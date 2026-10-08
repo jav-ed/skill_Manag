@@ -1,5 +1,6 @@
 //! `sync` and `push`: plan against the scanned projects, then run the shared pipeline.
 
+use skillmirror_core::backup::RunKind;
 use skillmirror_core::ops::{Workspace, plan_push, plan_sync};
 use skillmirror_core::plan::Plan;
 use skillmirror_core::scan::ScanReport;
@@ -17,10 +18,10 @@ pub(super) enum Which {
 }
 
 impl Which {
-    fn command(self) -> &'static str {
+    fn kind(self) -> RunKind {
         match self {
-            Self::Sync => "sync",
-            Self::Push => "push",
+            Self::Sync => RunKind::Sync,
+            Self::Push => RunKind::Push,
         }
     }
 
@@ -42,7 +43,7 @@ impl Which {
 pub(super) fn run(cli: &Cli, args: &ApplyArgs, which: Which) -> Result<Exit, CliError> {
     let Context { workspace, report } = open(cli)?;
     let run = Run {
-        command: which.command(),
+        kind: which.kind(),
         dry_run: args.dry_run,
         check: args.check,
         yes: args.yes,

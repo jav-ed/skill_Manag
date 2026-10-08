@@ -2,6 +2,7 @@
 
 use std::path::{Path, PathBuf};
 
+use crate::backup::{BackupError, Change, Run};
 use crate::events::{Event, Observer, Status};
 use crate::runid::run_id;
 use crate::scan::{ScanReport, Target, TargetSet, all_targets, first_link_above};
@@ -20,6 +21,17 @@ pub enum DeleteError {
     RemainsKept {
         skill: String,
         trash: PathBuf,
+        reason: String,
+    },
+    #[error("{0}")]
+    Backup(#[from] BackupError),
+    #[error(
+        "{skill} was not removed: its backup failed ({cause}), and the folder could not be put back; it is at {trash} ({reason})"
+    )]
+    Stranded {
+        skill: String,
+        trash: PathBuf,
+        cause: String,
         reason: String,
     },
     #[error("{0}")]
@@ -87,7 +99,15 @@ impl DeleteReport {
 }
 
 /// Removes each target folder, or only reports it when `dry_run` is set. One failure never stops the others.
-pub fn delete(targets: Vec<Target>, dry_run: bool, observer: Observer<'_>) -> DeleteReport {
+///
+/// With a `backup` run the folder is kept in the backup store instead of being deleted. If it cannot be
+/// stored it is put back and that target fails. A symlinked skill folder is not stored: only the link goes.
+pub fn delete(
+    targets: Vec<Target>,
+    dry_run: bool,
+    backup: Option<&Run>,
+    observer: Observer<'_>,
+) -> DeleteReport {
     let run = run_id();
     let deleted = targets
         .into_iter()
@@ -96,7 +116,7 @@ pub fn delete(targets: Vec<Target>, dry_run: bool, observer: Observer<'_>) -> De
             let result = if dry_run {
                 Ok(())
             } else {
-                remove(&target, &run, index)
+                remove(&target, &run, index, backup)
             };
             let status = match &result {
                 Ok(()) => Status::Deleted,
@@ -112,7 +132,12 @@ pub fn delete(targets: Vec<Target>, dry_run: bool, observer: Observer<'_>) -> De
     DeleteReport { deleted }
 }
 
-fn remove(target: &Target, run: &std::io::Result<String>, index: usize) -> Result<(), DeleteError> {
+fn remove(
+    target: &Target,
+    run: &std::io::Result<String>,
+    index: usize,
+    backup: Option<&Run>,
+) -> Result<(), DeleteError> {
     if let Some(link) = first_link_above(&target.path)? {
         return Err(DeleteError::LinkedParent { path: link });
     }
@@ -132,16 +157,44 @@ fn remove(target: &Target, run: &std::io::Result<String>, index: usize) -> Resul
             // One rename takes the skill out of `skills/`, so it is never left half deleted there.
             let trash = agents.join(format!(".trash-{run}-{index}"));
             fs_err::rename(&target.path, &trash)?;
-            fs_err::remove_dir_all(&trash).map_err(|e| DeleteError::RemainsKept {
-                skill: target.skill.clone(),
-                trash,
-                reason: e.to_string(),
-            })
+            match backup {
+                Some(run) => keep(run, target, index, trash),
+                None => discard(target, trash),
+            }
         }
         // A symlinked skill folder loses the link only; `remove_dir_all` never follows it.
         Ok(meta) if meta.file_type().is_symlink() => Ok(fs_err::remove_file(&target.path)?),
         Ok(_) => Err(not_installed()),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Err(not_installed()),
         Err(e) => Err(e.into()),
+    }
+}
+
+fn discard(target: &Target, trash: PathBuf) -> Result<(), DeleteError> {
+    fs_err::remove_dir_all(&trash).map_err(|e| DeleteError::RemainsKept {
+        skill: target.skill.clone(),
+        trash,
+        reason: e.to_string(),
+    })
+}
+
+/// Moves the folder out of the trash into the backup store, or back into the project if that fails.
+fn keep(run: &Run, target: &Target, index: usize, trash: PathBuf) -> Result<(), DeleteError> {
+    match run.keep(index, target, Change::Deleted, &trash) {
+        Ok(None) => Ok(()),
+        Ok(Some(cause)) => Err(DeleteError::RemainsKept {
+            skill: target.skill.clone(),
+            trash,
+            reason: cause.to_string(),
+        }),
+        Err(cause) => match fs_err::rename(&trash, &target.path) {
+            Ok(()) => Err(cause.into()),
+            Err(reason) => Err(DeleteError::Stranded {
+                skill: target.skill.clone(),
+                trash,
+                cause: cause.to_string(),
+                reason: reason.to_string(),
+            }),
+        },
     }
 }

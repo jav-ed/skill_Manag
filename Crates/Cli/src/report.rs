@@ -28,9 +28,14 @@ impl CliError {
         match self {
             Self::Usage(..)
             | Self::Tui(skillmirror_tui::TuiError::NoTerminal)
-            | Self::Core(skillmirror_core::Error::Delete(
-                skillmirror_core::ops::DeleteError::InvalidName { .. },
-            )) => Exit::Usage,
+            | Self::Core(
+                skillmirror_core::Error::Delete(skillmirror_core::ops::DeleteError::InvalidName {
+                    ..
+                })
+                | skillmirror_core::Error::Backup(skillmirror_core::backup::BackupError::NoSuchRun {
+                    ..
+                }),
+            ) => Exit::Usage,
             _ => Exit::HardError,
         }
     }
@@ -57,6 +62,7 @@ macro_rules! from_core_error {
 }
 
 from_core_error!(
+    skillmirror_core::backup::BackupError,
     skillmirror_core::config::ConfigError,
     skillmirror_core::ops::DeleteError,
     skillmirror_core::ops::ProjectError,

@@ -16,7 +16,7 @@ The previous lead (a Claude Code session) stopped on 2026-10-08 at the user's re
 | CLI (`Crates/Cli`): `sync push list delete skills add init migrate completions tui` | done; 40 integration tests incl. 3 real-PTY tests |
 | TUI (`Crates/Tui`): menu, sync, push, delete, list, setup wizard, mouse, fuzzy filter | done; 39 tests incl. snapshot tests |
 | Parity against the Go tool (oracle, 131 scenarios) | 87 match, 44 expected divergences, 0 unexpected |
-| Backup store and `undo` | HALF BUILT: store, undo and apply refactor compile, no tests, not wired to any front end |
+| Backup store and `undo` | done: store, apply and delete keep the old copy, CLI `undo` and `history`, TUI jobs keep backups; 54 new tests |
 | Review round 2 findings (6 medium, 12 low) | all open |
 | `status`, `diff`, `doctor`, targets bridge, registry cache, `indicatif` progress | not started |
 | Web report, TUI add/init/history screens | not started |

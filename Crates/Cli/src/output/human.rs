@@ -3,25 +3,10 @@
 use super::style::{ERROR, HEADER, MUTED, NAME, SUCCESS, WARNING};
 use super::view::{DeleteRow, DeleteStatus, InstalledRow, Kind, Row, SkillRow, Summary, Tense};
 
-/// Appends formatted text to a `String`. Writing to a string cannot fail, so there is no result to handle.
-macro_rules! put {
-    ($buf:expr, $($arg:tt)*) => {
-        $buf.push_str(&format!($($arg)*))
-    };
-}
-
-/// Like `put!`, plus a newline.
-macro_rules! putln {
-    ($buf:expr, $($arg:tt)*) => {{
-        $buf.push_str(&format!($($arg)*));
-        $buf.push('\n');
-    }};
-}
-
 /// Width of the skill name column.
 const NAME_WIDTH: usize = 30;
 
-fn plural(count: usize, word: &str) -> String {
+pub(super) fn plural(count: usize, word: &str) -> String {
     if count == 1 {
         format!("{count} {word}")
     } else {
@@ -29,7 +14,7 @@ fn plural(count: usize, word: &str) -> String {
     }
 }
 
-fn pad(name: &str) -> String {
+pub(super) fn pad(name: &str) -> String {
     let missing = NAME_WIDTH.saturating_sub(name.chars().count());
     format!("{name}{}", " ".repeat(missing))
 }

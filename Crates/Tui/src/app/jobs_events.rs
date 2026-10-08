@@ -72,8 +72,8 @@ impl App {
         }
         let tx = self.tx.clone();
         match pending.kind {
-            Kind::Delete => jobs::spawn_delete(tx, pending.targets),
-            kind => jobs::spawn_apply(tx, session, kind, pending.targets),
+            Kind::Delete => jobs::spawn_delete(tx, self.dirs.clone(), pending.targets),
+            kind => jobs::spawn_apply(tx, session, self.dirs.clone(), kind, pending.targets),
         }
     }
 

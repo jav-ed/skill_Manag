@@ -14,6 +14,10 @@ pub use store::{
 pub use undo::{Filter, Restored, UndoReport, Undone, undo};
 
 #[cfg(test)]
+mod apply_tests;
+#[cfg(test)]
+mod delete_tests;
+#[cfg(test)]
 mod tests;
 #[cfg(test)]
 mod undo_tests;

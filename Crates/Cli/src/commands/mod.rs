@@ -1,5 +1,6 @@
 //! One module per command.
 
+mod backup;
 mod context;
 mod delete;
 mod install;
@@ -49,6 +50,8 @@ fn dispatch(cli: &Cli, command: &Command) -> Result<Exit, CliError> {
         Command::Skills(args) => skills::run(cli, args),
         Command::Add(args) => install::add(cli, args),
         Command::Init(args) => install::init(cli, args),
+        Command::Undo(args) => backup::run_undo(args),
+        Command::History(args) => backup::run_history(args),
         Command::Migrate(args) => migrate::run(args),
         Command::Completions { shell } => {
             let mut buffer = Vec::new();

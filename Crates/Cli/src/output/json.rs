@@ -19,6 +19,8 @@ pub(crate) struct RunJson<'a> {
     summary: Summary,
     entries: &'a [Row],
     scan_issues: Vec<Issue>,
+    /// The backup run that holds what this run replaced; `skillmirror undo` brings it back.
+    backup: Option<String>,
 }
 
 impl<'a> RunJson<'a> {
@@ -40,7 +42,13 @@ impl<'a> RunJson<'a> {
                     message: i.message.clone(),
                 })
                 .collect(),
+            backup: None,
         }
+    }
+
+    pub(crate) fn with_backup(mut self, backup: Option<&str>) -> Self {
+        self.backup = backup.map(str::to_string);
+        self
     }
 
     pub(crate) fn render(&self) -> Result<String, serde_json::Error> {
@@ -67,11 +75,22 @@ impl<'a> ListJson<'a> {
 pub(crate) struct DeleteJson<'a> {
     dry_run: bool,
     deleted: &'a [DeleteRow],
+    /// The backup run that holds the removed folders; `skillmirror undo` brings them back.
+    backup: Option<String>,
 }
 
 impl<'a> DeleteJson<'a> {
     pub(crate) fn new(dry_run: bool, deleted: &'a [DeleteRow]) -> Self {
-        Self { dry_run, deleted }
+        Self {
+            dry_run,
+            deleted,
+            backup: None,
+        }
+    }
+
+    pub(crate) fn with_backup(mut self, backup: Option<&str>) -> Self {
+        self.backup = backup.map(str::to_string);
+        self
     }
 
     pub(crate) fn render(&self) -> Result<String, serde_json::Error> {

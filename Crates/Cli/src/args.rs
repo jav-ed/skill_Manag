@@ -46,6 +46,10 @@ pub(crate) enum Command {
     Add(AddArgs),
     /// Create a new project directory and install the mandatory skills plus a selection
     Init(InitArgs),
+    /// Bring back what a run replaced or removed (undoing is a run too, so a second undo redoes it)
+    Undo(UndoArgs),
+    /// List the runs that can be undone, newest first
+    History(HistoryArgs),
     /// Copy the vault pointer of the old skill_Manag tool to this tool
     Migrate(MigrateArgs),
     /// Print a shell completion script
@@ -97,6 +101,35 @@ pub(crate) struct DeleteArgs {
     /// Remove without asking
     #[arg(short, long)]
     pub(crate) yes: bool,
+    /// Print one JSON document instead of text
+    #[arg(long)]
+    pub(crate) json: bool,
+}
+
+#[derive(Debug, Args)]
+pub(crate) struct UndoArgs {
+    /// The run to undo (default: the newest one); `history` lists them
+    #[arg(value_name = "RUN")]
+    pub(crate) run: Option<String>,
+    /// Only undo what the run did in this project
+    #[arg(long, value_name = "DIR")]
+    pub(crate) project: Option<PathBuf>,
+    /// Only undo what the run did to this skill
+    #[arg(long, value_name = "NAME")]
+    pub(crate) skill: Option<String>,
+    /// Show what would be brought back and change nothing
+    #[arg(long)]
+    pub(crate) dry_run: bool,
+    /// Undo without asking
+    #[arg(short, long)]
+    pub(crate) yes: bool,
+    /// Print one JSON document instead of text
+    #[arg(long)]
+    pub(crate) json: bool,
+}
+
+#[derive(Debug, Args)]
+pub(crate) struct HistoryArgs {
     /// Print one JSON document instead of text
     #[arg(long)]
     pub(crate) json: bool,

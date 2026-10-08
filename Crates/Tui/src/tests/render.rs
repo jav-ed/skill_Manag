@@ -1,6 +1,23 @@
 use super::{Harness, world};
 use crate::input::Code;
 
+/// The backup run id changes with every run; the snapshot keeps its place and hides the value.
+fn without_run_id(screen: &str) -> String {
+    const MARK: &str = "Backup: run ";
+    screen
+        .lines()
+        .map(|line| match line.find(MARK) {
+            Some(at) => {
+                let rest = &line[at + MARK.len()..];
+                let end = rest.find(' ').unwrap_or(rest.len());
+                format!("{}{MARK}[RUN]{}", &line[..at], &rest[end..])
+            }
+            None => line.to_string(),
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
 #[test]
 fn the_menu_lists_every_entry_with_the_detail_of_the_selected_one() {
     let mut ui = Harness::new(world());
@@ -27,7 +44,7 @@ fn the_results_page_lists_failures_and_collapses_successes() {
     let mut ui = Harness::new(world());
     ui.open("List").wait_select();
     ui.press('a').press('s').wait_done();
-    insta::assert_snapshot!(ui.screen());
+    insta::assert_snapshot!(without_run_id(&ui.screen()));
     ui.press('d');
     let detailed = ui.screen();
     assert!(

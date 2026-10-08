@@ -1,6 +1,9 @@
 //! The only place that writes to the terminal. Colour is decided by `anstream`: off for pipes and `NO_COLOR`.
 #![allow(clippy::print_stdout, clippy::print_stderr)]
 
+#[macro_use]
+mod macros;
+mod backup;
 mod human;
 mod json;
 mod style;
@@ -8,6 +11,9 @@ mod view;
 
 use std::io::{BufRead, IsTerminal, Write};
 
+pub(crate) use backup::{
+    HistoryJson, HistoryRow, UndoJson, UndoRow, UndoStatus, render_history, render_undo,
+};
 pub(crate) use human::{
     render_delete, render_installed, render_rows, render_summary, render_vault,
 };

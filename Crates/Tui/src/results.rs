@@ -3,6 +3,7 @@
 use std::collections::BTreeMap;
 
 use skillmirror_core::apply::{ApplyReport, Failure, Outcome};
+use skillmirror_core::backup::Finished;
 use skillmirror_core::ops::DeleteReport;
 use skillmirror_core::plan::SkillPlan;
 
@@ -67,9 +68,23 @@ pub(crate) struct Results {
     pub(crate) skills: Vec<SkillResult>,
     /// Things that went well but need a hand, such as an old copy that could not be removed.
     pub(crate) warnings: Vec<String>,
+    /// The backup run that holds what this job replaced or removed.
+    pub(crate) backup: Option<String>,
 }
 
 impl Results {
+    /// Notes where the backup is, and a failed clean-up of old backups.
+    pub(crate) fn with_backup(mut self, finished: &Finished) -> Self {
+        if let Some(error) = &finished.prune_error {
+            self.warnings
+                .push(format!("Old backups could not be removed: {error}"));
+        }
+        if finished.stored > 0 {
+            self.backup = Some(finished.id.clone());
+        }
+        self
+    }
+
     pub(crate) fn failed(&self) -> usize {
         self.skills.iter().map(|s| s.failed).sum()
     }
@@ -110,6 +125,7 @@ impl Results {
             kind,
             skills: by_skill.into_values().collect(),
             warnings,
+            backup: None,
         }
     }
 
@@ -133,6 +149,7 @@ impl Results {
             kind: Kind::Delete,
             skills: by_skill.into_values().collect(),
             warnings: Vec::new(),
+            backup: None,
         }
     }
 }

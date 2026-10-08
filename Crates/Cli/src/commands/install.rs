@@ -3,6 +3,7 @@
 use std::collections::BTreeSet;
 use std::path::Path;
 
+use skillmirror_core::backup::RunKind;
 use skillmirror_core::ops::{self, SelectError, Selection, Workspace};
 
 use super::context::load_settings;
@@ -24,7 +25,7 @@ pub(super) fn add(cli: &Cli, args: &AddArgs) -> Result<Exit, CliError> {
         &selection(&args.select),
     )?;
     let plan = ops::plan_install(&workspace, &project, &skills);
-    execute(plan, &[], &run_of("add", &args.flags), &|| Ok(()))
+    execute(plan, &[], &run_of(RunKind::Add, &args.flags), &|| Ok(()))
 }
 
 pub(super) fn init(cli: &Cli, args: &InitArgs) -> Result<Exit, CliError> {
@@ -33,7 +34,7 @@ pub(super) fn init(cli: &Cli, args: &InitArgs) -> Result<Exit, CliError> {
     ops::check_new(&dir)?;
     let skills = init_skills(&workspace, args)?;
     let plan = ops::plan_install(&workspace, &dir, &skills);
-    execute(plan, &[], &run_of("init", &args.flags), &|| {
+    execute(plan, &[], &run_of(RunKind::Init, &args.flags), &|| {
         create_project(&dir, args.git)
     })
 }
@@ -72,9 +73,9 @@ fn selection(args: &SelectArgs) -> Selection {
     }
 }
 
-fn run_of<'a>(command: &'a str, flags: &InstallFlags) -> Run<'a> {
+fn run_of(kind: RunKind, flags: &InstallFlags) -> Run<'static> {
     Run {
-        command,
+        kind,
         dry_run: flags.dry_run,
         check: false,
         yes: flags.yes,

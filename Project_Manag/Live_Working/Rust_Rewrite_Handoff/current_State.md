@@ -22,8 +22,8 @@ Cargo virtual workspace, edition 2024, `rust-version = 1.88`, resolver 3, strict
 | `scan/` | Parallel walk with the `ignore` crate over the canonical root; finds `.agents/skills`; prune list and `exclude_*`; `first_link_above` (refuses symlinked `.agents`/`skills`); non-UTF-8 names and leftover `.stage-*`/`.trash-*` folders become issues, not silent skips. |
 | `plan/` | Per target: compare size, then bytes, then mode; remember a destination `Snapshot` (length, mode, mtime per entry). Errors per target (`SkillFileNotTracked`, `SkillFolderIsLink`, ...) never stop the others. |
 | `apply/` | Writes the plan with a bounded rayon pool. See "How a write flows". |
-| `backup/` | HALF BUILT. Backup store and undo, see [next steps](next_Steps.md). |
-| `ops/` | What front ends call: `Workspace::open/scan`, `plan_sync`, `plan_push`, `plan_install` (add/init), `delete`, `installed`, `resolve` (names, groups, profiles to skills). |
+| `backup/` | Backup store (`Backups`, `Run`, `Entry`) and `undo`. Every writing command keeps what it replaces or removes in `<state>/backups/<run-id>/<n>/`; `undo` is itself a run, so a second `undo` redoes it. Contract Q34. |
+| `ops/` | What front ends call: `Workspace::open/scan`, `plan_sync`, `plan_push`, `plan_install` (add/init), `delete` (takes an optional backup `Run`), `installed`, `resolve` (names, groups, profiles to skills). |
 | `events.rs` | `Observer` callback with `Event::{ScanFinished, TargetDone}`; the CLI, the TUI and a future web view share it. |
 | `error.rs` | `Error` (one variant per module) and the `Hint` trait (a second line telling the user what to do). |
 
@@ -62,6 +62,8 @@ Global options on every command: `--vault <DIR>`, `--root <DIR>`. No subcommand:
 | `skills [--group PATH] [--json]` | The vault's skills grouped by folder |
 | `add [SKILL]... [--group P] [--profile N] [--project DIR] [--dry-run] [-y] [--json]` | Install skills, groups or profiles into an existing project |
 | `init <DIR> [SKILL]... [--group] [--profile] [--git] [--no-mandatory] ...` | Create a project directory and install mandatory skills plus a selection |
+| `undo [RUN] [--project DIR] [--skill NAME] [--dry-run] [-y] [--json]` | Bring a run back (default: the newest); undoing is a run too, so a second `undo` redoes it |
+| `history [--json]` | The runs in the backup store, newest first |
 | `migrate [--retire]` | Copy the old tool's vault pointer to this tool |
 | `completions <shell>` | Shell completions |
 | `tui` | The interactive interface |
@@ -70,7 +72,7 @@ Exit codes: `0` clean, `1` drift found by `--check`, `2` usage error (also: writ
 
 ## TUI
 
-ratatui 0.30 on the `termina` backend through `ratatui-termina` (crossterm 0.29 stalls on input bursts of about 1 KB, which a mouse sweep or a paste produces). Own input layer (`input.rs`, `binding.rs`, `hit.rs`), `tui-input` for text fields, `nucleo-matcher` for the fuzzy filter, an OSC 8 link via `CellDiffOption::ForcedWidth`. Background work (scan, plan, apply, delete) runs in threads and reports over one mpsc channel; events are coalesced and the tick runs only while something animates. Screens: menu, work screens (sync, push, delete: select, confirm, run, results), list, setup wizard (vault and root with a folder picker, mandatory skills, save), help overlay. Mouse works everywhere. The app is tested by driving `App` with synthetic input against a `TestBackend` (insta snapshots in `Crates/Tui/src/tests/snapshots/`) and, for the real terminal path, with portable-pty and vt100 in `Crates/Cli/tests/interface.rs`.
+ratatui 0.30 on the `termina` backend through `ratatui-termina` (crossterm 0.29 stalls on input bursts of about 1 KB, which a mouse sweep or a paste produces). Own input layer (`input.rs`, `binding.rs`, `hit.rs`), `tui-input` for text fields, `nucleo-matcher` for the fuzzy filter, an OSC 8 link via `CellDiffOption::ForcedWidth`. Background work (scan, plan, apply, delete) runs in threads and reports over one mpsc channel; events are coalesced and the tick runs only while something animates. Screens: menu, work screens (sync, push, delete: select, confirm, run, results; the results page names the backup run), list, setup wizard (vault and root with a folder picker, mandatory skills, save), help overlay. Mouse works everywhere. The app is tested by driving `App` with synthetic input against a `TestBackend` (insta snapshots in `Crates/Tui/src/tests/snapshots/`) and, for the real terminal path, with portable-pty and vt100 in `Crates/Cli/tests/interface.rs`.
 
 ## Numbers (measured on the user's real data, read-only)
 
@@ -89,7 +91,7 @@ Installed: `cargo`, `just`, `cargo-nextest`. NOT installed: `tokei` (so `just lo
 
 ## Known gaps
 
-- Backup and `undo`: half built (see [next steps](next_Steps.md)).
+- The TUI has no history or undo screen yet (the CLI has `undo` and `history`).
 - Review round 2: six medium findings open, among them two that can delete a file the user never saw in the TUI (M1) and break healthy siblings when one new-project target fails (M3). Details: `Docs/Investigation/Review_Rounds/round_2_Full.md`.
 - No progress line while scanning (`indicatif` is planned); no root-level `--dry-run` alias (the Go tool had `skill_Manag --dry-run`; the Rust tool uses `sync --dry-run`, decision pending).
 - The TUI has no add/init/history screens and does not show scan issues.

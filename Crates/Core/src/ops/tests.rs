@@ -167,7 +167,7 @@ fn delete_by_name_removes_only_that_folder_and_dry_run_touches_nothing() {
     let targets = targets_named(&report, "coding").unwrap().targets;
     assert_eq!(targets.len(), 2);
 
-    let dry = delete(targets.clone(), true, &ignore_events);
+    let dry = delete(targets.clone(), true, None, &ignore_events);
     assert_eq!(dry.failed(), 0);
     assert!(
         world
@@ -177,7 +177,7 @@ fn delete_by_name_removes_only_that_folder_and_dry_run_touches_nothing() {
             .exists()
     );
 
-    let real = delete(targets, false, &ignore_events);
+    let real = delete(targets, false, None, &ignore_events);
     assert_eq!(real.failed(), 0);
     assert!(
         !world
@@ -236,7 +236,10 @@ fn deleting_a_symlinked_skill_removes_the_link_not_its_target() {
         skill: "linked".into(),
         path: project.join(".agents/skills/linked"),
     };
-    assert_eq!(delete(vec![target], false, &ignore_events).failed(), 0);
+    assert_eq!(
+        delete(vec![target], false, None, &ignore_events).failed(),
+        0
+    );
     assert!(outside.exists());
     assert!(!project.join(".agents/skills/linked").exists());
 }

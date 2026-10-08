@@ -1,9 +1,11 @@
 //! `delete`: remove one skill folder from one project or from every project that has it.
 
+use skillmirror_core::backup::RunKind;
 use skillmirror_core::events::ignore_events;
 use skillmirror_core::ops::{self, Deleted};
 use skillmirror_core::scan::Target;
 
+use super::backup;
 use super::context::{load_settings, warn_unreadable};
 use crate::args::{Cli, DeleteArgs};
 use crate::exit::Exit;
@@ -26,7 +28,9 @@ pub(super) fn run(cli: &Cli, args: &DeleteArgs) -> Result<Exit, CliError> {
         output::line("Cancelled, nothing was removed.");
         return Ok(Exit::Clean);
     }
-    let report = ops::delete(targets, args.dry_run, &ignore_events);
+    let (backups, backup_run) = backup::begin(RunKind::Delete)?;
+    let report = ops::delete(targets, args.dry_run, Some(&backup_run), &ignore_events);
+    let finished = backup_run.finish(&backups);
     let failed = report.failed();
     let rows: Vec<DeleteRow> = report
         .deleted
@@ -34,10 +38,12 @@ pub(super) fn run(cli: &Cli, args: &DeleteArgs) -> Result<Exit, CliError> {
         .map(|d| to_row(d, args.dry_run))
         .collect();
     if args.json {
-        output::line(&DeleteJson::new(args.dry_run, &rows).render()?);
+        let document = DeleteJson::new(args.dry_run, &rows);
+        output::line(&document.with_backup(backup::saved(&finished)).render()?);
     } else {
         output::print(&output::render_delete(&rows, args.dry_run));
     }
+    backup::announce(&finished, args.json);
     Ok(if failed > 0 {
         Exit::Partial
     } else {
