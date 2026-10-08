@@ -3,6 +3,7 @@
 
 #[macro_use]
 mod macros;
+mod author;
 mod backup;
 mod bridge;
 mod diff;
@@ -18,6 +19,7 @@ mod view;
 
 use std::io::{BufRead, IsTerminal, Write};
 
+pub(crate) use author::{AuthoredJson, Pointer, VaultInitJson, render_authored, render_vault_init};
 pub(crate) use backup::{
     HistoryJson, HistoryRow, UndoJson, UndoRow, UndoStatus, render_history, render_undo,
 };

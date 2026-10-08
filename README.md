@@ -52,7 +52,7 @@ just install            # or: cargo install --path Crates/Cli --locked
 
 The binary lands in `~/.cargo/bin/skillmirror`. Check it with `skillmirror doctor`. The compile takes about a minute and up to about 600 MB of memory; the build folder is removed afterwards (see [Development](#development) for the cost of working on the code).
 
-First run: `skillmirror` with no arguments opens the interface, and its Setup entry asks for the vault and the root and writes the configuration. Coming from the Go tool: `skillmirror migrate` copies its vault pointer.
+First run: `skillmirror` with no arguments opens the interface, and its Setup entry asks for the vault and the root and writes the configuration. Starting from nothing, `skillmirror vault init ~/skills --root ~/projects` makes the vault, `skillmirror new NAME` or `skillmirror adopt NAME --from PROJECT` fills it, and you commit in the vault when a skill is ready. Coming from the Go tool: `skillmirror migrate` copies its vault pointer.
 
 ## Commands
 
@@ -72,6 +72,9 @@ Every command accepts `--vault <DIR>` and `--root <DIR>`. Commands that write as
 | `status [SKILL...] [--group P] [--project DIR] [--all]` | How every project stands against the vault: outdated, mandatory missing, not in the vault. Exit 1 when something differs |
 | `diff [SKILL] [--project DIR] [--stat]` | The lines a sync would bring in and take away, as unified diffs |
 | `report [-o FILE] [--open]` | One self-contained HTML page: skills against projects, the vault tree, diffs, a filter, dark mode |
+| `new NAME [--group PATH] [--description TEXT] [--dry-run]` | Creates a skill in the vault from a template (`SKILL.md` with a header), staged in git, not committed |
+| `adopt NAME --from PROJECT [--group PATH] [--dry-run]` | Copies a skill folder that a project already has into the vault, staged, not committed; the project's folder is then in sync |
+| `vault init DIR [--root DIR] [--use] [--dry-run]` | Makes a new vault (a git repository with a `config.yaml`) and, when you have no default vault yet, makes it the default |
 | `bridge [--dry-run]` | Links other agent folders such as `.claude/skills` to `.agents/skills` (see `targets` below) |
 | `doctor` | Checks the machine, the configuration, the vault and every `SKILL.md` header; writes nothing |
 | `undo [RUN]` and `history` | Brings back what a run replaced or removed; undoing is a run too, so a second `undo` redoes it |
@@ -143,7 +146,7 @@ The vault must be a git repository. The files git tracks in a skill folder are w
 - A skill folder is replaced by building the new copy beside it and swapping the two folders in one step (`renameat2` exchange), so a crash never leaves a half written skill. Filesystems that cannot do this (NFS, CIFS, FUSE, FAT) are named by `doctor`.
 - Before a run replaces or removes a folder, the old copy goes to `~/.local/state/skillmirror/backups/<run>/`; the newest 30 runs are kept. `history` lists them and `undo` brings one back.
 - If a project folder changed between the plan and the write, that skill fails instead of being overwritten.
-- Links are never followed and never written through. Nothing is written into your vault by any command except the configuration file the Setup screen saves.
+- Links are never followed and never written through. Only the commands that grow the vault write into it (`new`, `adopt`, `vault init`, and the configuration file the Setup screen saves): they create files that did not exist, stage them with `git add`, and never overwrite, delete or commit anything.
 - Everything the scan could not read, and every leftover of an interrupted run, is reported, never hidden.
 
 ## Development

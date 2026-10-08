@@ -54,6 +54,13 @@ pub(crate) enum Command {
     Skills(SkillsArgs),
     /// Show one skill: its place and files in the vault, the profiles that name it, and what it is in each project
     Info(InfoArgs),
+    /// Create a skill in the vault from a template (staged in git, never committed)
+    New(NewArgs),
+    /// Copy a skill folder that a project has into the vault (staged in git, never committed)
+    Adopt(AdoptArgs),
+    /// Work on the vault itself
+    #[command(subcommand)]
+    Vault(VaultCommand),
     /// Install skills, groups or profiles into an existing project
     Add(AddArgs),
     /// Create a new project directory and install the mandatory skills plus a selection
@@ -285,6 +292,68 @@ pub(crate) struct InfoArgs {
     /// The skill folder name
     #[arg(value_name = "SKILL")]
     pub(crate) skill: String,
+    /// Print one JSON document instead of text
+    #[arg(long)]
+    pub(crate) json: bool,
+}
+
+#[derive(Debug, Args)]
+pub(crate) struct NewArgs {
+    /// Name of the new skill: lowercase letters, digits, `-` and `_`
+    #[arg(value_name = "NAME")]
+    pub(crate) name: String,
+    /// The vault folder to put it in, such as `web` or `web/seo` (made when it does not exist)
+    #[arg(long, value_name = "PATH", default_value = "")]
+    pub(crate) group: String,
+    /// The line agents read to decide when to use the skill
+    #[arg(long, value_name = "TEXT")]
+    pub(crate) description: Option<String>,
+    /// Show what would be created and create nothing
+    #[arg(long)]
+    pub(crate) dry_run: bool,
+    /// Print one JSON document instead of text
+    #[arg(long)]
+    pub(crate) json: bool,
+}
+
+#[derive(Debug, Args)]
+pub(crate) struct AdoptArgs {
+    /// The skill folder name in the project
+    #[arg(value_name = "NAME")]
+    pub(crate) name: String,
+    /// The project that has it
+    #[arg(long, value_name = "DIR", required = true)]
+    pub(crate) from: PathBuf,
+    /// The vault folder to put it in, such as `web` or `web/seo` (made when it does not exist)
+    #[arg(long, value_name = "PATH", default_value = "")]
+    pub(crate) group: String,
+    /// Show what would be copied and copy nothing
+    #[arg(long)]
+    pub(crate) dry_run: bool,
+    /// Print one JSON document instead of text
+    #[arg(long)]
+    pub(crate) json: bool,
+}
+
+#[derive(Debug, Subcommand)]
+pub(crate) enum VaultCommand {
+    /// Make a new vault: a git repository with a config.yaml
+    Init(VaultInitArgs),
+}
+
+#[derive(Debug, Args)]
+pub(crate) struct VaultInitArgs {
+    /// The new vault folder; it must not exist or must be empty
+    pub(crate) dir: PathBuf,
+    /// The folder that holds your projects, written to config.yaml as `root:`
+    #[arg(long, value_name = "DIR")]
+    pub(crate) root: Option<PathBuf>,
+    /// Make it the default vault even when another one is set
+    #[arg(long = "use")]
+    pub(crate) use_it: bool,
+    /// Show what would be created and create nothing
+    #[arg(long)]
+    pub(crate) dry_run: bool,
     /// Print one JSON document instead of text
     #[arg(long)]
     pub(crate) json: bool,

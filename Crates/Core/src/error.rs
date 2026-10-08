@@ -3,7 +3,7 @@
 use crate::apply::ApplyError;
 use crate::backup::BackupError;
 use crate::config::ConfigError;
-use crate::ops::{DeleteError, ProjectError, ScopeError, SelectError};
+use crate::ops::{AuthorError, DeleteError, ProjectError, ScopeError, SelectError, VaultInitError};
 use crate::plan::PlanError;
 use crate::scan::ScanError;
 use crate::vault::VaultError;
@@ -36,6 +36,10 @@ pub enum Error {
     Select(#[from] SelectError),
     #[error(transparent)]
     Scope(#[from] ScopeError),
+    #[error(transparent)]
+    Author(#[from] AuthorError),
+    #[error(transparent)]
+    VaultInit(#[from] VaultInitError),
 }
 
 impl Hint for Error {
@@ -51,6 +55,8 @@ impl Hint for Error {
             Self::Project(e) => e.hint(),
             Self::Select(e) => e.hint(),
             Self::Scope(e) => e.hint(),
+            Self::Author(e) => e.hint(),
+            Self::VaultInit(e) => e.hint(),
         }
     }
 }

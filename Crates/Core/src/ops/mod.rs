@@ -1,6 +1,9 @@
 //! The operations front ends call: open a workspace, scan, then plan and apply sync, push, list and delete.
 
+mod adopt;
+mod author;
 mod bridge;
+mod created;
 mod delete;
 mod diff;
 mod doctor;
@@ -13,8 +16,11 @@ mod scope;
 mod select;
 mod status;
 mod sync;
+mod vault_init;
 mod workspace;
 
+pub use adopt::{AdoptPlan, adopt, plan_adopt};
+pub use author::{AuthorError, Authored, check_new_name, new_skill, new_skill_paths};
 pub use bridge::{
     Bridge, BridgeError, BridgeState, create as create_bridge, plan as plan_bridges,
     plan_project as plan_project_bridges,
@@ -35,8 +41,13 @@ pub use scope::{Scope, ScopeError};
 pub use select::{SelectError, Selection, resolve, resolve_names};
 pub use status::{Outdated, Problem, ProjectStatus, StatusReport, status, status_scoped};
 pub use sync::{plan as plan_sync, plan_scoped as plan_sync_scoped};
+pub use vault_init::{NewVault, VaultInitError, check_new_vault, init_vault};
 pub use workspace::Workspace;
 
+#[cfg(test)]
+mod adopt_tests;
+#[cfg(test)]
+mod author_tests;
 #[cfg(test)]
 mod bridge_tests;
 #[cfg(test)]
@@ -61,5 +72,7 @@ mod scope_tests;
 mod status_tests;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod vault_init_tests;
 #[cfg(test)]
 mod workspace_tests;

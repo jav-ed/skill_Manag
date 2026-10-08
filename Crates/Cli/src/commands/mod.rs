@@ -1,5 +1,6 @@
 //! One module per command.
 
+mod author;
 mod backup;
 mod bridge;
 mod context;
@@ -15,6 +16,7 @@ mod pipeline;
 mod report;
 mod skills;
 mod status;
+mod vault;
 
 use std::io::IsTerminal;
 
@@ -55,6 +57,9 @@ fn dispatch(cli: &Cli, command: &Command) -> Result<Exit, CliError> {
         Command::Delete(args) => delete::run(cli, args),
         Command::Skills(args) => skills::run(cli, args),
         Command::Info(args) => info::run(cli, args),
+        Command::New(args) => author::new(cli, args),
+        Command::Adopt(args) => author::adopt(cli, args),
+        Command::Vault(command) => vault::run(cli, command),
         Command::Report(args) => report::run(cli, args),
         Command::Bridge(args) => bridge::run(cli, args),
         Command::Status(args) => status::run(cli, args),
