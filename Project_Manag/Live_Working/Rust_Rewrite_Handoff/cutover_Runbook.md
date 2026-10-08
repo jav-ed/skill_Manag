@@ -1,6 +1,6 @@
 # Cutover runbook
 
-The steps that replace the Go tool on `main` by the Rust tool. Every step that leaves the machine (a tag, a push to `main`, deleting a branch) needs the user's explicit yes; the checks and the local commit do not. Status on 2026-10-08: the commit that deletes the Go tree is done on the branch (see "The commit"); the tag, the merge and the clean-up are not.
+The steps that replace the Go tool on `main` by the Rust tool. Every step that leaves the machine (a tag, a push to `main`, deleting a branch) needs the user's explicit yes; the checks and the local commit do not. Status on 2026-10-08: the commit that deletes the Go tree is done, and the user asked for the merge into `main`, which is made from pull request #1 with a merge commit after a fresh-clone check (see "Merge"). The `go-oracle` tag was not pushed (not asked for), so `c7310f9` stays reachable only through `main`'s history; the promotion of this folder and the branch deletion are still open.
 
 ## Before
 

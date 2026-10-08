@@ -2,7 +2,7 @@
 
 *This `doc_Start.md` is the docs entry point, structured so an agent can quickly decide what to read and what to skip. It opens with a short summary of the repo and key entry-point files, then routes to each topic area through labeled links. Open a linker only when the task calls for it; the labels are written to make that decision possible without clicking.*
 
-`skillmirror` (formerly `skill_Manag`) is a command line tool and a full-screen interface that mirror agent skill folders from one master vault into every matching `.agents/skills/` directory across a codebase: git-tracked, SSH-safe, no symlinks, with backups and `undo`. It is written in Rust on the branch `rust-rewrite-handoff` (the branch to continue on). The Go tool it replaces is still on `main` until the merge; its sources were removed from this branch on 2026-10-08 and live in the history at commit `c7310f9` (the behavior contract and the parity harness refer to it).
+`skillmirror` (formerly `skill_Manag`) is a command line tool and a full-screen interface that mirror agent skill folders from one master vault into every matching `.agents/skills/` directory across a codebase: git-tracked, SSH-safe, no symlinks, with backups and `undo`. It is written in Rust. The Go tool it replaced was removed on 2026-10-08 and lives in the history at commit `c7310f9` (the behavior contract and the parity harness refer to it).
 
 Entry point(s): `Cargo.toml` in the repo root, then `Crates/Core/src/lib.rs` (engine) and `Crates/Cli/src/main.rs` (binary). The web interface is a separate project in `Ui/` (see its README); the Rust side only embeds what it builds.
 
@@ -17,7 +17,7 @@ Entry point(s): `Cargo.toml` in the repo root, then `Crates/Core/src/lib.rs` (en
 
 ## Live work
 
-- [Rust rewrite handoff](../Live_Working/Rust_Rewrite_Handoff/handoff_Overview.md): the state of the branch `rust-rewrite-handoff` for whoever continues it: what is built and verified, what is half built (backup store and `undo`), the ordered backlog with "done when", the working agreement with the user, the verification playbook, open questions and pitfalls. Open it before touching the Rust code or when picking the next piece of work.
+- [Rust rewrite handoff](../Live_Working/Rust_Rewrite_Handoff/handoff_Overview.md): the state of the Rust tool for whoever continues it: what is built and verified, what is half built (backup store and `undo`), the ordered backlog with "done when", the working agreement with the user, the verification playbook, open questions and pitfalls. Open it before touching the Rust code or when picking the next piece of work.
 - [Open issues](../Live_Working/open_Issues.md): short list of active items that point into the handoff.
 
 ## Repo References

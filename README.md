@@ -1,6 +1,6 @@
 # skillmirror
 
-> The Rust rewrite is on the branch `rust-rewrite-handoff` (draft pull request); `main` still holds the Go tool it replaces (`skill_Manag`) until the merge. The Go sources are no longer in this branch; they are in the history at commit `c7310f9`.
+> This is the Rust version of the tool. The Go tool it replaced (`skill_Manag`) is in the history at commit `c7310f9`.
 
 A command line tool and a full-screen interface that keep your agent skills in sync across all your projects: one vault, zero drift.
 
@@ -46,7 +46,6 @@ Needs Rust 1.89 or newer and `git`. Linux only.
 ```bash
 git clone git@github.com:jav-ed/skill_Manag.git
 cd skill_Manag
-git checkout rust-rewrite-handoff
 just install            # or: cargo install --path Crates/Cli --locked
 ```
 
