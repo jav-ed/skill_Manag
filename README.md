@@ -49,7 +49,7 @@ cd skill_Manag
 just install            # or: cargo install --path Crates/Cli --locked
 ```
 
-The binary lands in `~/.cargo/bin/skillmirror`. Check it with `skillmirror doctor`. The compile takes about a minute and up to about 600 MB of memory; the build folder is removed afterwards (see [Development](#development) for the cost of working on the code).
+The binary lands in `~/.cargo/bin/skillmirror`. Check it with `skillmirror doctor`. The compile takes about a minute and a quarter and, with all cores busy, peaks near 0.9 GB of memory (about 0.5 GB and four minutes with `CARGO_BUILD_JOBS=1`); the build folder is removed afterwards (see [Development](#development) for the cost of working on the code).
 
 First run: `skillmirror` with no arguments opens the interface, and its Setup entry asks for the vault and the root and writes the configuration. Starting from nothing, `skillmirror vault init ~/skills --root ~/projects` makes the vault, `skillmirror new NAME` or `skillmirror adopt NAME --from PROJECT` fills it, and you commit in the vault when a skill is ready. Coming from the Go tool: `skillmirror migrate` copies its vault pointer.
 
@@ -164,9 +164,12 @@ The vault must be a git repository. The files git tracks in a skill folder are w
 just check      # format, clippy, tests, file size (300 code lines), core stays synchronous
 just deny       # advisories, licences, bans
 just parity     # replay 131 scenarios of the old Go tool against this one (needs the Go oracle)
+Code/Development/Gate/check_Gate.sh      # all of the above plus the second toolchain and the feature build: GATE OK
+Code/Development/Smoke/check_Smoke.sh    # the built binary end to end in a throwaway world, web server included
+Code/Development/Web/check_Web.sh       # the web interface in Chromium
 ```
 
-**Building Rust is heavy.** A clean build of the workspace with Cargo's defaults uses 1.9 GB of disk and around 800 MB of extra memory, and a `target/` folder that has been used for a few days reaches 10 GB or more (debug information and the incremental cache). This repository turns both off in the root `Cargo.toml` (0.47 GB, about 500 MB, 27 s on four cores). On a small machine add `CARGO_BUILD_JOBS=2`; `cargo clean` frees everything. Numbers, what to switch back on for a debugger, and the rest: [`build_Resources.md`](Project_Manag/Docs/Setup/build_Resources.md).
+**Building Rust is heavy.** A clean build of the workspace and its tests with Cargo's defaults uses 2.5 GB of disk and peaks near 1.7 GB of memory, and a `target/` folder that has been used for a few days reaches 10 GB or more (debug information and the incremental cache). This repository turns both off in the root `Cargo.toml` (0.58 GB, peak near 1.2 GB, 35 s on four cores). It is still not light: on a small machine add `CARGO_BUILD_JOBS=1` (peak about 0.5 GB, three and a half times as long); `cargo clean` frees everything. Numbers, what to switch back on for a debugger, and the rest: [`build_Resources.md`](Project_Manag/Docs/Setup/build_Resources.md).
 
 Crates: `Crates/Core` (the engine, no async), `Crates/Cli`, `Crates/Tui`, `Crates/Web` (the HTML report and the local server), `Crates/Testkit`. The web interface itself is `Ui/` (node, not part of the Cargo workspace; `Code/Development/Web/build_Ui.sh` builds it). The architecture, the behaviour contract (one numbered row per rule) and the decisions behind them are under `Project_Manag/Docs/`; start at [`doc_Start.md`](Project_Manag/Docs/doc_Start.md).
 

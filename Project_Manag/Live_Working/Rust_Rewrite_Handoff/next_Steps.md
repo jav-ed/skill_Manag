@@ -1,61 +1,70 @@
 # Handoff: next steps
 
-*The ordered backlog, each item with the design to follow and a "done when". Items 1 and 2 protect user data and come first; the rest builds features on top. Phases refer to the table in the decision record. When you finish an item, tick it here and note what you learned in the pitfalls file.*
+*What is left, in order, each item with a "done when". Section A is the work that closes the gaps listed in `handoff_Overview.md`; section B is the history of what the lead finished (kept so a reader knows what exists and where its tests are); section C is the parked ideas. When you finish an item, tick it here and note what you learned in the pitfalls file.*
 
-Status marks: `[ ]` open, `[~]` half built, `[x]` done.
+Status marks: `[ ]` open, `[~]` partly done, `[x]` done.
 
-## 1. [x] Finish the backup store and `undo` (phase 5)
+## A. Open work, in order
 
-Done on 2026-10-08. What exists now:
+### A1. [ ] Run it on the real vault and tree, read-only (gap 1)
 
-- `Crates/Core/src/backup/`: the store (`Backups`, `Run`, `Entry`), `undo`, and 36 Core tests in `tests.rs`, `apply_tests.rs`, `delete_tests.rs` and `undo_tests.rs` (store round trip, apply with a backup for update, create and unchanged, a failing store swaps the old copy back and fails only that target, delete with backup, undo of update, create and delete, filters, dry run, undo twice is a redo, project gone, symlinked `.agents`, lost tree, poisoned note, run id `../x`). Three mutations (no swap-back, unchecked run id, prune after every run) were each caught by a test.
-- `ops::delete(targets, dry_run, backup, observer)` moves the folder to `.trash-*` first, then into the store, and renames it back when the store fails.
-- CLI: `sync`, `push`, `add`, `init` and `delete` start a backup run before the write and print `Backup: run <id>`; `--json` documents carry `backup`. New commands `undo` and `history` (Cli tests in `tests/undo.rs`, two real-PTY prompt tests in `tests/undo_terminal.rs`). `undo` previews through a dry run of itself, asks unless `--yes`.
-- TUI jobs pass a `Run`; the results page names the run (the snapshot test hides the id).
-- Contract Q34 and the decision record row are written. Parity: the Backup line is output text, which the harness does not compare, so no divergence entry was needed.
+Design: [handoff_Overview.md](handoff_Overview.md), "First hour", step 5. `skills`, `status`, `sync --dry-run`, `info`, `doctor`, `report`, `web` without `--allow-write`. Compare `list --json | jq length` with the earlier count (436 skills in 65 projects). `doctor` also reads the headers of the real vault's skills: two had an unquoted `: ` in the description (`post-scheduler` and the old `secrets`), which `doctor` reports; fixing them is the user's call in the vault.
 
-Left from this item: a history and undo screen in the TUI (item 4); the `Run` indices are per command, so a command that applies twice in one run would reuse slots (no command does today).
+Done when: a short report to the user with the output of each command, every surprise explained or turned into a failing test first, and no write has happened.
 
-## 2. [x] Fix review round 2 (Docs/Investigation/Review_Rounds/round_2_Full.md)
+### A2. [ ] Use it and list what is awkward (gap 2)
 
-Done on 2026-10-08: M1 to M6, L1 to L12 and the decision I1, each as a failing test first (Core, Cli and Tui tests named in the status line of each finding). Decisions that went into the contract: Q35 (profile `exclude`), Q36 (TUI plan before confirm and job discipline), Q37 (selection and filter), Q38 (no fsync), Q39 (leftovers). Declined with a reason: comments inside a replaced `mandatory` list are dropped with the old items, a read-only `config.yaml` is still replaced with its mode kept, no cancel flag for a running job (Ctrl-C asks twice instead).
+The terminal interface and the web interface have been checked by tests and by the lead's reading of screenshots, never judged by the user. Use both on a throwaway world, then on the real tree. Things worth a look: how the Skills browser reads with 24 skills in groups, the overview with 65 projects (the web table and its filter), the plan page when 60 projects change, the first-run wizard from nothing (`vault init`, `new`, `adopt` and the Setup screen), light and dark theme, small windows, a slow terminal over SSH.
 
-Left: a third review round with fresh eyes (no High, no Medium is the bar), and the Go parity re-run after the TUI and CLI changes (the last run, after the backup work, showed 0 unexpected).
+Done when: the list is with the user, small fixes are in with tests, choices are the user's.
 
-## 3. [ ] Rest of phase 5
+### A3. [ ] Close the CI gap (gap 3)
 
-| Item | Design | Done when |
-|---|---|---|
-| Scan progress (DONE 2026-10-08) | Contract Q45. `Event::ScanProgress` every 256 folders from the scan's threads, an `indicatif` spinner on stderr in `sync`, `push`, `status`, `diff`, `bridge`, `list`, `delete`; hidden for `--json`, pipes and `TERM=dumb` | done: `scan/progress_tests.rs`, `ops/workspace_tests.rs`, `Cli/tests/progress.rs` (real terminal: drawn and cleared; JSON, dumb terminal and pipe: nothing). Not shown: `doctor` (it reports its own layers), the TUI (it has its own loading page) |
-| `status` (DONE 2026-10-08) | Read-only table per project: up to date, would change (counts of files), mandatory missing, installed but not in the vault. `--json`, exit code like `--check` (contract Q41). Without a provenance lock it cannot say who changed a file, only that it differs | done: `ops/status.rs`, `Cli/tests/status.rs` |
-| `diff [SKILL] [--project DIR]` (DONE 2026-10-08) | Unified diff (`similar`) of what a sync would write, coloured on a terminal, `--stat` (contract Q42). The TUI question uses the same view for its plan (`ops::diff_of_plan`, Q49) | done: `ops/diff.rs`, `Cli/tests/diff.rs` |
-| `doctor` (DONE 2026-10-08) | Contract Q43. Layers: machine (git, pointer, old tool, backup store), config, vault (discovery, links, git), skill headers (the two real vault skills with an unquoted `: ` are caught), edits git does not know about, mandatory and profiles, scan with leftovers, root filesystem. Not done: a probe of `renameat2` on the real filesystem (it would write into the user's projects); the filesystem type is checked instead | done: `ops/doctor/`, `Cli/tests/doctor.rs` |
-| `targets` bridge (DONE 2026-10-08) | Contract Q44. `targets: [claude]` in the vault config, `bridge` command, `add`/`init` link their own project after a write, `status` (drift) and `doctor` (warning) report it. Differs from the ADR: `sync` does not recreate a missing bridge, `bridge` does (reason in Q44). Not done: `.kiro/skills` and other agents (add a row to `KNOWN_TARGETS` in `config/vault_config.rs`) | done: `ops/bridge.rs` (9 tests), `Cli/tests/bridge.rs` and `bridge_links.rs` (18 tests incl. a real terminal; existing real directory, dangling link, wrong link, link above). Open: no test makes `add` apply with zero successful writes, so the `wrote > 0` guard in `commands/pipeline.rs` survives a mutation check |
-| Registry cache | `$XDG_CACHE_HOME/skillmirror/` list of projects, `--rescan`, TTL, printed line "N projects from cache, age 3 h". Only after the cold scan is measured (needs `drop_caches`, ask the user) and only if it is still slow | measured gain, no silently missed project |
-| Root `--dry-run` alias | Go had `skill_Manag --dry-run`; decide with the user whether to keep an alias for `sync --dry-run` | decision recorded in the contract |
-| Provenance lock | Deferred by the user ("maybe later"). Would give three-way drift states and make `status` precise | do not start without the user |
+Add `just check-features` and `just ui-check` to the `check-deps` job of `.github/workflows/ci.yml` (the second needs a node 22.12 step, `actions/setup-node`, and `npm ci` is done by the script). Optionally the Chromium check `Code/Development/Web/check_Web.sh` as its own job (Playwright and a browser need installing in the job). Needs a token with the `workflows` permission, so this is a person's job or a session the user gives that permission.
 
-## 4. [x] TUI completion
+Done when: a pull request that edits `Ui/` without rebuilding `Crates/Web/assets/ui/` fails CI (try it once on a throwaway branch, then close the pull request).
 
-Done on 2026-10-08: scan problems (`i`, Q46), History page with undo (Q47), Add and Init pages with the links (Q48), each with flow tests, snapshots, mutation checks and a real-terminal test in `Crates/Cli/tests/interface_screens.rs`. Also done: the changes page behind `v` on the question (Q49). Left: wizard polish after real use. Keep the architecture: pure `App::handle(Event)`, background jobs over the channel with job ids, tests with synthetic events and snapshots, one real-terminal test per new screen.
+### A4. [ ] Push the tag (gap 4)
 
-## 5. [ ] Phase 6: UX pass and web view
+`git tag go-oracle c7310f9 && git push origin go-oracle`, after asking the user. Then update the sentence in `Docs/Architecture/go_Legacy.md` ("tag `go-oracle` once the maintainer has pushed it") and in [cutover_Runbook.md](cutover_Runbook.md).
 
-Done on 2026-10-08: stage 0, `skillmirror report` (Q50): `Crates/Web` with `maud`, data from `ops::report_data`, checked in Chromium (filter, theme toggle, anchors, no console errors, screenshots read). Stage 1 and 2 were built on 2026-10-08 after the user asked for the features a regular user needs: `skillmirror web` (loopback `axum` 0.8 behind the cargo feature `web`, with the security minimum of the decision record, section 5) and mutations behind `--allow-write` with a plan first (contract Q56). The TUI live scan, detail pane and preview of the UX pass exist (scan line, `i`, changes page).
+### A5. [ ] A fresh review (gap 5)
 
-## 6. [x] Phase 7: documentation pass
+Two things deserve eyes that did not write them: the backup and undo code (`Crates/Core/src/backup/`, `ops/history.rs`) because it holds the user's data, and the web server (`Crates/Web/src/server/`: `guard.rs`, `plans.rs`, `jobs.rs`) because it is the only network-facing part. Method: `Docs/Investigation/Review_Rounds/review_Method.md` (reproducers become failing tests; draw fuzz; race loops). The security list the server must keep is in `Docs/Architecture/front_Ends.md`.
 
-Done on 2026-10-08: README rewritten for the Rust tool (install, commands, interface, configuration, safety, development); architecture docs for the crates (`Docs/Architecture/rust_Overview.md`, `core_Modules.md`, `front_Ends.md`, with the Go structure kept as `go_Legacy.md`); `sync_Concept.md` rewritten; the Descr linker and `doc_Start.md` updated; the five Astro folders under `Docs/Architecture/` removed (they described a website that is not this repository; nothing linked to them); `deny.toml` header no longer says "unvalidated"; `.gitignore` anchors `dist*` and `fast*` to the root and drops the Astro lines. The empty `AI/` and `Matters/` folders do not exist in a checkout (git does not track empty folders); delete them on the machines that have them. `grep` finds the old names only in the legacy detector, its tests, the `migrate` command, the parity harness and the Go tree itself. Left for the cutover: the README install section changes from the branch to `main`, the handoff folder is promoted into the docs and deleted.
+Done when: no High and no Medium finding is open; every fix started as a failing test.
 
-## 7. [~] Phase 8: cutover (the Go tree is removed on the branch; tag, merge and branch deletion need the user)
+### A6. [ ] Other machines (gap 6)
 
-Done on 2026-10-08, on the branch: the Go tree (`main.go`, `cmd/`, `internal/`, `go.mod`, `go.sum`, `styles/`) is deleted, the Go lines of `.gitignore` and the Cargo comment are gone, the docs say where the Go sources live now (commit `c7310f9`), and the parity run (90 match, 41 expected, 0 unexpected) and the whole gate pass without the tree. Not done, and needing the user: the tag `go-oracle` (`git tag go-oracle c7310f9 && git push origin go-oracle`), the merge into `main`, and deleting the branch; the steps, the checks and the way back are in [cutover_Runbook.md](cutover_Runbook.md).
+Run `just parity` as a normal user (87 / 44 / 0 was the result before the lead ran as root; the scenarios that depend on read-only permissions behave differently for root, `Scratch/Oracle/parity/report.md` lists each after a run), look at `skillmirror web` in Firefox, build once on a machine with 8 GB and write the real number into `Docs/Setup/build_Resources.md`.
 
-## 8. [ ] Separate track: skills (not part of the rewrite)
+### A7. [ ] Decisions that wait for the user
 
-The lead edited three skills in this repo's own `.agents/skills/` (kept out of the pushed commits): `secrets` (new: owns Sops, Age, Fnox and a new `Age/keys_And_Recipients.md`), `default-tools` (no longer owns secrets, carries its commands itself), `skill-writer` (refreshed from the vault plus an "Independence" section). The user must review them, copy them to the vault by hand and add `secrets` to `mandatory` in the vault config; until then nobody may run a real sync or push on the lead's machine. Also open: `remote-helper` is bound to one project; sibling links in `coding` and `file-tree-optimization` (`../coding`, `../refac-cli`, `../../default-tools`); `post-scheduler` and the old vault `secrets` have invalid frontmatter (an unquoted `: `). These are the user's call; do not touch the vault.
+[open_Questions.md](open_Questions.md): one batch, with the lead's default for each.
 
-## 9. [ ] Parked ideas and one pending report
+### A8. [ ] Promote this folder, then ask about the branch
 
-- Pending report for the user: they asked for a short list of crates and tools that are good but blocked by the Hippocratic licence. The current list is in section 7 of the decision record (`git2`, `skiller`, the `cargo-binstall` libraries, `bacon`, `slint`); search the research reports for "licen" to complete it and send the user one consolidated list.
-- Parked: skill dependency hints (`file-tree-optimization` links `../coding` and `../refac-cli`, which a skill should not do; the tool could warn), further agent directories beyond `.claude/skills`, a `--commit` option after sync, watch mode. All were judged "not now" in the decision record.
+[cutover_Runbook.md](cutover_Runbook.md), last section.
+
+## B. Finished by the lead (what exists, where its tests are)
+
+1. **[x] Backup store and `undo`.** `Crates/Core/src/backup/` (store, `Run`, `undo`, tests in `tests.rs`, `apply_tests.rs`, `delete_tests.rs`, `undo_tests.rs`); `ops::delete` moves the folder to `.trash-*` first, then into the store, and renames it back when the store fails; the CLI starts a run before each write and prints `Backup: run <id>`; `undo` and `history` (`Cli/tests/undo.rs`, `undo_terminal.rs`); the TUI results page names the run. Three mutations (no swap-back, unchecked run id, prune after every run) were each caught. Contract Q34.
+2. **[x] Review round 2** (`Docs/Investigation/Review_Rounds/round_2_Full.md`): M1 to M6, L1 to L12 and I1, each as a failing test first. Decisions in the contract: Q35 (profile `exclude`), Q36 (plan before confirm, job discipline), Q37 (selection and filter), Q38 (no fsync), Q39 (leftovers). Declined with a reason: comments inside a replaced `mandatory` list go with the old items; a read-only `config.yaml` is replaced with its mode kept; no cancel flag for a running job (Ctrl-C asks twice).
+3. **[x] Phase 5 rest.** Scan progress (Q45), `status` (Q41), `diff` (Q42), `doctor` (Q43), the `targets` bridge (Q44). Open in the bridge: no test makes `add` apply with zero successful writes, so the `wrote > 0` guard in `commands/pipeline.rs` survives a mutation check. `doctor` does not probe `renameat2` on the real filesystem (it would write into the user's projects); it checks the filesystem type.
+4. **[x] Terminal interface completion.** Scan problems (`i`, Q46), History with undo (Q47), Add and Init (Q48), the changes page behind `v` (Q49), the Skills browser with a detail card (Q55). One real-terminal test per screen in `Crates/Cli/tests/interface_screens.rs`.
+5. **[x] Reports and web.** `skillmirror report` (Q50), `skillmirror web` with the security minimum of the decision record (loopback, one-time token traded for a `HttpOnly; SameSite=Strict` cookie, Host/Origin/Sec-Fetch-Site checks, JSON plus `X-Skillmirror: 1` on every change, strict CSP, 64 KB body limit) and writes behind `--allow-write` with a plan first and a plan that runs once (Q56). The interface is the `Ui/` project (Astro shell, Solid, lucide-solid, Motion), meeting Rust in the documented JSON API (`Docs/Architecture/web_Api.md`) and in the built files committed under `Crates/Web/assets/ui/`.
+6. **[x] What a regular user needs.** Scoped `sync`/`push`/`status` (skill names, group, profile, project; Q51), `info` (Q52), `new`, `adopt`, `vault init` (Q53), `config`, `mandatory` (Q54).
+7. **[x] Build cost.** `[profile.dev] debug = false, incremental = false`, documented in `Docs/Setup/build_Resources.md` with measured numbers and the switches to turn them back on.
+8. **[x] Documentation pass.** README, architecture, `sync_Concept.md`, the contract rows, the web API page, `doc_Start.md`; the Astro leftovers of an earlier website idea are gone.
+9. **[x] Cutover, the code part.** The Go tree is deleted; the merge into `main` is done (pull request 1). What is left of the cutover is A4 and A8.
+
+## C. Separate track: skills (not part of the rewrite; unchanged since the first handoff)
+
+The first lead edited three skills in this repo's own `.agents/skills/` (kept out of the pushed commits): `secrets` (new: owns Sops, Age, Fnox and a new `Age/keys_And_Recipients.md`), `default-tools` (no longer owns secrets, carries its commands itself), `skill-writer` (refreshed from the vault plus an "Independence" section). The user must review them, copy them to the vault by hand and add `secrets` to `mandatory` in the vault config; until then nobody may run a real sync or push on that machine. Also open: `remote-helper` is bound to one project; sibling links in `coding` and `file-tree-optimization` (`../coding`, `../refac-cli`, `../../default-tools`); `post-scheduler` and the old vault `secrets` have invalid frontmatter (an unquoted `: `). These are the user's call; do not touch the vault.
+
+## D. Parked ideas and one pending report
+
+- Pending report for the user: a short list of crates and tools that are good but blocked by the Hippocratic licence. The current list is in section 7 of the decision record (`git2`, `skiller`, the `cargo-binstall` libraries, `bacon`, `slint`); search the research reports for "licen" to complete it and send the user one consolidated list.
+- Registry cache (`$XDG_CACHE_HOME/skillmirror/` list of projects): only after the cold scan is measured (needs `drop_caches`, ask the user) and only if it is still slow. The scan is 0.7 s warm today.
+- Provenance lock: deferred by the user ("maybe later"); would give three-way drift states. Do not start without the user.
+- Parked: skill dependency hints (a skill should not link `../coding`; the tool could warn), further agent directories beyond `.claude/skills` (a row in `KNOWN_TARGETS`, `config/vault_config.rs`), a `--commit` option after sync, watch mode. All judged "not now" in the decision record.

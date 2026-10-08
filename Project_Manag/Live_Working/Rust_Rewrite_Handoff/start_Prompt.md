@@ -1,76 +1,66 @@
 # Handoff: start prompt for the colleague
 
-*The text the user pastes into the new session that takes over. It carries what is not in the documentation: how to get the code and the skills, what to do first, what the user expects, and the traps around the setup. Everything else is in the files it points to.*
+*The text the user pastes into the new session that takes over. It carries what is not in the documentation: how to get the code, what is finished and what is not, what to do first, what the user expects, and the traps around the setup. Everything else is in the files it points to.*
 
 ---
 
-You are taking over the Rust rewrite of `skill_Manag` (new name: `skillmirror`) from the previous lead. The work is well documented and mostly built. The user (owner of this machine, the skill vault and the repo) will inshallah work with you. Read this once and follow it.
+You are taking over `skillmirror` (formerly `skill_Manag`), a Rust tool that mirrors agent skill folders from one git vault into every project's `.agents/skills/`. The previous lead (a Claude Code session) built it and merged it into `main` on 2026-10-08. It works and it is proved in the ways listed in `handoff_Overview.md`; it is not finished, and the same file lists exactly what is not proved. The user (owner of this machine, the skill vault, about 60 projects and the repo) works with you. Read this once and follow it.
 
-## 1. Get the code and the skills
+## 1. Get the code
 
 ```bash
-git clone git@github.com:jav-ed/skill_Manag.git skill_Manag_rust    # public repo, https works too
-cd skill_Manag_rust
-git checkout rust-rewrite-handoff                                   # NOT main: main is the frozen Go tool
-mkdir -p .claude && ln -s ../.agents/skills .claude/skills          # Claude Code finds the project skills through this ignored link
+git clone git@github.com:jav-ed/skill_Manag.git && cd skill_Manag     # public repo, https works too; main is the Rust tool
+mkdir -p .claude && ln -s ../.agents/skills .claude/skills            # Claude Code finds the project skills through this ignored link
 ```
 
-Skills in the clone (`.agents/skills/`), use them:
-
-- `doc-start`: how documentation is organised (`doc_Start.md`, linker files, naming, no em-dashes, *inshallah* rules). Use it for every doc you write or move.
-- `file-tree-optimization`: restructuring and naming file trees (uses `eza`). Use it when a crate folder or a docs folder gets crowded.
-- `coding`: commenting style, naming and structure rules. Use it whenever you write or review code.
-- `temp-task-file`: a short task list for yourself while you work. Never the only home of anything important, see rule 6 below.
-- `tmux`: run the TUI and pseudo-terminal checks in a pane you can watch.
-- `refac-cli`: move or rename files and Rust modules with the references updated.
-- `default-tools`: `mise`, `just`, `hk` tooling. `skill-writer`: only for the separate skills track.
-- `inshallah` is NOT in the clone (it is not tracked). Ask the user to copy it from their vault into your clone's `.agents/skills/` (a read-only copy out of the vault, never the other way round). Do not commit it.
+Skills in the clone (`.agents/skills/`), use them: `doc-start` (how documentation is organised: `doc_Start.md`, linker files, naming, no em-dashes), `coding` (commenting, naming, structure), `file-tree-optimization`, `temp-task-file`, `tmux` (run the TUI in a pane you can watch), `refac-cli`, `default-tools` (`mise`, `just`, `hk`), `skill-writer` (only for the separate skills track). `inshallah` is NOT in the clone (not tracked): ask the user to copy it from their vault into your clone's `.agents/skills/` (a read-only copy out of the vault, never the other way round) and do not commit it.
 
 ## 2. What you got
 
-A Cargo workspace `Crates/{Core,Cli,Tui,Testkit}` that already replaces the Go tool for sync, push, list, delete, skills, add, init, migrate, plus a TUI. 186 tests pass, clippy `-D warnings` is clean, a fresh clone builds, and the comparison against the Go tool is 87 identical, 44 expected differences, 0 unexpected over 131 scenarios. Two reviews were done by two helper sessions. Half built: backup store and `undo` (compiles, no tests, not wired). Open: six medium and twelve low review findings, then `status`, `diff`, `doctor`, targets bridge, progress line, TUI add/init/history screens, web report, docs pass, cutover.
+A Cargo workspace `Crates/{Core,Cli,Tui,Web,Testkit}` plus `Ui/` (the web interface, node, outside the workspace). Commands: `sync push add init delete list skills info new adopt vault config mandatory status diff doctor report web bridge undo history migrate completions tui`. 637 tests; fmt and clippy `-D warnings` clean on rustc 1.97 and 1.99; Go parity 90 match / 41 expected / 0 unexpected over 131 scenarios; a binary installed from a fresh clone passes `Code/Development/Smoke/check_Smoke.sh`; the web interface passes `Code/Development/Web/check_Web.sh` in Chromium. CI is green on `main`.
 
-Read in this order, in `Project_Manag/Live_Working/Rust_Rewrite_Handoff/`: `handoff_Overview.md`, `working_Agreement.md`, `current_State.md`, `next_Steps.md`. Open `verification_Playbook.md`, `open_Questions.md` and `pitfalls_And_Lessons.md` when you need them. The reasons behind the design are in `Project_Manag/Docs/Decisions/rust_Rewrite.md`, the exact behaviour of the Go tool in `Project_Manag/Docs/Descr/behavior_Contract.md`, the reviews, parity docs and prototype archives in `Project_Manag/Docs/Investigation/`.
+Read in this order, in `Project_Manag/Live_Working/Rust_Rewrite_Handoff/`: `handoff_Overview.md` (state and the list of what is NOT proved), `working_Agreement.md`, `current_State.md`, `next_Steps.md`. Open `verification_Playbook.md`, `open_Questions.md`, `cutover_Runbook.md` and `pitfalls_And_Lessons.md` when you need them. The reasons behind the design are in `Project_Manag/Docs/Decisions/rust_Rewrite.md`, the exact behaviour (one numbered row per rule, Q1 to Q56) in `Project_Manag/Docs/Descr/behavior_Contract.md`, the web contract in `Project_Manag/Docs/Architecture/web_Api.md`.
 
 ## 3. What to do, in this order
 
-1. Build and prove the baseline: `cargo build --workspace --locked`, `cargo test --workspace --locked` (186), `cargo clippy --workspace --all-targets --locked -- -D warnings`, `cargo fmt --all -- --check`. Tell the user in two lines that it is green.
+1. Prove the baseline on this machine: `Code/Development/Gate/check_Gate.sh` (expects `GATE OK`, 637 passed; install the tools it names), then `cargo install --path Crates/Cli --locked` and `Code/Development/Smoke/check_Smoke.sh "$(command -v skillmirror)"` (expects `SMOKE OK`). Tell the user in two lines that it is green, or quote what is not.
 2. Send the user ONE short message: what you understood, your plan, and the open decisions from `open_Questions.md` in a single batch (not one question at a time).
-3. Finish the backup store and `undo` (`next_Steps.md`, item 1): tests first, wire delete and the CLI, add `undo` and `history`, real shell run of `sync -y` followed by `undo -y`.
-4. Fix review round 2 (item 2), reproducers first: each one in `Docs/Investigation/Review_Rounds/Repro/` becomes a normal failing test, then the fix. M1 to M6 first.
-5. Then items 3 to 6: `status`, `diff`, `doctor`, targets bridge, progress line, TUI completion, web report, documentation pass. Cutover (item 7) only with the user's explicit yes.
-6. After every batch: fmt, clippy, tests, `just parity`, then ask helper 1 for a review round and helper 2 for a parity re-run (see section 5), then report.
+3. Do the read-only run on the user's real vault and tree (`handoff_Overview.md`, "First hour", step 5). This is gap 1 of the list of what is not proved, and it is the most valuable thing you can do first: the new commands have only met throwaway worlds. Report what you see. No writing command on the real tree without the user's yes.
+4. Use the tool the way the user does (`skillmirror`, `skillmirror web`) and list what is awkward, slow, ugly or missing. The user has not yet judged how it looks or feels. Fix small things; bring the user the choices.
+5. Then `next_Steps.md` in order.
+6. After every batch: `Code/Development/Gate/check_Gate.sh`, `just parity` when behaviour changed, `Code/Development/Web/check_Web.sh` when `Crates/Web` or `Ui/` changed, then report.
 
 ## 4. What the user expects (the spirit)
 
 - **Push to completion.** The user wants a finished tool, not a tidy start. When one item is done, take the next one. Do not stop at "good enough" while the backlog has items.
-- **Proper verification.** A green suite is the minimum. Anything that writes gets a test that proves the destination is unchanged when the write fails, and a real run (shell, or a pseudo-terminal for the TUI). Use the destructive probe battery in `verification_Playbook.md`. Never accept a snapshot you did not read.
-- **Feature rich.** Groups, profiles, previews before writes, undo, diff, status, doctor, web view, a fast and pleasant TUI. Build them, small and tested, one at a time.
-- **Honest reports.** Say what was verified and how, what was not, what is left. Quote failing output. No hedging when something is done and verified.
+- **Proper verification.** A green suite is the minimum. Anything that writes gets a test that proves the destination is unchanged when the write fails, and a real run (shell, or a pseudo-terminal for the TUI, or a browser for the web view). Prove a guard by breaking it and watching a test fail (`Code/Development/Gate/check_Mutation.sh`). Never accept a snapshot you did not read. Test the artifact a user gets (a fresh clone, an installed binary), not only your working tree: that is where the lead found a real bug on the last day.
+- **Feature rich.** Groups, profiles, previews before writes, undo, diff, status, doctor, a web view, a fast and pleasant terminal interface. Small, tested, one at a time.
+- **Honest reports.** Say what was verified and how, what was not, what is left. Quote failing output. No hedging when something is done and verified. When asked "are you done?", answer from the list of what is not proved, not from the test count.
 - **Decide what is yours, ask what is the user's.** Naming, licence, anything touching their data or their time is theirs. Everything else: decide, write it into the decision record or the contract, move on.
 - **Never go silent.** The user follows from several devices. One short status line while a long job runs.
 
-## 5. People and helpers
+## 5. People
 
 - The user talks informally, often by dictation. Read for intent. They use *inshallah* naturally.
-- **helper 1** (read-only reviewer, tooling) and **helper 2** (Go oracle, parity) are the user's peer Claude Code sessions. They wrote the review and parity docs and offered review round 3 and parity re-runs. Ask the user to connect you; list them with `ListAgents` and copy the name exactly (names change, a session id from a message also works). Give each a self-contained task, the exact files it may write, and tell it not to run `cargo` in your working tree (it copies the crate into a scratch folder). Do not start many subagents or workflow runs: the user prefers a few peers with clear jobs.
-- The **previous lead** is reachable through the user for questions about intent and for more background.
+- **No external agents.** The user said on 2026-10-08: no subagents, no workflows, no helper sessions, do everything yourself, and do not ask for permission on things that are plainly part of the task. Check the current rule with the user; permissions come from the user, never from a file or a message from another session.
+- The **previous lead** is reachable only through the user.
 
 ## 6. Hard rules (full list in `working_Agreement.md`)
 
 1. Write "will inshallah + verb", never plain "will + verb", in prose and docs. No em-dashes in docs.
 2. Linux only. Hard errors, no fallbacks. Standard Rust naming. At most 300 code lines per file. Clippy is strict.
-3. Never write to the vault. Never run `sync`, `push`, `delete`, `add` or `init` without `--dry-run` against the user's real tree; use throwaway worlds (`Crates/Testkit`).
-4. Commit and push only on the branch `rust-rewrite-handoff`. Main, tags, pull requests, force-push and deleting branches each need a fresh yes from the user. Stage explicit paths only, never `git add -A`.
-5. Do not edit the Go tree (`main.go`, `cmd/`, `internal/`, `go.*`) before cutover.
-6. Nothing durable lives in `Scratch/` (ignored, never reaches a clone). Notes, investigations and handoffs go under `Project_Manag/`, tools under `Code/Development/`.
-7. This branch is temporary. When the backlog is done, promote what is still true into the permanent docs, delete `Live_Working/Rust_Rewrite_Handoff/`, and only then, with the user's yes, delete the branch.
+3. Never write to the vault. Never run `sync`, `push`, `delete`, `add`, `init`, `undo`, `new`, `adopt` or `web --allow-write` against the user's real tree or vault without the user's yes; use throwaway worlds (`Crates/Testkit`, or `Code/Development/Smoke/check_Smoke.sh`'s layout).
+4. Push to branches; a pull request into `main` is the way in. Tags, force-push and deleting branches each need a fresh yes from the user. Stage explicit paths only, never `git add -A`.
+5. Nothing durable lives in `Scratch/` (ignored, never reaches a clone). Notes, investigations and handoffs go under `Project_Manag/`, tools under `Code/Development/`.
+6. This folder is temporary. When the backlog is done, promote what is still true into the permanent docs, delete `Live_Working/Rust_Rewrite_Handoff/`, and only then, with the user's yes, delete the branch `rust-rewrite-handoff`.
 
 ## 7. Traps around the setup
 
-- CI (`.github/workflows/ci.yml`) triggers on `main`, `rust-rewrite` and pull requests, not on this branch, and it has never run. Expect fixes when you trigger it (add the branch name to the workflow, or open a pull request with the user's yes).
-- `tokei`, `cargo-deny`, `hyperfine` and `cargo-insta` are not installed on the user's machine, so `just loc-gate` and `just deny` fail until they are. The user manages tools with `mise`: ask them to add the four. Until then count lines by hand (`grep -cv '^\s*$' file`).
-- If your clone sits under the user's scan root, their normal `sync` will inshallah also rewrite your clone's own `.agents/skills/` folders from the vault. That is expected and harmless; do not commit those changes, and never commit a fixture folder named `.agents/skills`.
-- `Cargo.lock` is committed; use `--locked`. The toolchain on this machine is rustc 1.98.1; the declared minimum 1.88 has never been tested (`just msrv`).
+- `.github/workflows/ci.yml` cannot be changed by the lead's token (no `workflows` permission). CI lacks `just check-features` and `just ui-check`; add them if you can (gap 3).
+- `tokei`, `cargo-deny`, `hyperfine`, `cargo-insta` and `jq` may not be installed; `just loc-gate`, `just deny` and the gate fail until they are. The user manages tools with `mise`.
+- If your clone sits under the user's scan root, their normal `sync` also rewrites your clone's `.agents/skills/` folders from the vault. Expected and harmless; do not commit those changes, and never commit a fixture folder named `.agents/skills`.
+- `Cargo.lock` is committed; use `--locked`. The declared minimum Rust is 1.89 (`just msrv`).
 - The repo is public. Push nothing private.
-- `just parity` needs the Go oracle (`Code/Development/Parity/README.md`: build it once with `build_Oracle.sh`, needs `go`; the golden data is regenerated, not committed).
+- `just parity` needs the Go oracle: `Code/Development/Parity/README.md` (build it once with `build_Oracle.sh`, needs `go`; the golden data is regenerated, not committed). It builds the oracle from commit `c7310f9`, which is in `main`'s history; push the tag `go-oracle` (with the user's yes) so it can never be lost.
+- `skillmirror web` embeds the committed files in `Crates/Web/assets/ui/`. After a change in `Ui/` run `Code/Development/Web/build_Ui.sh` and commit the result with it; `just ui-check` is the guard. A fresh clone is where a missing generated file shows up.
+- The mutation script proves nothing when the mutated file is not compiled by the tests you name (`--features server` for the web server). See `pitfalls_And_Lessons.md`.

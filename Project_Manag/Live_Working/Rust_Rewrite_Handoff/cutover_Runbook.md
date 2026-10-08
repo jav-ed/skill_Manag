@@ -1,42 +1,33 @@
 # Cutover runbook
 
-The steps that replace the Go tool on `main` by the Rust tool. Every step that leaves the machine (a tag, a push to `main`, deleting a branch) needs the user's explicit yes; the checks and the local commit do not. Status on 2026-10-08: the commit that deletes the Go tree is done, and the user asked for the merge into `main`, which is made from pull request #1 with a merge commit after a fresh-clone check (see "Merge"). The `go-oracle` tag was not pushed (not asked for), so `c7310f9` stays reachable only through `main`'s history; the promotion of this folder and the branch deletion are still open.
+*How the Go tool was replaced by the Rust tool on `main`, what is still open, and the way back. Every step that leaves the machine and was not given (a tag, a force-push, deleting a branch) needs the user's explicit yes.*
 
-## Before
+## Status on 2026-10-08
 
-1. The pull request of `rust-rewrite-handoff` is green (CI: fmt, clippy on 1.99, tests, loc-gate, check-deps, deny) and the head is the commit to merge.
-2. Run the gate locally: format and clippy on 1.97 and 1.99, `just loc-gate`, `just check-deps`, `just deny`, all tests.
-3. `just parity` shows 90 match, 41 expected divergences and 0 unexpected (131 scenarios; 87, 44 and 0 when not run as root). The harness builds the Go oracle from commit `c7310f9`, so it needs that commit to stay reachable: do step 4 first.
-4. Tag the Go commit so the oracle can always be rebuilt: `git tag go-oracle c7310f9`, then `git push origin go-oracle` (outward). Decide whether the golden data (about 11 MB, regenerable with `run_Scenarios.sh`) stays out of the repository; the recommendation is out, and it is out today (`Scratch/` is ignored).
-5. Read the PR description and the README install section once more; they name the branch.
+Done:
 
-## The commit
+- The Go tree is deleted (`main.go`, `cmd/`, `internal/`, `go.mod`, `go.sum`, `styles/`), with the Go lines of `.gitignore` and the Cargo comment. `Docs/Architecture/go_Legacy.md` and the contract sections that cite Go files stay: they are the record of the old behaviour, and their citations name commit `c7310f9`.
+- Verified before the merge, on the head that was merged (`41de505`): the gate (`Code/Development/Gate/check_Gate.sh`: 637 tests, fmt and clippy on 1.97 and 1.99, deny, loc-gate, features, check-deps), `just msrv`, a `dist` build, `just parity` against the head's own build (90 match, 41 expected, 0 unexpected), the Chromium check, a fresh clone (build, tests, `Ui` check), `cargo install --path Crates/Cli --locked` into an empty root, and `Code/Development/Smoke/check_Smoke.sh` on that installed binary (all checks pass).
+- Merged into `main` as pull request 1 with a merge commit (`b2e11fc`), CI green on the head and on `main`. The user asked for the merge ("push it and merge it to the main") after being told what was and was not verified.
+- README install section tells `git clone` and `just install`; the work-in-progress banner is gone.
 
-Done on the branch (the user allowed it): the Go tree is deleted, `main.go`, `cmd/`, `internal/`, `go.mod`, `go.sum`, `styles/`. The same commit did what this list says:
+Not done:
 
-- `Cargo.toml` line 1 (the comment about Go sources) goes.
-- `.gitignore`: the Go lines (`skill_Manag`, `skill_manag`, `*.test`, `*.out`, `go.work*`) go; keep `target/`.
-- `Docs/Architecture/go_Legacy.md` and the contract sections that cite Go files stay: they are the record of the old behaviour, and the citations name commit `c7310f9` (tag `go-oracle`).
-- README: the install section tells `git clone` and `just install` without `git checkout rust-rewrite-handoff`; the first line drops the work-in-progress banner when the owner agrees.
-- `doc_Start.md`: drop the "Go sources, until the cutover" entry points.
-- `git worktree remove --force Scratch/Oracle/src` on any machine that has the oracle worktree (`build_Oracle.sh` makes it again).
-- Build and install check: `cargo build --profile dist`, `cargo install --path Crates/Cli --locked`, `skillmirror doctor`, `skillmirror --version`. Checked on 2026-10-08 on the branch: the dist build takes about 1.5 minutes and gives a 4.8 MB binary that passes `doctor` and a `sync --dry-run`.
-
-## Merge
-
-Merge into `main` with a merge commit (`git merge --no-ff rust-rewrite-handoff`), push `main` (outward), take the pull request out of draft or close it with the merge. The user decides which of the two.
+1. **The tag `go-oracle`.** `git tag go-oracle c7310f9`, then `git push origin go-oracle` (outward; needs the user's yes). The parity harness builds the oracle from `c7310f9`, which is reachable from `main` today; the tag protects it from a future history rewrite. Afterwards edit the sentence in `Docs/Architecture/go_Legacy.md` that says "once the maintainer has pushed it".
+2. **Promote and delete this folder** (below).
+3. **Delete the branch `rust-rewrite-handoff`** (below). It is merged; local work branches named `worktree-wf_*` that may exist in a clone were never pushed and can be deleted with `git branch -D` once you have looked at them.
 
 ## Promote the handoff and clean up
 
-`Live_Working/Rust_Rewrite_Handoff/` is a transfer vehicle: when the backlog is done, move what is still true into permanent places and delete the folder (the plan is in `handoff_Overview.md`, section "What happens to this handoff branch"):
+`Live_Working/Rust_Rewrite_Handoff/` is a transfer vehicle. When the backlog in [next_Steps.md](next_Steps.md) section A is done, move what is still true into permanent places and delete the folder:
 
 - verification playbook and pitfalls: `Docs/Setup/` or `Docs/Descr/`;
-- current state and the command table: already mirrored in the README and `Docs/Architecture/`;
+- current state and the command table: mirrored in the README and `Docs/Architecture/`; check that they agree and delete the duplicate;
 - open questions the user has not answered: `Docs/Decisions/`;
-- `open_Issues.md` stays and points at what is left.
+- `Live_Working/open_Issues.md` stays and points at what is left; remove the rows that point into the deleted folder.
 
 Delete the branch last, and only after asking: locally `git branch -d rust-rewrite-handoff`, on the remote `git push origin --delete rust-rewrite-handoff`.
 
 ## The way back
 
-The Go tool is not lost: `git checkout go-oracle` (or `c7310f9`) holds it. A bad merge on `main` is undone with `git revert -m 1 <merge commit>`. The backups of the Rust tool are in `~/.local/state/skillmirror/backups/`; `skillmirror undo` brings a run back.
+The Go tool is not lost: `git checkout c7310f9` (or the tag, once pushed) holds it, and `git worktree add --detach /tmp/go c7310f9` gives a build tree. A bad merge on `main` is undone with `git revert -m 1 b2e11fc`. The backups of the Rust tool are in `~/.local/state/skillmirror/backups/`; `skillmirror history` lists the runs and `skillmirror undo` brings one back (a second `undo` redoes it).
