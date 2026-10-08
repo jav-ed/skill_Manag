@@ -5,6 +5,7 @@
 mod macros;
 mod backup;
 mod diff;
+mod doctor;
 mod human;
 mod json;
 mod lossy;
@@ -18,6 +19,7 @@ pub(crate) use backup::{
     HistoryJson, HistoryRow, UndoJson, UndoRow, UndoStatus, render_history, render_undo,
 };
 pub(crate) use diff::{DiffJson, render_diff};
+pub(crate) use doctor::{DoctorJson, render_doctor};
 pub(crate) use human::{
     render_delete, render_installed, render_rows, render_summary, render_vault,
 };

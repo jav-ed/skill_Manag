@@ -44,6 +44,8 @@ pub(crate) enum Command {
     Status(StatusArgs),
     /// Show the lines a sync would bring in and take away; writes nothing, exit 1 when something differs
     Diff(DiffArgs),
+    /// Check the vault, the configuration and the machine; writes nothing, exit 1 for warnings, 3 for errors
+    Doctor(DoctorArgs),
     /// Show the skills in the vault, grouped by folder
     Skills(SkillsArgs),
     /// Install skills, groups or profiles into an existing project
@@ -113,6 +115,13 @@ pub(crate) struct DiffArgs {
     /// Only the lines added and removed per file, not the lines themselves
     #[arg(long)]
     pub(crate) stat: bool,
+    /// Print one JSON document instead of text
+    #[arg(long)]
+    pub(crate) json: bool,
+}
+
+#[derive(Debug, Args)]
+pub(crate) struct DoctorArgs {
     /// Print one JSON document instead of text
     #[arg(long)]
     pub(crate) json: bool,

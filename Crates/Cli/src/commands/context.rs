@@ -10,7 +10,7 @@ use crate::args::Cli;
 use crate::output;
 use crate::report::CliError;
 
-fn flags(cli: &Cli) -> Flags {
+pub(super) fn flags(cli: &Cli) -> Flags {
     Flags {
         vault: cli.vault.clone(),
         root: cli.root.clone(),

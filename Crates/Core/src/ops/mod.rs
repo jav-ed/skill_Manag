@@ -2,6 +2,7 @@
 
 mod delete;
 mod diff;
+mod doctor;
 mod list;
 mod project;
 mod push;
@@ -14,6 +15,7 @@ pub use delete::{
     DeleteError, DeleteReport, Deleted, delete, target_in_project, targets_named, validate_name,
 };
 pub use diff::{DiffFilter, DiffKind, DiffReport, FileDiff, SkillDiff, Skipped, diff};
+pub use doctor::{Finding, Report as DoctorReport, Severity, doctor};
 pub use list::{Installed, InstalledSet, installed};
 pub use project::{NewProject, ProjectError, check_existing, check_new, create_new, plan_install};
 pub use push::plan as plan_push;
@@ -24,6 +26,8 @@ pub use workspace::Workspace;
 
 #[cfg(test)]
 mod diff_tests;
+#[cfg(test)]
+mod doctor_tests;
 #[cfg(test)]
 mod profile_tests;
 #[cfg(test)]
