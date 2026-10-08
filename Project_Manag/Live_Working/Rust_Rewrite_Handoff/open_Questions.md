@@ -20,7 +20,7 @@
 | 12 | Which `mise` tools to install: `tokei`, `cargo-deny`, `hyperfine`, `cargo-insta`? | all four | `just loc-gate`, `just deny`, timings |
 | 13 | Review of the three edited project skills, then hand copy to the vault and add `secrets` to `mandatory`? | the user's pace | the skills track |
 
-Permissions already given: commit and push of the branch `rust-rewrite` (2026-10-08). Not given: push to `main`, tags, pull request, any real `sync`/`push` run, any write to the vault.
+Permissions already given: commit and push of the branch `rust-rewrite-handoff` (2026-10-08, the user asked for a separate branch to keep things clean). Not given: push to `main`, tags, pull request, any real `sync`/`push` run, any write to the vault.
 
 ## Settled (do not re-open without a new reason)
 

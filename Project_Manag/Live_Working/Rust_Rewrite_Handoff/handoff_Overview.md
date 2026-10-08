@@ -6,7 +6,7 @@ The previous lead (a Claude Code session) stopped on 2026-10-08 at the user's re
 
 ## What the project is
 
-`skill_Manag` mirrors agent skill folders from one git-tracked master vault into every project's `.agents/skills/<name>/` directory. The files are copied, never symlinked, so projects stay git-tracked and work over SSH. The Go implementation on `main` is slow (a dry run took 4.8 to 7 s in the last comparison and up to 13 s with a cold cache). The branch `rust-rewrite` holds a Rust rewrite named `skillmirror` that is faster (scan about 0.7 s), safer (staged writes, atomic directory swap, hard errors) and has more features (nested vault groups, profiles, `add`, `init`, a TUI with mouse and fuzzy filter). The user wants it finished: feature rich, verified properly, then cut over (Go removed in one commit).
+`skill_Manag` mirrors agent skill folders from one git-tracked master vault into every project's `.agents/skills/<name>/` directory. The files are copied, never symlinked, so projects stay git-tracked and work over SSH. The Go implementation on `main` is slow (a dry run took 4.8 to 7 s in the last comparison and up to 13 s with a cold cache). The branch `rust-rewrite-handoff` (see "Branches" below) holds a Rust rewrite named `skillmirror` that is faster (scan about 0.7 s), safer (staged writes, atomic directory swap, hard errors) and has more features (nested vault groups, profiles, `add`, `init`, a TUI with mouse and fuzzy filter). The user wants it finished: feature rich, verified properly, then cut over (Go removed in one commit).
 
 ## State in one table
 
@@ -24,11 +24,18 @@ The previous lead (a Claude Code session) stopped on 2026-10-08 at the user's re
 
 Totals at hand-off: 186 tests pass, `cargo clippy --workspace --all-targets -- -D warnings` is clean, `cargo fmt --check` is clean, no Rust file is over 300 lines of code (my own count; `tokei` is not installed, so `just loc-gate` has never run).
 
+## Branches
+
+- `rust-rewrite-handoff`: the branch to clone and continue on. It holds the Rust workspace, the docs and this handoff. The user chose a separate branch on 2026-10-08 to keep the history clean.
+- `rust-rewrite`: the lead's local branch at the same code without the handoff commits. It was never pushed; ignore it.
+- `main`: the Go implementation, frozen until cutover. Its local tip `c7310f9` ("skills added") was pushed together with the handoff branch because it is the base of the branch.
+- CI (`.github/workflows/ci.yml`) triggers on pushes to `main` and `rust-rewrite` and on pull requests, so pushing `rust-rewrite-handoff` alone does not run it. Add the branch name to the workflow, or open a pull request, to get the first CI run (expect fixes).
+
 ## First hour
 
 ```bash
 git clone git@github.com:jav-ed/skill_Manag.git && cd skill_Manag
-git checkout rust-rewrite
+git checkout rust-rewrite-handoff
 cargo build --workspace --locked
 cargo test --workspace --locked            # 186 tests; the first build takes a few minutes
 cargo clippy --workspace --all-targets --locked -- -D warnings

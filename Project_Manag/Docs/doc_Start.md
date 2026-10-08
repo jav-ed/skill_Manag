@@ -2,7 +2,7 @@
 
 *This `doc_Start.md` is the docs entry point, structured so an agent can quickly decide what to read and what to skip. It opens with a short summary of the repo and key entry-point files, then routes to each topic area through labeled links. Open a linker only when the task calls for it; the labels are written to make that decision possible without clicking.*
 
-`skill_Manag` is a CLI and TUI that mirrors agent skill folders from one master vault into every matching `.agents/skills/` directory across a codebase: git-tracked, SSH-safe, no symlinks. The Go implementation on `main` is being rewritten in Rust on the branch `rust-rewrite`; the Go code stays as the behavior reference until cutover.
+`skill_Manag` is a CLI and TUI that mirrors agent skill folders from one master vault into every matching `.agents/skills/` directory across a codebase: git-tracked, SSH-safe, no symlinks. The Go implementation on `main` is being rewritten in Rust on the branch `rust-rewrite-handoff` (the branch to continue on); the Go code stays as the behavior reference until cutover.
 
 Entry point(s): `main.go`, then `cmd/root.go` (cobra setup and menu loop), then `cmd/tui/menu.go` (TUI entry). The Rust sources start at `Cargo.toml` in the repo root, then `Crates/Core/src/lib.rs` (engine) and `Crates/Cli/src/main.rs` (binary).
 
@@ -17,7 +17,7 @@ Entry point(s): `main.go`, then `cmd/root.go` (cobra setup and menu loop), then 
 
 ## Live work
 
-- [Rust rewrite handoff](../Live_Working/Rust_Rewrite_Handoff/handoff_Overview.md): the state of the branch `rust-rewrite` for whoever continues it: what is built and verified, what is half built (backup store and `undo`), the ordered backlog with "done when", the working agreement with the user, the verification playbook, open questions and pitfalls. Open it before touching the Rust code or when picking the next piece of work.
+- [Rust rewrite handoff](../Live_Working/Rust_Rewrite_Handoff/handoff_Overview.md): the state of the branch `rust-rewrite-handoff` for whoever continues it: what is built and verified, what is half built (backup store and `undo`), the ordered backlog with "done when", the working agreement with the user, the verification playbook, open questions and pitfalls. Open it before touching the Rust code or when picking the next piece of work.
 - [Open issues](../Live_Working/open_Issues.md): short list of active items that point into the handoff.
 
 ## Repo References
