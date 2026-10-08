@@ -17,6 +17,7 @@ fn skill(name: &str, group: &[&str], description: Option<&str>, mandatory: bool)
         header_problem: None,
         mandatory,
         files: vec!["SKILL.md".to_string()],
+        untracked: Vec::new(),
     }
 }
 
@@ -297,5 +298,20 @@ fn nested_groups_nest() {
     assert!(
         web < seo && seo < meta,
         "a skill sits in its deepest group: {tree}"
+    );
+}
+
+#[test]
+fn files_git_does_not_track_are_named_on_the_card() {
+    let mut with_draft = data();
+    with_draft.skills[0].untracked = vec!["draft.md".to_string()];
+    let html = page(&with_draft);
+    assert!(
+        html.contains("Not copied, git does not track: draft.md"),
+        "the card must say that draft.md is left behind"
+    );
+    assert!(
+        !page(&data()).contains("Not copied"),
+        "a skill without untracked files says nothing about them"
     );
 }

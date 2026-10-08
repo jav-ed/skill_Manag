@@ -4,25 +4,9 @@
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
-use super::{DiffFilter, FileDiff, Workspace, diff, status};
+use super::{DiffFilter, FileDiff, SkillInfo, Workspace, diff, skill_info, status};
 use crate::plan::PlanError;
 use crate::scan::{ScanIssue, ScanReport};
-use crate::vault::read_header;
-
-/// A skill of the vault.
-#[derive(Debug, Clone)]
-pub struct SkillInfo {
-    pub name: String,
-    /// The folders between the vault and the skill, outermost first.
-    pub group: Vec<String>,
-    /// From the header of `SKILL.md`; `None` when there is none or it cannot be read.
-    pub description: Option<String>,
-    /// Why the header cannot be read.
-    pub header_problem: Option<String>,
-    pub mandatory: bool,
-    /// The files git tracks in the skill folder, relative to it, sorted.
-    pub files: Vec<String>,
-}
 
 /// What a skill is in one project.
 #[derive(Debug)]
@@ -112,36 +96,11 @@ pub fn report_data(workspace: &Workspace, scan: &ScanReport) -> Result<ReportDat
             );
         }
     }
-    let mandatory = workspace.settings.mandatory();
     let mut skills: Vec<SkillInfo> = workspace
         .vault
         .skills
         .values()
-        .map(|skill| {
-            let (description, header_problem) = match read_header(skill) {
-                Ok(header) => (header.description.filter(|d| !d.trim().is_empty()), None),
-                Err(problem) => (None, Some(problem)),
-            };
-            let mut files: Vec<String> = workspace
-                .files
-                .get(&skill.name)
-                .map(|f| {
-                    f.tracked
-                        .iter()
-                        .map(|t| t.rel.display().to_string())
-                        .collect()
-                })
-                .unwrap_or_default();
-            files.sort();
-            SkillInfo {
-                name: skill.name.clone(),
-                group: skill.group.clone(),
-                description,
-                header_problem,
-                mandatory: mandatory.contains(&skill.name),
-                files,
-            }
-        })
+        .map(|skill| skill_info(workspace, skill))
         .collect();
     skills.sort_by(|a, b| a.group.cmp(&b.group).then_with(|| a.name.cmp(&b.name)));
     Ok(ReportData {

@@ -35,6 +35,11 @@ pub(super) fn sections(data: &ReportData) -> Markup {
                 @if !skill.files.is_empty() {
                     ul.files { @for file in &skill.files { li { (file) } } }
                 }
+                @if !skill.untracked.is_empty() {
+                    p.desc.warn {
+                        "Not copied, git does not track: " (skill.untracked.join(", "))
+                    }
+                }
                 (states(data, &skill.name, number))
             }
         }

@@ -6,6 +6,7 @@ mod context;
 mod delete;
 mod diff;
 mod doctor;
+mod info;
 mod install;
 mod list;
 mod migrate;
@@ -53,6 +54,7 @@ fn dispatch(cli: &Cli, command: &Command) -> Result<Exit, CliError> {
         Command::List(args) => list::run(cli, args),
         Command::Delete(args) => delete::run(cli, args),
         Command::Skills(args) => skills::run(cli, args),
+        Command::Info(args) => info::run(cli, args),
         Command::Report(args) => report::run(cli, args),
         Command::Bridge(args) => bridge::run(cli, args),
         Command::Status(args) => status::run(cli, args),

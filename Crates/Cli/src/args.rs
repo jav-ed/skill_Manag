@@ -52,6 +52,8 @@ pub(crate) enum Command {
     Report(ReportArgs),
     /// Show the skills in the vault, grouped by folder
     Skills(SkillsArgs),
+    /// Show one skill: its place and files in the vault, the profiles that name it, and what it is in each project
+    Info(InfoArgs),
     /// Install skills, groups or profiles into an existing project
     Add(AddArgs),
     /// Create a new project directory and install the mandatory skills plus a selection
@@ -273,6 +275,16 @@ pub(crate) struct SkillsArgs {
     /// Only the skills below this vault folder
     #[arg(long, value_name = "PATH")]
     pub(crate) group: Option<String>,
+    /// Print one JSON document instead of text
+    #[arg(long)]
+    pub(crate) json: bool,
+}
+
+#[derive(Debug, Args)]
+pub(crate) struct InfoArgs {
+    /// The skill folder name
+    #[arg(value_name = "SKILL")]
+    pub(crate) skill: String,
     /// Print one JSON document instead of text
     #[arg(long)]
     pub(crate) json: bool,

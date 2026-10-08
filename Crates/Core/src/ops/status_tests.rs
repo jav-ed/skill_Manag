@@ -7,6 +7,13 @@ use crate::testutil::TempTree;
 
 /// A vault with coding, astro and tmux (tmux is mandatory) and four projects in different states.
 pub(super) fn world(mandatory: &str) -> (TempTree, Workspace) {
+    let tree = built(mandatory, "");
+    let workspace = open(&tree);
+    (tree, workspace)
+}
+
+/// The same files with `extra` appended to the vault config, committed, and no workspace opened yet.
+pub(super) fn built(mandatory: &str, extra: &str) -> TempTree {
     let tree = TempTree::new();
     tree.write_all(&[
         ("vault/coding/SKILL.md", "coding v2"),
@@ -16,7 +23,7 @@ pub(super) fn world(mandatory: &str) -> (TempTree, Workspace) {
         (
             "vault/config.yaml",
             &format!(
-                "root: {}/projects\nmandatory: [{mandatory}]\n",
+                "root: {}/projects\nmandatory: [{mandatory}]\n{extra}",
                 tree.path().display()
             ),
         ),
@@ -35,13 +42,17 @@ pub(super) fn world(mandatory: &str) -> (TempTree, Workspace) {
         ("projects/plain/src/main.rs", ""),
     ]);
     tree.git_init_commit("vault");
+    tree
+}
+
+pub(super) fn open(tree: &TempTree) -> Workspace {
     let flags = Flags {
         vault: Some(tree.path().join("vault")),
         root: None,
     };
     let dirs = Dirs::under(&tree.path().join("home"));
     let settings = Settings::load(&flags, &EnvOverrides::default(), &dirs).unwrap();
-    (tree, Workspace::open(settings).unwrap())
+    Workspace::open(settings).unwrap()
 }
 
 fn project<'a>(report: &'a StatusReport, name: &str) -> &'a ProjectStatus {

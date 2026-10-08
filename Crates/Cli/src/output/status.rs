@@ -233,7 +233,7 @@ fn problem_lines(out: &mut String, label: &str, problem: &skillmirror_core::ops:
     }
 }
 
-fn file_counts(o: &Outdated) -> String {
+pub(super) fn file_counts(o: &Outdated) -> String {
     let mut parts = Vec::new();
     for (count, what) in [
         (o.added, "added"),

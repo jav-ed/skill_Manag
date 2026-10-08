@@ -68,6 +68,7 @@ Every command accepts `--vault <DIR>` and `--root <DIR>`. Commands that write as
 | `delete NAME [--project DIR]` | Removes one skill from every project, or from one |
 | `list` | Every installed skill folder, with the ones the vault lacks marked |
 | `skills [--group PATH]` | The vault as a tree of groups |
+| `info SKILL [--json]` | One skill from every side: group, description, the files that are copied and the ones git does not track, the profiles that name it, and what it is in each project |
 | `status [SKILL...] [--group P] [--project DIR] [--all]` | How every project stands against the vault: outdated, mandatory missing, not in the vault. Exit 1 when something differs |
 | `diff [SKILL] [--project DIR] [--stat]` | The lines a sync would bring in and take away, as unified diffs |
 | `report [-o FILE] [--open]` | One self-contained HTML page: skills against projects, the vault tree, diffs, a filter, dark mode |
