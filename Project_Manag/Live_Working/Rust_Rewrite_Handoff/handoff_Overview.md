@@ -58,6 +58,7 @@ Never point the tool at the user's real vault with a writing command while learn
 
 ## Which file answers what
 
+- [Start prompt](start_Prompt.md): the text the user pastes into the colleague's session: how to clone and set up the skills, the first tasks in order, the spirit the user expects, helpers, hard rules and traps around the setup. Open it to see what the colleague was told on day one.
 - [Working agreement](working_Agreement.md): who the user is, the standing rules they gave, what "done" means to them, how to talk to them, and the spirit the lead worked in (push to completion, verify properly, feature rich). Open it before the first message to the user.
 - [Current state](current_State.md): the architecture as built, the invariants that keep data safe, the command surface and exit codes, measured numbers, tool availability, known gaps. Open it before changing code.
 - [Next steps](next_Steps.md): the ordered backlog with a "done when" for each item: finish backup and `undo`, the review-2 fixes, the rest of phase 5, phases 6 to 8, and the separate skills track. Open it to pick the next piece of work.
