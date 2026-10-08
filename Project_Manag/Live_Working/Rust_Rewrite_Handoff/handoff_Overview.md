@@ -31,6 +31,14 @@ Totals at hand-off: 186 tests pass, `cargo clippy --workspace --all-targets -- -
 - `main`: the Go implementation, frozen until cutover. Its local tip `c7310f9` ("skills added") was pushed together with the handoff branch because it is the base of the branch.
 - CI (`.github/workflows/ci.yml`) triggers on pushes to `main` and `rust-rewrite` and on pull requests, so pushing `rust-rewrite-handoff` alone does not run it. Add the branch name to the workflow, or open a pull request, to get the first CI run (expect fixes).
 
+## What happens to this handoff branch
+
+The branch `rust-rewrite-handoff` is a transfer vehicle, not a permanent home. The user's plan (2026-10-08): the colleague reads everything here, implements the backlog, and afterwards deletes the branch to keep the repository clean. So that nothing is lost when it goes:
+
+- **Lasting knowledge lives in `Project_Manag/Docs/`** and stays: the decision record, the behavior contract, the research reports, the review rounds, the parity oracle docs and the prototype archives (`Docs/Investigation/`). Nothing important is kept only in `Scratch/` (gitignored, never reaches a clone).
+- **This folder (`Live_Working/Rust_Rewrite_Handoff/`) is transient.** When its backlog is done, first promote what is still true into permanent places (the verification playbook and pitfalls into `Docs/Setup/` or `Docs/Descr/`, the architecture summary into `Docs/Architecture/`, open decisions into `Docs/Decisions/`), then delete the folder and the `open_Issues.md` rows that point into it.
+- **Delete the branch last, and ask the user first.** Local: `git branch -d rust-rewrite-handoff` after it is merged or its commits are on the branch that replaces it. Remote: `git push origin --delete rust-rewrite-handoff`. Both are outward actions that need the user's explicit yes.
+
 ## First hour
 
 ```bash
@@ -62,4 +70,4 @@ Related material outside this folder: [the decision record](../../Docs/Decisions
 - **The user**: owner of the project, the vault and about 60 projects on their machine. Decides naming, licence, anything that touches their data, and when to commit or push to anything other than the agreed branch.
 - **The previous lead**: wrote the engine, CLI, TUI and most tests. Gone from the code, still reachable through the user.
 - **Helper sessions**: two peer Claude Code sessions the user opened, "helper 1" (read-only reviewer, tooling) and "helper 2" (Go oracle and parity). They wrote the behavior contract, the CI and `deny.toml`, both review rounds and the parity harness. Their knowledge is written out in the Investigation folder. They may or may not still exist; ask the user.
-- **You**: the colleague. The user will tell you what they expect first; this folder is the background.
+- **You**: the colleague. The user will inshallah tell you what they expect first; this folder is the background.

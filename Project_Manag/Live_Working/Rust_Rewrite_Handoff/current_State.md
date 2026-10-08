@@ -81,7 +81,7 @@ ratatui 0.30 on the `termina` backend through `ratatui-termina` (crossterm 0.29 
 
 ## Parity with the Go tool
 
-131 oracle scenarios: 87 match, 44 expected divergences (each cites a contract Q-id), 0 unexpected. Material: `Docs/Investigation/Parity_Oracle/` (setup, table, report) and `Code/Development/Parity/` (harness). The Go source stays in the tree until cutover and can always be rebuilt from commit `c7310f9`.
+131 oracle scenarios: 87 match, 44 expected divergences (each cites a contract Q-id), 0 unexpected. Re-run on the handoff tip on 2026-10-08 (`just parity`, about 75 s): the same 87 / 44 / 0. Material: `Docs/Investigation/Parity_Oracle/` (setup, table, report) and `Code/Development/Parity/` (harness). The Go source stays in the tree until cutover and can always be rebuilt from commit `c7310f9`.
 
 ## Tools: what is installed on the lead's machine
 

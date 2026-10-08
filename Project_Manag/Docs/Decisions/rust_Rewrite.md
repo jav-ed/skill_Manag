@@ -63,7 +63,7 @@ Opt-in rule (unchanged): `sync` updates only skills a project already has; `push
 - Mouse: rectangles are recorded while drawing (`HitMap`) and resolved topmost first. Row arithmetic like the Go `msg.Y - itemsStart` is banned.
 - Small crates: `tui-input` (state only), `tui-tree-widget` (group tree), `nucleo-matcher` (fuzzy filter, MPL-2.0, marked), `terminal-colorsaurus` (light or dark, `theme = auto|dark|light` in config). Written ourselves: spinner, key-binding table that also drives the `?` overlay, directory picker (169 lines in the prototype), OSC 8 link behind a runtime flag, virtual lists with `Scrollbar` instead of paginator.
 - Tests: `TestBackend` plus `insta` snapshots, headless mouse tests, and PTY end-to-end tests with `portable-pty` and `vt100`.
-- The working prototype (1,347 lines, 25 tests) is kept in `Scratch/Prototypes/tui_Proto` and will inshallah be ported, not rewritten.
+- The working prototype (1,347 lines, 25 tests) was ported into `Crates/Tui`; its source is archived in [the prototypes folder](../Investigation/Prototypes/linker_Prototypes.md).
 
 ### 5. Web view (`skillmirror-web`, cargo feature `web`)
 

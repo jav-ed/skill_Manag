@@ -23,7 +23,7 @@
 9. **Few agents.** Do most of the coding yourself. Parallel work goes to the user's peer sessions through SendMessage, each with a self-contained task, a hard file boundary (they write only named files) and no `cargo` runs in the shared tree. Do not start many subagents or workflow runs, even when a tool offers it.
 10. **Commit and push only on request.** The user asked for the push of the branch `rust-rewrite-handoff` on 2026-10-08. Pushing to `main`, opening a PR, tagging or force-pushing each needs a fresh yes.
 11. **Frozen Go tree.** Do not edit Go code (`main.go`, `cmd/`, `internal/`, `go.*`) before cutover. It is the behaviour reference.
-12. **Notes and handoffs never go into `Scratch/`.** That folder is gitignored and disposable; nothing there reaches a clone. Durable notes belong under `Project_Manag/Live_Working/` (active work) or `Project_Manag/Docs/` (lasting knowledge), and reproducible tools under `Code/Development/`. A scratch task list is fine while you work, but its content must be moved before you stop.
+12. **Notes, investigations and handoffs never go into `Scratch/`.** That folder is gitignored and disposable; nothing there reaches a clone. Durable notes belong under `Project_Manag/Live_Working/` (active work) or `Project_Manag/Docs/` (lasting knowledge), and reproducible tools under `Code/Development/`. A scratch task list is fine while you work, but its content must be moved before you stop.
 13. **Licence**: the project is Hippocratic License 3.0 (not OSI). Permissive and MPL-2.0 dependencies are fine; GPL, AGPL, LGPL and source-available code are blockers. `skiller` (SUL-1.0) is read-only inspiration, never copied.
 
 ## What "done" means here

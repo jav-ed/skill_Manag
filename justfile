@@ -84,3 +84,8 @@ check: fmt-check clippy test loc-gate check-deps
 # Compile against the declared minimum Rust version (run `rustup toolchain install 1.88` once).
 msrv:
     rustup run 1.88 cargo check --locked --workspace
+
+# Replay the 131 Go-oracle scenarios against a skillmirror binary and classify the differences (needs the oracle, see Code/Development/Parity/README.md; about 1 minute).
+parity binary="target/debug/skillmirror":
+    cargo build --locked -p skillmirror
+    bash Code/Development/Parity/check_Parity.sh {{binary}}

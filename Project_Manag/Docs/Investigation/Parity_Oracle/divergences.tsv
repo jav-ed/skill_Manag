@@ -1,0 +1,54 @@
+# Tracked copy of the parity divergence table (round 2: 131 scenarios = 87 MATCH + 44 EXPECTED-DIVERGENCE + 0 UNEXPECTED).
+# Read by Code/Development/Parity/compare.py; the prose version is divergences_Explained.md in this folder.
+# Quirk ids (Q2..Q33) are rows of Project_Manag/Docs/Descr/behavior_Contract.md; "rust_Rewrite.md §N" points to
+# Project_Manag/Docs/Decisions/rust_Rewrite.md. Q31 (symlinked or .. scan root), Q32 (empty or nonexistent config entries) and Q33 (apply or
+# delete through a symlinked .agents) were added to the contract after the replays of rounds 1 and 2 showed them.
+# scenario<TAB>reference<TAB>covers<TAB>reason
+# covers: comma list of check kinds this entry explains: exit[=N|M], tree[=pre], set, rest
+#   exit=3     the Rust exit code must be 3 (else the entry does not cover it -> UNEXPECTED)
+#   tree=pre   Rust's projects tree after the step must equal its tree before the step
+# a scenario whose differing checks are all covered is EXPECTED-DIVERGENCE
+cfg_config_root_empty	Q32	exit=3	Steps 1 and 2 (root: "" and a bare root:) match (Go needs the Setup TUI, Rust exits 3). Step 3: with an explicit --root, Go ignores the empty config value and works; Rust still rejects the config ('root must not be empty', exit 3). Intended: a config file is checked whenever it is read, even when a flag overrides the key (Q32).
+cfg_config_yaml_malformed	rust_Rewrite.md §2 Config read	exit=3	Go ignores a malformed config.yaml (contract §2); Rust parses with deny_unknown_fields and fails with line/column, exit 3. Nothing written.
+cfg_root_is_a_file	Q12	exit=3	Go: no error, prints 'No matching skills found' (exit 0). Rust: hard error 'scan root is not a directory' (exit 3). Q12 was UNCLEAR; policy 'hard errors, no fallbacks'.
+cfg_root_is_symlink	Q31	set	Step 1: `--root link` (symlink, no trailing slash). Go's WalkDir does not descend, so nothing is found; Rust resolves the root to its canonical path and finds all 12 targets. Step 2 (trailing slash) agrees; Rust prints the canonical paths (<TMP>/projects/...) where Go prints the link spelling (<TMP>/projects_link/...), which the set comparison maps.
+cfg_root_is_symlink_delete	Q31	tree	delete coding --root link: without the trailing slash Go finds nothing (exit 0); Rust canonicalizes the root and deletes from all 4 projects. Step 2 agrees.
+cfg_root_nonexistent	Q12	exit=3	Go: exit 0 with 'No matching skills found'. Rust: hard error 'scan root does not exist' (exit 3).
+cfg_vault_empty_dir	rust_Rewrite.md §2 Vault file list	exit=3	The scenario's empty vault dir is not a git repo, so Rust fails with 'not a git repository' (exit 3); Go printed 'No skills found in vault.' (exit 0). The empty GIT vault is covered by cfg_vault_git_zero_skills (MATCH).
+del_dot_name_with_project	Q5	exit=2,tree=pre	Go removes the whole .agents/skills dir. Rust rejects '.' as a skill name (exit 2); tree untouched.
+del_dotdot_name_with_project	Q5	exit=2,tree=pre	Go removes the whole .agents dir. Rust rejects '..' (exit 2); tree untouched.
+del_empty_name_with_project	Q5	exit=2,tree=pre	Go removes the whole .agents/skills dir. Rust rejects the empty name (exit 2); tree untouched.
+del_empty_name_without_project	Q5	exit=2	Go finds nothing and exits 0. Rust rejects the empty name (usage error, exit 2) before scanning.
+del_project_lacks_skill	Q15	exit=3	Go prints 'deleted from' for a skill the project does not have (exit 0). Rust: 'is not an installed skill folder', exit 3, nothing touched.
+del_project_nonexistent	Q15	exit=3	Go prints 'deleted from' for a project path that does not exist (exit 0). Rust: 'is not an installed skill folder', exit 3.
+del_project_through_symlinked_agents	Q33 (+ Q14)	exit=3,tree=pre,rest	Go's RemoveAll follows the .agents symlink and deletes real_agents/skills/coding outside the project (rest.manifest differs). Rust: '.agents is a symlink; skill folders behind a link are never removed', exit 3, nothing deleted.
+del_project_through_symlinked_skills_dir	Q33 (+ Q14)	exit=3,tree=pre,rest	Same through a symlinked .agents/skills: Go deletes inside the link target, Rust refuses (exit 3).
+del_readonly_skill_by_name	Q16 + Q3 principle (rust_Rewrite.md §2 Apply)	tree,exit=4	Go removes what it can (languages/*) and leaves the rest, prints the error but exits 0 and counts the project as updated. Rust renames the folder into .agents/.trash-* first; on a read-only folder that rename fails with EACCES, so the skill stays complete (no .trash-* left); other projects are deleted, exit 4 (partial).
+del_readonly_skill_with_project	Q16 + Q3 principle	exit=4,tree=pre	Go removes languages/* then fails (exit 1). Rust's rename into .agents/.trash-* fails with EACCES, the skill stays complete, exit 4 (partial).
+del_subpath_name_with_project	Q5	exit=2,tree=pre	Go removes a subfolder of the skill. Rust rejects names with a separator (exit 2); tree untouched.
+del_traversal_name_with_project	Q5	exit=2,tree=pre	Go deletes <project>/src through '../../src'. Rust rejects the name (exit 2); tree untouched.
+drv_push_mandatory_missing_in_vault	Q20	exit=3,tree=pre	mandatory = [ghost, coding]. Go silently drops 'ghost' and pushes coding. Rust refuses the whole push (exit 3, nothing written) and names the unknown skill; Q20 criticised the old misleading message.
+drv_push_mandatory_none_in_vault	Q20	exit=3	mandatory = [ghost]. Go: nothing to push, exit 0. Rust: hard error naming 'ghost', exit 3.
+drv_push_vault_not_git	Q26 + Q29 (non-git fallback)	exit=3,tree=pre	Go falls back to a walk and pushes (including untracked files). Rust: 'vault is not a git repository', exit 3, nothing written.
+drv_sync_filename_double_quote	Q2	exit=0,tree	Go: git quotes the name, stat fails, project copies wiped. Rust uses git ls-files -z: the file is copied, exit 0.
+drv_sync_filename_unicode_default_git	Q2	exit=0,tree	Go: escaped name "\303\274n\303\257.md", stat fails, project copies wiped. Rust (-z) copies ünï.md, exit 0.
+drv_sync_readonly_project_dir	Q3 principle (rust_Rewrite.md §2 Apply)	tree,exit=4	Go: RemoveAll removes languages/* then fails. Rust: the swap fails with EACCES (hint now blames permissions), project-a's copy stays complete, other targets sync, exit 4.
+drv_sync_symlink_dangling	Q26 + Q3	exit=4,tree=pre	Go: stat error after wiping the project copy (partial tree). Rust: whole skill refused up front, project copies untouched.
+drv_sync_symlink_outside_vault	Q26	exit=4,tree=pre	Go copies the content of a file outside the vault through a tracked symlink. Rust fails the skill, exit 4, nothing copied.
+drv_sync_symlink_to_dir	Q26 + Q3	exit=4,tree=pre	Go: 'is a directory' error after wiping, leaves an empty file 'linkdir'. Rust: skill refused up front, project copies untouched.
+drv_sync_symlink_to_file	Q26	exit=4,tree=pre	Go dereferences a tracked file symlink into a regular file. Rust fails that skill ('contains a tracked symlink: link.md'), exit 4, project copies untouched.
+drv_sync_vault_file_deleted_from_disk_only	Q3	exit=4,tree=pre	Go wipes the project copy, then fails on the missing file (partial tree). Rust: 'tracked file ... is missing from the vault working tree', skill untouched, exit 4.
+drv_sync_vault_not_git	Q26 + Q29 (non-git fallback)	exit=3,tree=pre	Go falls back to a walk (untracked files in, symlinks and build/ out). Rust: hard error, exit 3, nothing written.
+drv_sync_vault_skill_zero_tracked_files	Q4	exit=4,tree	Go wipes matching project copies and reports ok with 0 files. Rust fails that skill (exit 4) and keeps the project copy; the other skills sync.
+scan_dry_run_symlinks_in_git_vault	Q26	exit=4	Go counts tracked symlinks as files. Rust marks the skill failed ('contains a tracked symlink'), other skills are planned, exit 4 (rust_Rewrite.md §2 now says the same).
+scan_dry_run_vault_not_git	Q26 + Q29 (non-git fallback)	exit=3	Go counts untracked files in the fallback walk. Rust: 'vault is not a git repository', exit 3.
+scan_exclude_dirs_from_env	rust_Rewrite.md §3 (legacy env) + ruling 4	exit=3	SKILL_MANAG_EXCLUDE_DIRS: Go feeds exclude_dirs from the environment. Rust: any SKILL_MANAG_* variable is a hard error (exit 3) with a hint to use config.yaml.
+scan_exclude_dirs_name_of_root	Q11	set	exclude_dirs: [projects] matches the scan root's own name. Go skips the whole walk (nothing found). Rust does not apply directory exclusions to the root itself, so all 12 targets are found. Q11 describes the same flaw for the built-in prune list.
+scan_exclude_empty_entries	Q32	exit=3,tree=pre	Go ignores an empty exclude_paths entry and an empty exclude_dirs name. Rust: 'exclude_paths has an empty entry' / 'exclude_dirs entry "" must be a bare directory name', exit 3.
+scan_exclude_paths_nonexistent	Q32	exit=3,tree=pre	Go ignores entries that match nothing (relative `no/such/dir`, absolute `<TMP>/nope`). Rust: 'exclude_paths entry ... does not exist', exit 3, for both.
+scan_exclude_paths_outside_root	Q32	exit=3,tree=pre	This scenario matched in round 1. Its entries `../elsewhere` and `/nonexistent/abs` do not exist, so Rust now exits 3 where Go ignores them.
+scan_vault_hidden_dir_is_a_skill	Q6 + rust_Rewrite.md §2 vault discovery	set	Go treats any vault subdir, dot-dirs included, as a skill (.hidden matched). Rust discovery skips dot-directories; .hidden is not a skill, so the project's .hidden copy is not a target.
+scan_vault_skill_with_zero_tracked_files	Q4	exit=4	Dry run. Go lists the skill as 'would sync (0 files)' (exit 0). Rust marks the skill failed (zero tracked files is a hard error for that skill) and exits 4; the other skills are planned.
+tty_delete_interactive_no_tty	rust_Rewrite.md §3 first CLI cut	exit=2	Go `delete` without a name opens a TUI. Rust requires <NAME> (usage error, exit 2); no interactive delete in the CLI cut.
+tty_list_no_tty	rust_Rewrite.md §3 first CLI cut	exit=0	Go list is a TUI and fails without TTY. Rust `list` is a plain non-interactive listing, exit 0.
+tty_menu_no_tty	rust_Rewrite.md §3 first CLI cut (TUI is phase 4)	exit=2	Go opens the menu TUI (fails without TTY, exit 1). Rust now prints its help and exits 2 when no subcommand is given; there is no menu yet.

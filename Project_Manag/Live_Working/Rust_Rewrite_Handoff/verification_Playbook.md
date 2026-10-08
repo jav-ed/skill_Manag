@@ -11,7 +11,7 @@
 | CLI integration tests | `cargo test -p skillmirror --locked` (40) | flags, exit codes, JSON, refusing to write without `--yes`, config errors, install flows | what a human sees in a terminal |
 | TUI synthetic tests | `cargo test -p skillmirror-tui --locked` (39) | state machine, key and mouse routing, rendering (insta snapshots in `Crates/Tui/src/tests/snapshots/`) | real terminal bytes, resize storms, input floods |
 | Real-PTY tests | `Crates/Cli/tests/interface.rs` (portable-pty + vt100) | start-up, quitting cleanly, mouse, zero idle CPU, raw-mode restore | visual taste |
-| Go parity oracle | `Code/Development/Parity/` (see the parity docs) | any unplanned behaviour change versus the Go tool over 131 scenarios | new features (no Go counterpart) |
+| Go parity oracle | `just parity` (harness in `Code/Development/Parity/`, docs in `Docs/Investigation/Parity_Oracle/`) | any unplanned behaviour change versus the Go tool over 131 scenarios | new features (no Go counterpart) |
 | Review rounds | `Docs/Investigation/Review_Rounds/` | races, odd filesystems, UI under odd sizes, anything the author did not think of | nothing is guaranteed; run again after fixes |
 | Real data, read-only | below | surprises in the user's real tree | writes (never run them) |
 
