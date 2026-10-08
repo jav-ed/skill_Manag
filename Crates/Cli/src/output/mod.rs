@@ -6,6 +6,7 @@ mod macros;
 mod author;
 mod backup;
 mod bridge;
+mod config;
 mod diff;
 mod doctor;
 mod human;
@@ -24,6 +25,7 @@ pub(crate) use backup::{
     HistoryJson, HistoryRow, UndoJson, UndoRow, UndoStatus, render_history, render_undo,
 };
 pub(crate) use bridge::{BridgeJson, BridgeRow, BridgeStatus, render_bridge_notes, render_bridges};
+pub(crate) use config::{ConfigJson, MandatoryJson, render_config, render_mandatory};
 pub(crate) use diff::{DiffJson, render_diff};
 pub(crate) use doctor::{DoctorJson, render_doctor};
 pub(crate) use human::{

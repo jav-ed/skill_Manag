@@ -9,6 +9,7 @@ mod diff;
 mod doctor;
 mod info;
 mod list;
+mod mandatory;
 mod project;
 mod push;
 mod report;
@@ -34,6 +35,7 @@ pub use diff::{
 pub use doctor::{Finding, Report as DoctorReport, Severity, doctor};
 pub use info::{ProjectState, SkillDetail, SkillInfo, SkillState, skill_detail, skill_info};
 pub use list::{Installed, InstalledSet, installed};
+pub use mandatory::{Change as MandatoryChange, MandatoryError, change_mandatory};
 pub use project::{NewProject, ProjectError, check_existing, check_new, create_new, plan_install};
 pub use push::{plan as plan_push, plan_scoped as plan_push_scoped};
 pub use report::{Cell, ReportData, report_data};
@@ -58,6 +60,8 @@ mod doctor_machine_tests;
 mod doctor_tests;
 #[cfg(test)]
 mod info_tests;
+#[cfg(test)]
+mod mandatory_tests;
 #[cfg(test)]
 mod profile_tests;
 #[cfg(test)]

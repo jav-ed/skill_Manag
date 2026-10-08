@@ -75,6 +75,8 @@ Every command accepts `--vault <DIR>` and `--root <DIR>`. Commands that write as
 | `new NAME [--group PATH] [--description TEXT] [--dry-run]` | Creates a skill in the vault from a template (`SKILL.md` with a header), staged in git, not committed |
 | `adopt NAME --from PROJECT [--group PATH] [--dry-run]` | Copies a skill folder that a project already has into the vault, staged, not committed; the project's folder is then in sync |
 | `vault init DIR [--root DIR] [--use] [--dry-run]` | Makes a new vault (a git repository with a `config.yaml`) and, when you have no default vault yet, makes it the default |
+| `config show [--json]`, `config path`, `config root DIR` | Shows the vault, the scan root (with where each came from) and the settings; prints the path of `config.yaml`; sets `root:` there |
+| `mandatory list`, `mandatory add SKILL...`, `mandatory remove SKILL...` | Shows or edits the skills that `push` installs everywhere, in `config.yaml` (comments and other keys stay) |
 | `bridge [--dry-run]` | Links other agent folders such as `.claude/skills` to `.agents/skills` (see `targets` below) |
 | `doctor` | Checks the machine, the configuration, the vault and every `SKILL.md` header; writes nothing |
 | `undo [RUN]` and `history` | Brings back what a run replaced or removed; undoing is a run too, so a second `undo` redoes it |

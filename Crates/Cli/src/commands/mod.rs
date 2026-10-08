@@ -3,6 +3,7 @@
 mod author;
 mod backup;
 mod bridge;
+mod config;
 mod context;
 mod delete;
 mod diff;
@@ -10,6 +11,7 @@ mod doctor;
 mod info;
 mod install;
 mod list;
+mod mandatory;
 mod migrate;
 mod mirror;
 mod pipeline;
@@ -60,6 +62,8 @@ fn dispatch(cli: &Cli, command: &Command) -> Result<Exit, CliError> {
         Command::New(args) => author::new(cli, args),
         Command::Adopt(args) => author::adopt(cli, args),
         Command::Vault(command) => vault::run(cli, command),
+        Command::Config(command) => config::run(cli, command),
+        Command::Mandatory(command) => mandatory::run(cli, command),
         Command::Report(args) => report::run(cli, args),
         Command::Bridge(args) => bridge::run(cli, args),
         Command::Status(args) => status::run(cli, args),

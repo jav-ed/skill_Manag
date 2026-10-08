@@ -61,6 +61,12 @@ pub(crate) enum Command {
     /// Work on the vault itself
     #[command(subcommand)]
     Vault(VaultCommand),
+    /// Show or change the configuration
+    #[command(subcommand)]
+    Config(ConfigCommand),
+    /// Show or change the skills that `push` installs everywhere
+    #[command(subcommand)]
+    Mandatory(MandatoryCommand),
     /// Install skills, groups or profiles into an existing project
     Add(AddArgs),
     /// Create a new project directory and install the mandatory skills plus a selection
@@ -339,6 +345,56 @@ pub(crate) struct AdoptArgs {
 pub(crate) enum VaultCommand {
     /// Make a new vault: a git repository with a config.yaml
     Init(VaultInitArgs),
+}
+
+#[derive(Debug, Subcommand)]
+pub(crate) enum ConfigCommand {
+    /// Show the vault, the scan root and the settings in <vault>/config.yaml, and where each came from
+    Show {
+        /// Print one JSON document instead of text
+        #[arg(long)]
+        json: bool,
+    },
+    /// Print the path of <vault>/config.yaml, for `$EDITOR $(skillmirror config path)`
+    Path,
+    /// Set `root:` in <vault>/config.yaml to a folder that holds your projects
+    Root(ConfigRootArgs),
+}
+
+#[derive(Debug, Args)]
+pub(crate) struct ConfigRootArgs {
+    /// The folder to scan for projects; it must exist
+    pub(crate) dir: PathBuf,
+    /// Show the change and make none
+    #[arg(long)]
+    pub(crate) dry_run: bool,
+}
+
+#[derive(Debug, Subcommand)]
+pub(crate) enum MandatoryCommand {
+    /// List the mandatory skills
+    List {
+        /// Print one JSON document instead of text
+        #[arg(long)]
+        json: bool,
+    },
+    /// Add skills of the vault to the list
+    Add(MandatoryEditArgs),
+    /// Take skills off the list
+    Remove(MandatoryEditArgs),
+}
+
+#[derive(Debug, Args)]
+pub(crate) struct MandatoryEditArgs {
+    /// Skill names
+    #[arg(value_name = "SKILL", required = true)]
+    pub(crate) names: Vec<String>,
+    /// Show the new list and change nothing
+    #[arg(long)]
+    pub(crate) dry_run: bool,
+    /// Print one JSON document instead of text
+    #[arg(long)]
+    pub(crate) json: bool,
 }
 
 #[derive(Debug, Args)]

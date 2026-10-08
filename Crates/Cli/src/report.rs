@@ -77,6 +77,7 @@ from_core_error!(
     skillmirror_core::ops::ScopeError,
     skillmirror_core::ops::AuthorError,
     skillmirror_core::ops::VaultInitError,
+    skillmirror_core::ops::MandatoryError,
     skillmirror_core::ops::SelectError,
     skillmirror_core::apply::ApplyError,
     skillmirror_core::plan::PlanError,
