@@ -99,18 +99,17 @@ pub fn report_data(workspace: &Workspace, scan: &ScanReport) -> Result<ReportDat
         for name in project.missing_bridges {
             missing_bridges.push((index, name));
         }
+        for problem in project.project_problems {
+            project_problems.push((index, problem.message));
+        }
         for problem in project.failed {
-            if problem.skill.starts_with("bridge ") {
-                project_problems.push((index, problem.message));
-            } else {
-                cells.insert(
-                    (problem.skill, index),
-                    Cell::Problem {
-                        message: problem.message,
-                        hint: problem.hint,
-                    },
-                );
-            }
+            cells.insert(
+                (problem.skill, index),
+                Cell::Problem {
+                    message: problem.message,
+                    hint: problem.hint,
+                },
+            );
         }
     }
     let mandatory = workspace.settings.mandatory();

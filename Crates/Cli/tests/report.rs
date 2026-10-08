@@ -6,6 +6,7 @@ use common::skillmirror;
 use predicates::prelude::*;
 use predicates::str::contains;
 use skillmirror_testkit::World;
+use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 
 fn listing(root: &Path) -> Vec<String> {
@@ -46,6 +47,11 @@ fn report_writes_one_html_file_and_names_it() {
         .stdout(contains("Wrote the report to"))
         .stdout(contains("3 skills, 3 projects"));
 
+    let mode = std::fs::metadata(&out).unwrap().permissions().mode() & 0o777;
+    assert_eq!(
+        mode, 0o600,
+        "the report holds file contents, so it is private"
+    );
     let html = std::fs::read_to_string(&out).unwrap();
     assert!(html.starts_with("<!DOCTYPE html>"));
     assert!(html.contains("<!-- skillmirror report -->"));
@@ -176,4 +182,33 @@ fn an_unknown_mandatory_skill_is_a_hard_error_and_writes_no_file() {
         .stderr(contains("nope"));
 
     assert!(!out.exists());
+}
+
+#[test]
+fn a_link_is_never_replaced_even_when_it_points_at_a_report() {
+    let world = World::standard();
+    let real = world.path().join("real.html");
+    skillmirror(&world)
+        .arg("report")
+        .arg("-o")
+        .arg(&real)
+        .assert()
+        .success();
+    let link = world.path().join("link.html");
+    std::os::unix::fs::symlink(&real, &link).unwrap();
+
+    skillmirror(&world)
+        .arg("report")
+        .arg("-o")
+        .arg(&link)
+        .assert()
+        .code(3)
+        .stderr(contains("is a link"));
+
+    assert!(
+        std::fs::symlink_metadata(&link)
+            .unwrap()
+            .file_type()
+            .is_symlink()
+    );
 }

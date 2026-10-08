@@ -39,6 +39,16 @@ pub(super) fn run(cli: &Cli, args: &ReportArgs) -> Result<Exit, CliError> {
 /// that is already there is replaced only if it is a report of this tool.
 fn write_report(target: &Path, html: &str) -> Result<PathBuf, CliError> {
     let path = std::path::absolute(target)?;
+    // A link is never replaced, whatever it points at: the rename would swap the link for the report.
+    if fs_err::symlink_metadata(&path).is_ok_and(|meta| meta.file_type().is_symlink()) {
+        return Err(CliError::refused(
+            format!(
+                "{} is a link, so no report is written there",
+                path.display()
+            ),
+            "choose another name with --output, or remove the link yourself",
+        ));
+    }
     match fs_err::read(&path) {
         Ok(existing) => {
             let head = existing.get(..200).unwrap_or(&existing);

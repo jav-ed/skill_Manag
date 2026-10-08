@@ -205,3 +205,46 @@ fn bridge_asks_in_a_terminal_and_only_a_yes_links() {
     assert_eq!(term.exit_code(), 0);
     assert!(link_of(&world, "one").is_some());
 }
+
+#[test]
+fn a_link_in_the_way_is_a_problem_of_the_project_and_not_of_a_skill() {
+    let world = world();
+    // Everything in sync and linked except `one`, where a real folder is in the way.
+    skillmirror(&world)
+        .args(["sync", "--yes"])
+        .assert()
+        .success();
+    skillmirror(&world)
+        .args(["push", "--yes"])
+        .assert()
+        .success();
+    world.project_file("one/.claude/skills/mine/SKILL.md", "mine");
+    skillmirror(&world)
+        .args(["bridge", "--yes"])
+        .assert()
+        .code(4);
+
+    let out = skillmirror(&world)
+        .args(["status", "--json"])
+        .output()
+        .unwrap();
+
+    assert_eq!(out.status.code(), Some(4));
+    let doc: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    let one = doc["projects"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|p| p["project"].as_str().unwrap().ends_with("/one"))
+        .unwrap();
+    assert_eq!(one["status"], "problem");
+    assert_eq!(one["failed"].as_array().unwrap().len(), 0);
+    assert_eq!(one["project_problems"][0]["skill"], "claude");
+    assert!(
+        one["project_problems"][0]["message"]
+            .as_str()
+            .unwrap()
+            .contains("real folder")
+    );
+    assert_eq!(doc["summary"]["failed"], 1);
+}

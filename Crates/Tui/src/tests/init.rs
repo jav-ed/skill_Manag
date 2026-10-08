@@ -151,3 +151,29 @@ fn an_answer_about_a_name_the_user_stepped_back_from_is_dropped() {
         "the refusal is for a name no longer asked: {page}"
     );
 }
+
+#[test]
+fn a_folder_that_got_files_after_the_question_is_never_touched() {
+    let mut ui = Harness::new(world());
+    ui.open("Init");
+    ui.code(Code::Enter)
+        .type_text("fresh")
+        .code(Code::Enter)
+        .wait_select();
+    ui.code(Code::Enter).wait_confirm();
+    // Between the question and the yes, the user (or another program) puts a file there.
+    ui.world.project_file("fresh/notes.md", "mine");
+
+    ui.press('y');
+    ui.wait_for("the end of the job", |app| {
+        matches!(&app.screen, Screen::Work(w) if matches!(w.phase, crate::screens::Phase::Failed(_) | crate::screens::Phase::Done(_)))
+    });
+
+    let page = ui.screen();
+    assert!(page.contains("is not empty"), "{page}");
+    assert_eq!(ui.world.read("projects/fresh/notes.md"), "mine");
+    assert!(
+        !ui.world.exists("projects/fresh/.agents"),
+        "nothing was installed into a folder that is not empty"
+    );
+}

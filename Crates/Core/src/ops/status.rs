@@ -36,7 +36,11 @@ pub struct ProjectStatus {
     pub not_in_vault: Vec<String>,
     /// Targets from the vault config whose link to `.agents/skills` does not exist yet; `bridge` makes it.
     pub missing_bridges: Vec<String>,
+    /// Skills that could not be compared.
     pub failed: Vec<Problem>,
+    /// Things wrong with the project as a whole: a link the vault config asks for is in the way. The
+    /// `skill` of a problem here is the name of the target, such as `claude`.
+    pub project_problems: Vec<Problem>,
 }
 
 impl ProjectStatus {
@@ -49,6 +53,7 @@ impl ProjectStatus {
             not_in_vault: Vec::new(),
             missing_bridges: Vec::new(),
             failed: Vec::new(),
+            project_problems: Vec::new(),
         }
     }
 
@@ -72,7 +77,10 @@ impl StatusReport {
     }
 
     pub fn failed(&self) -> usize {
-        self.projects.iter().map(|p| p.failed.len()).sum()
+        self.projects
+            .iter()
+            .map(|p| p.failed.len() + p.project_problems.len())
+            .sum()
     }
 }
 
@@ -133,8 +141,8 @@ pub fn status(workspace: &Workspace, report: &ScanReport) -> Result<StatusReport
         if bridge.state == BridgeState::Missing {
             status.missing_bridges.push(bridge.name.clone());
         } else if let Some((message, hint)) = bridge.problem() {
-            status.failed.push(Problem {
-                skill: format!("bridge {}", bridge.name),
+            status.project_problems.push(Problem {
+                skill: bridge.name.clone(),
                 message,
                 hint: Some(hint),
             });
@@ -147,6 +155,9 @@ pub fn status(workspace: &Workspace, report: &ScanReport) -> Result<StatusReport
         status.missing_mandatory.sort();
         status.not_in_vault.sort();
         status.failed.sort_by(|a, b| a.skill.cmp(&b.skill));
+        status
+            .project_problems
+            .sort_by(|a, b| a.skill.cmp(&b.skill));
     }
     Ok(StatusReport { projects })
 }

@@ -36,13 +36,15 @@ pub(crate) struct ProjectRow {
     missing_bridges: Vec<String>,
     not_in_vault: Vec<String>,
     failed: Vec<ProblemRow>,
+    /// Things wrong with the project as a whole, such as a link in the way; `skill` names the target.
+    project_problems: Vec<ProblemRow>,
 }
 
 impl ProjectRow {
     pub(crate) fn of(project: &ProjectStatus) -> Self {
         let status = if project.drifts() {
             "drift"
-        } else if project.failed.is_empty() {
+        } else if project.failed.is_empty() && project.project_problems.is_empty() {
             "in_sync"
         } else {
             "problem"
@@ -55,17 +57,21 @@ impl ProjectRow {
             missing_mandatory: project.missing_mandatory.clone(),
             missing_bridges: project.missing_bridges.clone(),
             not_in_vault: project.not_in_vault.clone(),
-            failed: project
-                .failed
-                .iter()
-                .map(|p| ProblemRow {
-                    skill: p.skill.clone(),
-                    message: p.message.clone(),
-                    hint: p.hint.clone(),
-                })
-                .collect(),
+            failed: problem_rows(&project.failed),
+            project_problems: problem_rows(&project.project_problems),
         }
     }
+}
+
+fn problem_rows(problems: &[skillmirror_core::ops::Problem]) -> Vec<ProblemRow> {
+    problems
+        .iter()
+        .map(|p| ProblemRow {
+            skill: p.skill.clone(),
+            message: p.message.clone(),
+            hint: p.hint.clone(),
+        })
+        .collect()
 }
 
 fn outdated_row(o: &Outdated) -> OutdatedRow {
@@ -97,7 +103,7 @@ impl StatusSummary {
             in_sync: report
                 .projects
                 .iter()
-                .filter(|p| !p.drifts() && p.failed.is_empty())
+                .filter(|p| !p.drifts() && p.failed.is_empty() && p.project_problems.is_empty())
                 .count(),
             drift: report.drifting(),
             outdated_skills: sum(|p| p.outdated.len()),
@@ -129,8 +135,10 @@ impl<'a> StatusJson<'a> {
 pub(crate) fn render_status(report: &StatusReport, show_all: bool) -> String {
     let mut out = String::new();
     for project in &report.projects {
-        let calm =
-            !project.drifts() && project.failed.is_empty() && project.not_in_vault.is_empty();
+        let calm = !project.drifts()
+            && project.failed.is_empty()
+            && project.project_problems.is_empty()
+            && project.not_in_vault.is_empty();
         if calm && !show_all {
             continue;
         }
@@ -157,16 +165,11 @@ pub(crate) fn render_status(report: &StatusReport, show_all: bool) -> String {
                 pad(name)
             );
         }
+        for problem in &project.project_problems {
+            problem_lines(&mut out, &format!("bridge {}", problem.skill), problem);
+        }
         for problem in &project.failed {
-            putln!(
-                out,
-                "  {ERROR}✗{ERROR:#} {NAME}{}{NAME:#} {}",
-                pad(&problem.skill),
-                problem.message
-            );
-            if let Some(hint) = &problem.hint {
-                putln!(out, "      {MUTED}hint: {hint}{MUTED:#}");
-            }
+            problem_lines(&mut out, &problem.skill, problem);
         }
         for skill in &project.not_in_vault {
             putln!(
@@ -215,6 +218,19 @@ pub(crate) fn render_status(report: &StatusReport, show_all: bool) -> String {
         parts.join(", ")
     );
     out
+}
+
+/// A problem as a red line with its hint under it.
+fn problem_lines(out: &mut String, label: &str, problem: &skillmirror_core::ops::Problem) {
+    putln!(
+        out,
+        "  {ERROR}✗{ERROR:#} {NAME}{}{NAME:#} {}",
+        pad(label),
+        problem.message
+    );
+    if let Some(hint) = &problem.hint {
+        putln!(out, "      {MUTED}hint: {hint}{MUTED:#}");
+    }
 }
 
 fn file_counts(o: &Outdated) -> String {

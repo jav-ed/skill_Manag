@@ -213,11 +213,18 @@ fn a_missing_bridge_is_drift_and_a_blocked_one_is_a_problem() {
         b.missing_bridges.is_empty(),
         "a blocked bridge is a problem, not a missing one"
     );
-    let blocked = b
-        .failed
-        .iter()
-        .find(|p| p.skill == "bridge claude")
-        .unwrap();
+    assert!(
+        b.failed.is_empty(),
+        "a link problem is not a skill that failed: {:?}",
+        b.failed
+    );
+    assert_eq!(
+        report.failed(),
+        1,
+        "but it counts as a problem of the project"
+    );
+    let blocked = b.project_problems.first().unwrap();
+    assert_eq!(blocked.skill, "claude", "named by the target");
     assert!(
         blocked.message.contains("real folder"),
         "{}",
@@ -241,4 +248,24 @@ fn a_bridge_in_place_is_no_drift() {
     let report = status(&ws, &scanned).unwrap();
 
     assert!(report.projects.iter().all(|p| p.missing_bridges.is_empty()));
+}
+
+#[test]
+fn a_skill_folder_named_like_a_link_problem_is_still_a_skill() {
+    let (tree, _) = world("tmux");
+    tree.write("projects/b/.agents/skills/bridge claude/SKILL.md", "mine");
+    let ws = with_claude_target(&tree);
+    tree.write("projects/b/.claude/skills/own/SKILL.md", "own");
+    let scanned = ws.scan(&ignore_events).unwrap();
+
+    let report = status(&ws, &scanned).unwrap();
+
+    let b = project(&report, "b");
+    assert!(
+        b.not_in_vault.contains(&"bridge claude".to_string()),
+        "{:?}",
+        b.not_in_vault
+    );
+    assert_eq!(b.project_problems.len(), 1);
+    assert!(b.failed.is_empty(), "{:?}", b.failed);
 }
