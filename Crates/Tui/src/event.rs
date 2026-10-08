@@ -9,12 +9,21 @@ use std::time::Duration;
 use crate::backend::InputSource;
 use crate::input::Input;
 use crate::results::Results;
+use crate::screens::{Pending, VaultCheck};
 use crate::session::Session;
+
+/// Names one background job. Every report carries the id of the job it belongs to, so a report that
+/// arrives after the screen moved on is recognised and dropped.
+pub(crate) type JobId = u64;
 
 /// What a background job reports.
 pub(crate) enum Job {
     /// The scan finished, or failed with a message.
     Loaded(Box<Result<Session, String>>),
+    /// What a sync or push would write, worked out before anything is asked or written.
+    Planned(Box<Pending>),
+    /// The setup wizard looked at the chosen vault folder.
+    Checked(Box<Result<VaultCheck, String>>),
     /// A run advanced.
     Progress {
         done: usize,
@@ -26,7 +35,12 @@ pub(crate) enum Job {
 
 pub(crate) enum Event {
     Term(Input),
-    Job(Job),
+    Job {
+        id: JobId,
+        job: Job,
+    },
+    /// Reading the keyboard failed for good; nothing will ever arrive again.
+    InputFailed(String),
 }
 
 /// Reads terminal events on its own thread. It polls with a short timeout and checks a flag, so it
@@ -49,7 +63,11 @@ impl InputThread {
                         }
                     }
                     Ok(None) => {}
-                    Err(_) => break,
+                    Err(error) => {
+                        // Without this the screen would keep drawing and no key, Ctrl-C included, would work.
+                        drop(tx.send(Event::InputFailed(error.to_string())));
+                        break;
+                    }
                 }
             }
         });

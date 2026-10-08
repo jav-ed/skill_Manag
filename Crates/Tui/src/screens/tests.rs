@@ -100,15 +100,19 @@ fn enter_with_nothing_selected_does_nothing() {
 }
 
 #[test]
-fn sync_starts_at_once_but_delete_asks_first() {
+fn sync_and_push_plan_first_and_delete_asks_first() {
     let items = vec![item("a", &["x", "y"], true), item("b", &["x"], false)];
     let mut sync = work(Mode::Sync, items.clone());
-    let Action::Run(pending) = sync.on_key(Key::press(crate::input::Code::Enter)) else {
-        panic!("sync should run")
+    let Action::Plan(pending) = sync.on_key(Key::press(crate::input::Code::Enter)) else {
+        panic!("sync should work out its plan first")
     };
     assert_eq!(
         (pending.kind, pending.targets.len(), pending.skills),
         (Kind::Sync, 2, 1)
+    );
+    assert!(
+        pending.plan.is_none(),
+        "the app makes the plan, not the page"
     );
 
     let mut delete = work(Mode::Delete, items);

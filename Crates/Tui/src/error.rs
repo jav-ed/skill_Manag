@@ -10,12 +10,15 @@ pub enum TuiError {
     /// stdin or stdout is not a terminal, so there is nothing to draw on.
     #[error("the interactive view needs a terminal")]
     NoTerminal,
+    /// Reading the keyboard failed, so no key could ever arrive again.
+    #[error("cannot read the keyboard: {0}")]
+    Input(String),
 }
 
 impl Hint for TuiError {
     fn hint(&self) -> Option<String> {
         match self {
-            Self::Terminal(_) => None,
+            Self::Terminal(_) | Self::Input(_) => None,
             Self::NoTerminal => Some(
                 "run `skillmirror --help` to see the commands that work without a terminal"
                     .to_string(),

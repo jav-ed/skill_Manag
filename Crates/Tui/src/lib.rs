@@ -9,6 +9,7 @@ mod hit;
 mod items;
 mod jobs;
 mod num;
+mod preview;
 mod results;
 mod screens;
 mod session;
@@ -50,7 +51,11 @@ pub fn run(launch: Launch) -> Result<(), TuiError> {
     let result = event_loop(&mut terminal, &mut app, &rx);
     drop(input);
     backend::stop(&mut terminal)?;
-    Ok(result?)
+    result?;
+    match app.failure() {
+        Some(message) => Err(TuiError::Input(message.to_string())),
+        None => Ok(()),
+    }
 }
 
 fn event_loop(

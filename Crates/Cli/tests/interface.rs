@@ -34,6 +34,13 @@ fn a_session_syncs_through_a_real_terminal_and_quits_cleanly() {
     term.wait_for("Select skills to sync");
     term.wait_for("2 / 2 selected");
     term.send("\r");
+    // The page says what would be written and waits for a yes before it writes anything.
+    term.wait_for("Sync 2 skills in 2 projects?");
+    assert_eq!(
+        world.read("projects/one/.agents/skills/coding/SKILL.md"),
+        "coding v1"
+    );
+    term.send("y");
     term.wait_for("Sync results");
     term.wait_for("synced to 2 projects");
     assert_eq!(

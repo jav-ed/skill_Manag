@@ -31,7 +31,7 @@ fn move_to(ui: &mut Harness, name: &str) {
 fn choose_vault(ui: &mut Harness) {
     ui.press('h');
     move_to(ui, "vault");
-    ui.press('l').code(Code::Enter);
+    ui.press('l').code(Code::Enter).wait_checked();
 }
 
 #[test]
@@ -114,7 +114,7 @@ fn escape_goes_back_one_step_and_q_leaves() {
 #[test]
 fn a_folder_that_is_not_a_vault_is_refused_with_the_reason() {
     let mut ui = Harness::unconfigured(world());
-    ui.code(Code::Enter);
+    ui.code(Code::Enter).wait_checked();
     assert_eq!(step(&ui), "vault", "the home folder holds no skills");
     let page = ui.screen();
     assert!(page.contains('✗'), "{page}");
@@ -152,7 +152,7 @@ fn the_mouse_walks_the_picker_and_toggles_the_checklist() {
         .unwrap();
     ui.click(crate::hit::Target::PickerRow(index));
     ui.click(crate::hit::Target::PickerRow(index));
-    ui.click(crate::hit::Target::PickerSelect);
+    ui.click(crate::hit::Target::PickerSelect).wait_checked();
     assert_eq!(step(&ui), "root");
     ui.click(crate::hit::Target::PickerSelect);
     assert_eq!(step(&ui), "mandatory");

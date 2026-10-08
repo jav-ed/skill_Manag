@@ -43,7 +43,11 @@ fn the_delete_dialog_names_the_damage() {
 fn the_results_page_lists_failures_and_collapses_successes() {
     let mut ui = Harness::new(world());
     ui.open("List").wait_select();
-    ui.press('a').press('s').wait_done();
+    ui.press('a')
+        .press('s')
+        .wait_confirm()
+        .press('y')
+        .wait_done();
     insta::assert_snapshot!(without_run_id(&ui.screen()));
     ui.press('d');
     let detailed = ui.screen();
@@ -51,6 +55,18 @@ fn the_results_page_lists_failures_and_collapses_successes() {
         detailed.contains("updated"),
         "d shows every project: {detailed}"
     );
+}
+
+#[test]
+fn the_sync_confirmation_lists_the_files_it_would_remove() {
+    let mut ui = Harness::new(world());
+    ui.open("Sync").wait_select();
+    ui.world
+        .project_file("one/.agents/skills/astro/my_notes.md", "my notes");
+    ui.world
+        .project_file("two/.agents/skills/coding/old/draft.md", "draft");
+    ui.code(Code::Enter).wait_confirm();
+    insta::assert_snapshot!(ui.screen());
 }
 
 #[test]
@@ -88,6 +104,28 @@ fn no_screen_panics_on_a_tiny_terminal() {
             ui.screen();
             ui.press('x');
             ui.press(' ').code(Code::Enter);
+            ui.screen();
+        }
+    }
+}
+
+#[test]
+fn the_planning_confirmation_and_running_pages_survive_a_tiny_terminal() {
+    for (w, h) in [(1, 1), (10, 3), (30, 6), (60, 10), (80, 24)] {
+        for label in ["Sync", "Push"] {
+            let mut ui = Harness::sized(world(), w, h);
+            ui.world
+                .project_file("one/.agents/skills/coding/stray_a.md", "x");
+            ui.world
+                .project_file("one/.agents/skills/coding/stray_b.md", "x");
+            ui.open(label).wait_select();
+            ui.code(Code::Enter);
+            ui.screen(); // planning
+            ui.wait_confirm();
+            ui.screen(); // the question, with files to name
+            ui.press('y');
+            ui.screen(); // writing
+            ui.wait_done();
             ui.screen();
         }
     }

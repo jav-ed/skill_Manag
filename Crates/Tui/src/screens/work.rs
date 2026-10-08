@@ -2,6 +2,7 @@
 
 use std::collections::HashSet;
 
+use skillmirror_core::plan::Plan;
 use skillmirror_core::scan::Target;
 use tui_input::Input as TextInput;
 
@@ -12,18 +13,35 @@ use crate::results::{Kind, Results};
 use crate::session::Session;
 
 /// A run waiting for a go-ahead or already started.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug)]
 pub(crate) struct Pending {
     pub(crate) kind: Kind,
     pub(crate) targets: Vec<Target>,
     /// How many skills (rows) the targets belong to.
     pub(crate) skills: usize,
+    /// What a sync or push will write. The run applies exactly this plan, so a folder edited after it
+    /// was made fails instead of being overwritten. A delete has none.
+    pub(crate) plan: Option<Plan>,
 }
+
+// The plan is a large value without equality; it only matters whether there is one.
+impl PartialEq for Pending {
+    fn eq(&self, other: &Self) -> bool {
+        self.kind == other.kind
+            && self.targets == other.targets
+            && self.skills == other.skills
+            && self.plan.is_some() == other.plan.is_some()
+    }
+}
+
+impl Eq for Pending {}
 
 pub(crate) enum Phase {
     Loading,
     Failed(String),
     Select,
+    /// Working out what the selected sync or push would write.
+    Planning(Kind),
     Confirm(Pending),
     Running {
         kind: Kind,
@@ -38,6 +56,8 @@ pub(crate) enum Phase {
 pub(crate) enum Action {
     None,
     Back,
+    /// Work out what the selection would do, then ask.
+    Plan(Pending),
     Run(Pending),
 }
 
@@ -120,9 +140,17 @@ impl Work {
         }
     }
 
-    /// The targets of every selected row, in row order. Rows hidden by the filter count too.
+    /// The targets of every selected row that is visible, in row order. A row the filter hides stays
+    /// selected for when the filter is cleared, but no key acts on it: the page never lets a delete
+    /// reach a skill the user cannot see.
     pub(crate) fn pending(&self, kind: Kind) -> Option<Pending> {
-        let mut chosen: Vec<usize> = self.selected.iter().copied().collect();
+        let mut chosen: Vec<usize> = self
+            .view
+            .filtered
+            .iter()
+            .map(|(item, _)| *item)
+            .filter(|item| self.selected.contains(item))
+            .collect();
         chosen.sort_unstable();
         let rows: Vec<&Item> = chosen.iter().filter_map(|i| self.items.get(*i)).collect();
         let targets: Vec<Target> = rows
@@ -134,7 +162,14 @@ impl Work {
             kind,
             targets,
             skills,
+            plan: None,
         })
+    }
+
+    /// Selected rows that the filter currently hides.
+    pub(crate) fn hidden_selected(&self) -> usize {
+        let shown: HashSet<usize> = self.view.filtered.iter().map(|(item, _)| *item).collect();
+        self.selected.iter().filter(|i| !shown.contains(i)).count()
     }
 
     /// Why the list is empty, in the words of the Go tool.

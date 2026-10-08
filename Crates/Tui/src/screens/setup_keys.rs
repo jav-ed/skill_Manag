@@ -17,11 +17,14 @@ impl Setup {
         if key.code == Code::Esc {
             return self.back();
         }
+        // While a folder is being looked at, the picker keeps still: a second choice would race the first.
+        if self.checking {
+            return SetupAction::None;
+        }
         match self.step {
             Step::Vault | Step::Root => {
                 let outcome = self.picker.on_key(key);
-                self.picked(outcome);
-                SetupAction::None
+                self.picked(outcome)
             }
             Step::Mandatory => {
                 self.mandatory_key(key);
@@ -68,10 +71,13 @@ impl Setup {
 
     pub(crate) fn on_mouse(&mut self, mouse: Mouse, target: Option<Target>) -> SetupAction {
         let left = matches!(mouse.kind, MouseKind::Down(Button::Left));
+        if self.checking {
+            return SetupAction::None;
+        }
         match self.step {
             Step::Vault | Step::Root => {
                 let outcome = self.picker.on_mouse(mouse, target);
-                self.picked(outcome);
+                return self.picked(outcome);
             }
             Step::Mandatory => match (mouse.kind, target) {
                 (MouseKind::Moved, Some(Target::CheckRow(i))) => self.list.cursor = i,

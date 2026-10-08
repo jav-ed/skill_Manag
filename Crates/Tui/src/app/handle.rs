@@ -16,7 +16,11 @@ impl App {
             Event::Term(Input::Mouse(mouse)) => self.on_mouse(mouse),
             // A resize needs no state change: the next draw lays out again and rebuilds the hit map.
             Event::Term(Input::Resize | Input::Ignored) => {}
-            Event::Job(job) => self.on_job(job),
+            Event::Job { id, job } => self.on_job(id, job),
+            Event::InputFailed(message) => {
+                self.failure = Some(message);
+                self.quit = true;
+            }
         }
     }
 
@@ -25,13 +29,23 @@ impl App {
             return;
         }
         if QUIT.matches(key) {
-            self.quit = true;
+            self.ctrl_c();
         } else if self.help {
             self.help = false;
         } else if HELP.matches(key) && !self.typing() {
             self.help = true;
         } else {
             self.route_key(key);
+        }
+    }
+
+    /// Ctrl-C ends the program, except while a job is writing: leaving then would stop it half way, so
+    /// the first press only says so and the second one quits.
+    fn ctrl_c(&mut self) {
+        if self.writing() && !self.quit_warned {
+            self.quit_warned = true;
+        } else {
+            self.quit = true;
         }
     }
 
@@ -61,7 +75,15 @@ impl App {
     fn setup_act(&mut self, action: SetupAction) {
         match action {
             SetupAction::None => {}
-            SetupAction::Leave => self.back_to_menu(),
+            SetupAction::Leave => {
+                self.checking = None;
+                self.back_to_menu();
+            }
+            SetupAction::Check(path) => {
+                let id = self.new_job();
+                self.checking = Some(id);
+                crate::jobs::spawn_check(self.tx.clone(), id, path);
+            }
             SetupAction::Save(request) => self.save_setup(&request),
         }
     }
@@ -75,9 +97,18 @@ impl App {
     }
 
     fn act(&mut self, action: Action) {
+        // One job at a time: nothing starts while another one is writing.
+        if self.writing() && !matches!(action, Action::None) {
+            return;
+        }
         match action {
             Action::None => {}
-            Action::Back => self.back_to_menu(),
+            Action::Back => {
+                // Leaving the page while it still works out a plan drops that plan.
+                self.running = None;
+                self.back_to_menu();
+            }
+            Action::Plan(pending) => self.plan(pending),
             Action::Run(pending) => self.start(pending),
         }
     }
@@ -125,7 +156,10 @@ impl App {
                 self.effects.push(Effect::OpenUrl(SITE_URL.to_string()));
                 true
             }
+            // The arrow must not walk away from a job that is writing.
+            Some(Target::HeaderBack) if self.writing() => true,
             Some(Target::HeaderBack) => {
+                self.running = None;
                 match &mut self.screen {
                     Screen::Work(work) if matches!(work.phase, Phase::Confirm(_)) => {
                         work.phase = Phase::Select;

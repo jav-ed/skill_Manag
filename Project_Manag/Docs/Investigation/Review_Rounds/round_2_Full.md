@@ -1,6 +1,6 @@
 # Review rounds: Round 2, Full
 
-Adversarial read of the code written after round 1: `ops/project.rs`, `ops/select.rs`, profiles and `save_config`, `apply/run.rs`, `plan/build.rs`, `plan/inspect.rs`, `Crates/Cli/src` and `Crates/Tui/src`. Second session, read-only, 2026-10-07 and 2026-10-08. All findings are **open** at the tip checked on 2026-10-08.
+Adversarial read of the code written after round 1: `ops/project.rs`, `ops/select.rs`, profiles and `save_config`, `apply/run.rs`, `plan/build.rs`, `plan/inspect.rs`, `Crates/Cli/src` and `Crates/Tui/src`. Second session, read-only, 2026-10-07 and 2026-10-08. All findings were **open** at the tip checked on 2026-10-08; the status line of each says what was done since (all fixed or decided on 2026-10-08, with the parts declined named).
 
 ## Not reviewed: the backup module
 
@@ -33,7 +33,7 @@ Fix first: M1 (the Tui plans after Enter and writes with no preview), M2 (job ev
 - **Why it matters**: round 1 M1 made the plan snapshot-checked so the human confirmation window is safe. The Tui has no confirmation window and plans after it, so the guard is unreachable. The Cli shows file rows and asks first (`Cli/src/commands/pipeline.rs:77-80`).
 - **Existing test that encodes the behavior**: `Tui/src/screens/tests.rs`: `sync_starts_at_once_but_delete_asks_first`. It must change with the fix. Go also started on Enter (contract Q21 is about its missing phase guard), so this is a carry-over, now unsafe.
 - **Fix**: build the `Plan` when the page loads or on Enter, keep it in `Pending`, show a confirm page listing removed and modified files (the Delete dialog has the shape), and pass that plan to `apply` so `DestinationChanged` can fire. Re-plan on entering the confirm page, never after it.
-- **Status**: open.
+- **Status**: fixed on 2026-10-08. Sync, push and the list's `s` work out a plan in a job (`Phase::Planning`), show it on a confirmation page that names the files that would be removed, and apply that same plan, so `DestinationChanged` fires for a file added meanwhile. A plan that would write nothing goes straight through. Tests: `Tui/src/tests/round2_jobs.rs` (including a file added while the page is open) and the snapshot `the_sync_confirmation_lists_the_files_it_would_remove`; the old test is now `sync_and_push_plan_first_and_delete_asks_first`. Contract Q36.
 
 ### M2. Job events land on whichever screen is open, and the mouse can leave a running job `[RUN]`
 
@@ -41,7 +41,7 @@ Fix first: M1 (the Tui plans after Enter and writes with no preview), M2 (job ev
 - **Scenario** (`u1`): Enter on Sync gives `Sync/running 0/3`. Click the header arrow: `menu`. Open Delete: `Delete/select`, populated from the pre-job session. The Sync job reports and the Delete page becomes `Delete/done(results of Sync)`. From that page the user can confirm a delete while the first job still writes: two jobs on the same projects. If the user is on the menu when the job ends, `work_mut()` is `None` and the results are lost.
 - **Existing test**: `Tui/src/screens/tests.rs`: `running_ignores_keys_so_a_second_enter_cannot_restart_it` covers keys only.
 - **Fix**: a job id and kind; `running: Option<JobId>` in `App`; while set, ignore the header arrow and `open` (or show a "job in progress" page); drop events whose id differs. One guard (`Work::busy()`) for keys and mouse.
-- **Status**: open.
+- **Status**: fixed on 2026-10-08. Every job report carries a job id and only the job the screen waits for is heard; the header arrow and Ctrl-C are guarded while a job writes; nothing starts while another job writes. Tests: `round2_jobs.rs` (header arrow, stale reports, leaving during the plan).
 
 ### M3. A failing target removes the `skills/` directory its siblings still need `[RUN]`
 
@@ -68,7 +68,7 @@ Fix first: M1 (the Tui plans after Enter and writes with no preview), M2 (job ev
 - **Scenario** (`u5`): the vault config has `mandatory: [coding, tmux]` with a column-0 comment between the items. The wizard shows `saved with error: ... mandatory lists "tmux" twice` and the pointer file already holds the new vault path. The next start uses the new vault with the old root and mandatory list.
 - **Rule**: no partial state on a hard error. The pointer is the lesser write, so it goes last.
 - **Fix**: save the config first, write the pointer second, and restore the previous config text if the pointer write fails (the wizard has it in memory). Test: an unsaveable config leaves the pointer file absent.
-- **Status**: open.
+- **Status**: fixed on 2026-10-08. The wizard saves the config first and the pointer second, and puts the config back as it was if the pointer cannot be written. Tests: `round2_wizard.rs` (both orders, red without the fix).
 
 ### M6. `init` creates the project, and with `--git` the repository, even when nothing can be written `[RUN]`
 
@@ -113,28 +113,28 @@ Fix first: M1 (the Tui plans after Enter and writes with no preview), M2 (job ev
 - **Scenario** (`u2`): on Delete press `a`, then `/astro`, Enter, Enter. The header says `3 / 3 selected`, one row is visible, the dialog says `Delete 3 skills in 2 projects?`. The dialog is honest about the count, so delete is guarded; for Sync and Push the same state starts a job at once (M1).
 - **Contract and tests**: contract Q18 lists "selection survives filter changes" as a Go behavior to CHANGE, yet `Tui/src/screens/tests.rs`: `the_filter_narrows_the_rows_and_selection_survives_it` asserts the survival, and `all_toggles_only_the_visible_rows_and_flips_back` makes `a` act on visible rows only. Decide one policy.
 - **Fix**: either Enter acts on visible rows only, or the header shows `1 shown, 3 selected` and the confirm page lists names.
-- **Status**: open.
+- **Status**: fixed on 2026-10-08 with a decision, contract Q37: Enter, `s` and `d` act on the selected rows that are visible, a selection made before a filter stays and the header counts the hidden ones. Test: `round2_jobs.rs`.
 
 ### L6. Ctrl-C ends the program in the middle of a job `[RUN]`
 
 - **Where**: `Tui/src/binding.rs:131` (`QUIT`), `Tui/src/app/handle.rs:27` (checked before the phase), `Tui/src/lib.rs:61` (the loop ends, job threads are not joined).
 - **Scenario** (`u3`): `Sync/running 0/3, should_quit: true`. Each swap is atomic, so projects stay consistent, but `.agents/.stage-*` or `.trash-*` of interrupted skills can remain and some projects are updated, others not, with no results page (`[READ]` for the leftovers).
 - **Fix**: while `Running`, Ctrl-C shows "waiting for the job to finish, press Ctrl-C again to quit"; the second press quits. Better: a cancel flag the pool checks between targets.
-- **Status**: open.
+- **Status**: fixed on 2026-10-08: while a job writes, the first Ctrl-C only warns in the footer and the second quits. A cancel flag the pool checks between targets is not built. Test: `round2_jobs.rs`.
 
 ### L7. A scan from before a setup change is adopted afterwards `[READ]`
 
 - **Where**: `Tui/src/app/mod.rs:117-125` (`loading` blocks a second spawn), `:177-183` (`write_setup` sets `session = None`), `Tui/src/app/jobs_events.rs:39-59` (`on_loaded` stores any result).
 - **Scenario**: `u6` shows the sibling case `[RUN]`: open Sync, Esc, open List before the first scan reports, and the first scan populates the List page with no new scan. With a setup change in between, the old scan of the old vault or root becomes the session of the new settings.
 - **Fix**: number the loads; `on_loaded` ignores a result whose number is not current; `write_setup` bumps the number and clears `loading`.
-- **Status**: open.
+- **Status**: fixed on 2026-10-08: scans are numbered like every job, and saving the setup forgets the scan on its way. Test: `round2_jobs.rs`.
 
 ### L8. A read error ends the input thread silently `[READ]`
 
 - **Where**: `Tui/src/event.rs:52` (`Err(_) => break`).
 - **Scenario**: the terminal read fails (EIO after the pty closed). The thread ends, the loop keeps drawing on the tick, and no key, Ctrl-C included, ever arrives; the process spins until killed. An error is swallowed.
 - **Fix**: send `Event::InputFailed(error)` before breaking, restore the terminal and exit with the error (exit 3).
-- **Status**: open.
+- **Status**: fixed on 2026-10-08: a read error sends `Event::InputFailed`, the interface ends and `skillmirror` exits 3 with the reason. The app-level path is tested; the thread reading a real dead terminal is not.
 
 ### L9. `init --git` obeys `GIT_DIR` from the environment `[RUN]`
 
@@ -162,13 +162,13 @@ Fix first: M1 (the Tui plans after Enter and writes with no preview), M2 (job ev
 - **Where**: `Tui/src/screens/setup.rs:102-120` (`choose_vault` calls `discover`, `VaultConfig::load`, and imports `read_files`).
 - **Scenario**: choosing a big vault runs `git ls-files` and reads every tracked file while the UI is frozen (no redraw, input or resize).
 - **Fix**: run it as a job like `spawn_load` and show a "checking the folder" state.
-- **Status**: open.
+- **Status**: fixed on 2026-10-08: choosing a vault runs `check_vault` as a job, the page shows "Looking at the folder", the picker keeps still, and an answer for a folder the user walked away from is dropped. Tests: `round2_wizard.rs`.
 
 ## Info
 
 ### I1. Delete and apply treat leftover remains differently `[RUN]`
 
-`Core/src/ops/delete.rs:135-139` returns `RemainsKept` as an error, so the row is `Failed` and the exit code is 4 although the skill is gone from `skills/`. `apply` reports an old copy that cannot be removed as a `Leftover` warning and keeps the row `Updated`. Both are honest; pick one policy and write it in the contract. **Status**: open (decision).
+`Core/src/ops/delete.rs:135-139` returns `RemainsKept` as an error, so the row is `Failed` and the exit code is 4 although the skill is gone from `skills/`. `apply` reports an old copy that cannot be removed as a `Leftover` warning and keeps the row `Updated`. Both are honest; pick one policy and write it in the contract. **Status**: decided on 2026-10-08, no code change, contract Q39: a leftover is a warning when the goal was reached (the new copy of an update is in place) and a failure when it was not (a delete that left remains in the trash is incomplete). The delete path can only be exercised as a non-root user, so it stays covered by the existing non-root test.
 
 ## Verified OK (negative results)
 

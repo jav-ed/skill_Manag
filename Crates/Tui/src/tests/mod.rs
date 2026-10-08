@@ -4,6 +4,8 @@
 mod flow;
 mod mouse;
 mod render;
+mod round2_jobs;
+mod round2_wizard;
 mod wizard;
 
 use std::sync::mpsc::{self, Receiver};
@@ -118,6 +120,33 @@ impl Harness {
             "the selection page",
             |app| matches!(&app.screen, Screen::Work(w) if matches!(w.phase, Phase::Select)),
         )
+    }
+
+    /// Waits until the setup wizard has looked at the folder it was given.
+    pub(super) fn wait_checked(&mut self) -> &mut Self {
+        self.wait_for(
+            "the vault check",
+            |app| matches!(&app.screen, Screen::Setup(s) if !s.checking),
+        )
+    }
+
+    /// The next job report, taken out of the queue without being handled.
+    pub(super) fn next_event(&mut self) -> Event {
+        self.rx
+            .recv_timeout(Duration::from_secs(5))
+            .expect("a job report")
+    }
+
+    pub(super) fn wait_confirm(&mut self) -> &mut Self {
+        self.wait_for(
+            "the confirmation page",
+            |app| matches!(&app.screen, Screen::Work(w) if matches!(w.phase, Phase::Confirm(_))),
+        )
+    }
+
+    /// Enter on a sync or push page, then yes on the page that lists what would be written.
+    pub(super) fn run_confirmed(&mut self) -> &mut Self {
+        self.code(Code::Enter).wait_confirm().press('y').wait_done()
     }
 
     pub(super) fn wait_done(&mut self) -> &mut Self {

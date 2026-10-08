@@ -41,7 +41,31 @@ pub(crate) struct SaveRequest {
 pub(crate) enum SetupAction {
     None,
     Leave,
+    /// Look at the chosen vault folder (it reads git and every skill, so the app does it off the UI thread).
+    Check(PathBuf),
     Save(SaveRequest),
+}
+
+/// What looking at a vault folder found.
+#[derive(Debug)]
+pub(crate) struct VaultCheck {
+    path: PathBuf,
+    skills: Vec<String>,
+    existing: VaultConfig,
+}
+
+/// Reads the folder as a vault: it must hold skills, be a git repository and have a valid config.
+/// This is the slow part of choosing a vault, which is why it is a function of its own.
+pub(crate) fn check_vault(path: PathBuf) -> Result<VaultCheck, String> {
+    let vault = discover(&path).map_err(|e| describe(&e))?;
+    // The vault must be a git repository: its tracked files decide what is copied.
+    read_files(&vault).map_err(|e| describe(&e))?;
+    let existing = VaultConfig::load(&path).map_err(|e| describe(&e))?;
+    Ok(VaultCheck {
+        skills: vault.skills.keys().cloned().collect(),
+        path,
+        existing,
+    })
 }
 
 pub(crate) struct Setup {
@@ -55,6 +79,8 @@ pub(crate) struct Setup {
     pub(crate) note: Option<String>,
     /// Why the chosen folder was refused.
     pub(crate) error: Option<String>,
+    /// A folder is being looked at in the background.
+    pub(crate) checking: bool,
     pub(super) start: SetupStart,
     existing: VaultConfig,
 }
@@ -82,54 +108,58 @@ impl Setup {
             list: ListView::default(),
             note: start.note.clone(),
             error: None,
+            checking: false,
             start,
             existing: VaultConfig::default(),
         }
     }
 
     /// The picker took a directory for the current step.
-    pub(super) fn chosen(&mut self, path: PathBuf) {
+    pub(super) fn chosen(&mut self, path: PathBuf) -> SetupAction {
         match self.step {
-            Step::Vault => self.choose_vault(path),
+            Step::Vault => {
+                self.checking = true;
+                self.error = None;
+                SetupAction::Check(path)
+            }
             Step::Root => {
                 self.root = Some(path);
                 self.step = Step::Mandatory;
+                SetupAction::None
             }
-            _ => {}
+            _ => SetupAction::None,
         }
     }
 
-    fn choose_vault(&mut self, path: PathBuf) {
-        let vault = match discover(&path) {
-            Ok(vault) => vault,
-            Err(e) => {
-                self.error = Some(describe(&e));
-                return;
-            }
-        };
-        // The vault must be a git repository: its tracked files decide what is copied.
-        if let Err(e) = read_files(&vault) {
-            self.error = Some(describe(&e));
+    /// The background look at the chosen vault came back.
+    pub(crate) fn checked(&mut self, result: Result<VaultCheck, String>) {
+        // The user stepped back meanwhile: the answer is about a choice that no longer stands.
+        if !self.checking {
             return;
         }
-        let existing = match VaultConfig::load(&path) {
-            Ok(config) => config,
-            Err(e) => {
-                self.error = Some(describe(&e));
-                return;
-            }
-        };
-        let mut names: Vec<String> = vault.skills.keys().cloned().collect();
+        self.checking = false;
+        match result {
+            Ok(check) => self.accept(check),
+            Err(message) => self.error = Some(message),
+        }
+    }
+
+    fn accept(&mut self, check: VaultCheck) {
+        let VaultCheck {
+            path,
+            skills: names,
+            existing,
+        } = check;
         let lacking: Vec<&String> = existing
             .mandatory
             .iter()
             .filter(|n| !names.contains(n))
             .collect();
         let mut skills: Vec<Skill> = names
-            .drain(..)
+            .iter()
             .map(|name| Skill {
-                checked: existing.mandatory.contains(&name),
-                name,
+                checked: existing.mandatory.contains(name),
+                name: name.clone(),
                 in_vault: true,
             })
             .collect();
@@ -156,6 +186,7 @@ impl Setup {
     /// One step back; from the first step the wizard is left.
     pub(super) fn back(&mut self) -> SetupAction {
         self.error = None;
+        self.checking = false;
         match self.step {
             Step::Vault | Step::Saved(_) => return SetupAction::Leave,
             Step::Root => {
@@ -206,9 +237,10 @@ impl Setup {
         self.step = Step::Saved(result);
     }
 
-    pub(super) fn picked(&mut self, outcome: Outcome) {
-        if let Outcome::Chosen(path) = outcome {
-            self.chosen(path);
+    pub(super) fn picked(&mut self, outcome: Outcome) -> SetupAction {
+        match outcome {
+            Outcome::Chosen(path) => self.chosen(path),
+            Outcome::Pending => SetupAction::None,
         }
     }
 

@@ -10,7 +10,9 @@ mod work_keys;
 
 pub(crate) use menu::{Dest, ENTRIES, Menu, MenuAction};
 pub(crate) use picker::Picker;
-pub(crate) use setup::{SaveRequest, Setup, SetupAction, SetupStart, Step};
+pub(crate) use setup::{
+    SaveRequest, Setup, SetupAction, SetupStart, Step, VaultCheck, check_vault,
+};
 pub(crate) use work::{Action, Pending, Phase, Work};
 
 #[cfg(test)]

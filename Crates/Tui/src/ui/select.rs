@@ -52,7 +52,17 @@ pub(super) fn draw(frame: &mut Frame, hits: &mut HitMap, work: &mut Work, area: 
         Constraint::Length(1),
     ])
     .areas(area);
-    let selected = format!("   {} / {} selected", work.selected.len(), work.items.len());
+    let hidden = work.hidden_selected();
+    let hidden_note = if hidden > 0 {
+        format!(" ({hidden} hidden by the filter)")
+    } else {
+        String::new()
+    };
+    let selected = format!(
+        "   {} / {} selected{hidden_note}",
+        work.selected.len(),
+        work.items.len()
+    );
     frame.render_widget(
         Paragraph::new(Line::from(vec![
             Span::styled(format!(" {}", title(work)), theme::bold()),

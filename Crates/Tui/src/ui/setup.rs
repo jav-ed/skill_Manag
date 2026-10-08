@@ -63,6 +63,12 @@ fn heading(setup: &Setup) -> Vec<Line<'static>> {
                 "Your skill collection: the git folder that holds your master skills.",
             ));
             lines.push(text("Walk to it, then press enter inside it:"));
+            if setup.checking {
+                lines.push(Line::from(Span::styled(
+                    "   Looking at the folder…",
+                    theme::muted(),
+                )));
+            }
         }
         Step::Root => {
             lines.push(done("Vault", &path(&setup.vault)));

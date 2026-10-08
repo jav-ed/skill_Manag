@@ -47,7 +47,9 @@ fn short(screen: &Screen) -> Vec<Hint> {
             }
             Phase::Confirm(_) => hints(CONFIRM_HELP),
             Phase::Done(_) => hints(RESULTS_HELP),
-            Phase::Loading | Phase::Failed(_) | Phase::Running { .. } => hints(BACK_HELP),
+            Phase::Loading | Phase::Failed(_) | Phase::Planning(_) | Phase::Running { .. } => {
+                hints(BACK_HELP)
+            }
         },
     }
 }
@@ -102,7 +104,15 @@ fn work_full(work: &Work) -> Vec<Hint> {
     }
 }
 
-pub(super) fn draw(frame: &mut Frame, screen: &Screen, area: Rect) {
+pub(super) fn draw(frame: &mut Frame, screen: &Screen, notice: Option<&str>, area: Rect) {
+    if let Some(notice) = notice {
+        let line = Line::from(vec![
+            Span::raw(" "),
+            Span::styled(notice.to_string(), theme::warning()),
+        ]);
+        frame.render_widget(Paragraph::new(line), area);
+        return;
+    }
     if let Screen::Work(work) = screen
         && work.filtering
         && matches!(work.phase, Phase::Select)

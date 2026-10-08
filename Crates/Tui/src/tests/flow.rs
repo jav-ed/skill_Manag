@@ -11,6 +11,7 @@ fn phase_name(app: &crate::app::App) -> &'static str {
             Phase::Loading => "loading",
             Phase::Failed(_) => "failed",
             Phase::Select => "select",
+            Phase::Planning(_) => "planning",
             Phase::Confirm(_) => "confirm",
             Phase::Running { .. } => "running",
             Phase::Done(_) => "done",
@@ -28,7 +29,7 @@ fn sync_updates_installed_skills_only_and_shows_the_results() {
     assert!(page.contains("2 / 2 selected"), "{page}");
     assert!(!page.contains("tmux"), "sync never adds a skill: {page}");
 
-    ui.code(Code::Enter).wait_done();
+    ui.run_confirmed();
     let page = ui.screen();
     assert!(page.contains("Sync results"), "{page}");
     assert!(page.contains("synced to 2 projects"), "{page}");
@@ -51,7 +52,7 @@ fn sync_updates_installed_skills_only_and_shows_the_results() {
 fn a_second_sync_finds_everything_up_to_date_and_selects_nothing() {
     let mut ui = Harness::new(world());
     ui.open("Sync").wait_select();
-    ui.code(Code::Enter).wait_done();
+    ui.run_confirmed();
     ui.press('q');
     assert_eq!(phase_name(&ui.app), "menu");
     ui.open("Sync").wait_select();
@@ -75,7 +76,7 @@ fn push_installs_the_mandatory_skills_into_every_project_with_a_skills_directory
         page.contains("tmux") && page.contains("3 projects"),
         "{page}"
     );
-    ui.code(Code::Enter).wait_done();
+    ui.run_confirmed();
     for project in ["one", "two", "three"] {
         assert_eq!(
             ui.world
@@ -144,7 +145,11 @@ fn list_deletes_exactly_the_selected_rows_after_confirming() {
 fn list_sync_refreshes_the_selected_row_and_skips_what_the_vault_lacks() {
     let mut ui = Harness::new(world());
     ui.open("List").wait_select();
-    ui.press('a').press('s').wait_done();
+    ui.press('a')
+        .press('s')
+        .wait_confirm()
+        .press('y')
+        .wait_done();
     let page = ui.screen();
     assert!(page.contains("local-only"), "{page}");
     assert!(
@@ -220,7 +225,7 @@ fn a_sync_keeps_the_old_copies_and_the_results_page_names_the_run() {
     let mut ui = Harness::new(world());
     ui.open("Sync").wait_select();
 
-    ui.code(Code::Enter).wait_done();
+    ui.run_confirmed();
 
     let ids = backup_runs(&ui);
     assert_eq!(ids.len(), 1, "{ids:?}");
@@ -260,7 +265,7 @@ fn a_delete_keeps_the_folder_in_the_store() {
 fn a_job_that_changes_nothing_leaves_no_backup() {
     let mut ui = Harness::new(world());
     ui.open("Sync").wait_select();
-    ui.code(Code::Enter).wait_done();
+    ui.run_confirmed();
     let first = backup_runs(&ui);
     ui.press('q');
     ui.open("Sync").wait_select();

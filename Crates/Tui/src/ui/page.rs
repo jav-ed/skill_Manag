@@ -20,6 +20,20 @@ pub(super) fn loading(frame: &mut Frame, tick: usize, area: Rect) {
     frame.render_widget(Paragraph::new(line), area);
 }
 
+pub(super) fn planning(frame: &mut Frame, kind: Kind, tick: usize, area: Rect) {
+    let glyph = SPINNER.get(tick % SPINNER.len()).copied().unwrap_or("·");
+    let what = match kind {
+        Kind::Sync => "the sync",
+        Kind::Push => "the push",
+        Kind::Delete => "the delete",
+    };
+    let line = Line::from(vec![
+        Span::styled(format!("  {glyph}  "), theme::accent()),
+        Span::styled(format!("Checking what {what} will change…"), theme::muted()),
+    ]);
+    frame.render_widget(Paragraph::new(line), area);
+}
+
 pub(super) fn failed(frame: &mut Frame, message: &str, area: Rect) {
     let mut lines: Vec<Line> = message
         .lines()

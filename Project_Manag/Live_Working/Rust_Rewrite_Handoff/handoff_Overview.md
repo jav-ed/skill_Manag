@@ -17,12 +17,12 @@ The previous lead (a Claude Code session) stopped on 2026-10-08 at the user's re
 | TUI (`Crates/Tui`): menu, sync, push, delete, list, setup wizard, mouse, fuzzy filter | done; 39 tests incl. snapshot tests |
 | Parity against the Go tool (oracle, 131 scenarios) | 87 match, 44 expected divergences, 0 unexpected |
 | Backup store and `undo` | done: store, apply and delete keep the old copy, CLI `undo` and `history`, TUI jobs keep backups; 54 new tests |
-| Review round 2 findings (6 medium, 12 low) | all open |
+| Review round 2 findings (6 medium, 12 low, 1 info) | all fixed or decided on 2026-10-08, each with a test that was red first; a third review round is the next check |
 | `status`, `diff`, `doctor`, targets bridge, registry cache, `indicatif` progress | not started |
 | Web report, TUI add/init/history screens | not started |
 | Docs pass (README, architecture docs), cutover | not started |
 
-Totals at hand-off: 186 tests pass, `cargo clippy --workspace --all-targets -- -D warnings` is clean, `cargo fmt --check` is clean, no Rust file is over 300 lines of code (my own count; `tokei` is not installed, so `just loc-gate` has never run).
+Totals at hand-off: 186 tests pass (291 after the work of 2026-10-08), `cargo clippy --workspace --all-targets -- -D warnings` is clean, `cargo fmt --check` is clean, no Rust file is over 300 lines of code (my own count; `tokei` is not installed, so `just loc-gate` has never run).
 
 ## Branches
 

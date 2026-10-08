@@ -16,20 +16,11 @@ Done on 2026-10-08. What exists now:
 
 Left from this item: a history and undo screen in the TUI (item 4); the `Run` indices are per command, so a command that applies twice in one run would reuse slots (no command does today).
 
-## 2. [ ] Fix review round 2 (Docs/Investigation/Review_Rounds/round_2_Full.md)
+## 2. [x] Fix review round 2 (Docs/Investigation/Review_Rounds/round_2_Full.md)
 
-Read the file: each finding has where, scenario, evidence and a proposed fix, and reproducers sit in `Review_Rounds/Repro/`. Make each reproducer a normal regression test, red first, then fix.
+Done on 2026-10-08: M1 to M6, L1 to L12 and the decision I1, each as a failing test first (Core, Cli and Tui tests named in the status line of each finding). Decisions that went into the contract: Q35 (profile `exclude`), Q36 (TUI plan before confirm and job discipline), Q37 (selection and filter), Q38 (no fsync), Q39 (leftovers). Declined with a reason: comments inside a replaced `mandatory` list are dropped with the old items, a read-only `config.yaml` is still replaced with its mode kept, no cancel flag for a running job (Ctrl-C asks twice instead).
 
-- **M1 (Tui)**: the job plans again after Enter (`jobs.rs`), so `sync`/`push` can delete files the user never saw (a `my_notes.md` added to a project copy while the sync page was open vanished without a word). Build the plan before the confirm page, show added, changed and removed files, and apply that same plan. The existing TUI test `sync_starts_at_once_but_delete_asks_first` encodes this bug and must change with the fix.
-- **M2 (Tui)**: job events land on whatever screen is open; the mouse header arrow leaves a running job; a second job can start. Add a job id to every event, ignore stale ones, and one busy guard shared by keys and mouse.
-- **M3 (Core apply)**: when one new-project target fails, `remove_created` deletes the `skills/` folder its siblings still need. Create `skills/` once per project before the pool starts and clean up after the pool.
-- **M4 (`save_config`)**: replaces a symlinked `config.yaml` by a regular file; drops comments inside the list; turns CRLF into LF; refuses a blank line or a column-0 comment inside the list, a quoted key, a BOM. Edit through the link target, keep line endings, accept the YAML forms it refuses.
-- **M5 (wizard)**: the pointer is written before the config is saved, so a failed save leaves the pointer moved. Save the config first.
-- **M6 (`init`)**: when every skill fails to plan, `init` leaves an empty project directory (and `.git` with `--git`), and the retry fails with "not empty". With `changes() == 0` behave like a dry run and never call `before_write`.
-- Lows worth doing: L1 a same-size edit with a restored mtime evades the snapshot (add `ctime`); L2 an `Unchanged` plan fails when a file was just re-saved; L3 profile `extends` diamonds are exponential (22 levels took 8.5 s on every config load; memoise); L4 `exclude` depends on the `extends` order; L5 the TUI test `the_filter_narrows_the_rows_and_selection_survives_it` asserts that a selection survives a filter, but contract Q18 says Go's behaviour there is to CHANGE (decide which is right, then align test and contract); L6 Ctrl-C quits mid-job; L9 `init --git` obeys `GIT_DIR`; L10 `--json` on a terminal prints the rows before the JSON. The rest are in the file.
-- Not decided yet: I1 (the unmerged-index scope) and whether to document the no-fsync trade-off in the contract.
-
-Done when: every finding is fixed or explicitly declined with a reason in `round_2_Full.md`, each with a test; a third review round (helper 1 offered to do it) finds no High and no Medium.
+Left: a third review round with fresh eyes (no High, no Medium is the bar), and the Go parity re-run after the TUI and CLI changes (the last run, after the backup work, showed 0 unexpected).
 
 ## 3. [ ] Rest of phase 5
 

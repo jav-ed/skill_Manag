@@ -15,7 +15,7 @@ use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout};
 
 use crate::app::{App, Screen};
-use crate::screens::{Pending, Phase, Work};
+use crate::screens::{Phase, Work};
 
 pub(crate) fn draw(frame: &mut Frame, app: &mut App) {
     app.hits.clear();
@@ -33,6 +33,7 @@ pub(crate) fn draw(frame: &mut Frame, app: &mut App) {
         hover,
         tick,
         help,
+        quit_warned,
         ..
     } = app;
     header::draw(frame, hits, *hover, name, head);
@@ -41,7 +42,8 @@ pub(crate) fn draw(frame: &mut Frame, app: &mut App) {
         Screen::Work(work) => draw_work(frame, hits, *hover, *tick, work, body),
         Screen::Setup(setup_state) => setup::draw(frame, hits, *hover, setup_state, body),
     }
-    footer::draw(frame, screen, foot);
+    let notice = quit_warned.then_some("A job is writing. Press ctrl+c again to quit anyway.");
+    footer::draw(frame, screen, notice, foot);
     if *help {
         footer::overlay(frame, hits, screen);
     }
@@ -59,11 +61,11 @@ fn draw_work(
         Phase::Loading => page::loading(frame, tick, area),
         Phase::Failed(message) => page::failed(frame, message, area),
         Phase::Select => select::draw(frame, hits, work, area),
+        Phase::Planning(kind) => page::planning(frame, *kind, tick, area),
         Phase::Confirm(_) => {
             select::draw(frame, hits, work, area);
             if let Phase::Confirm(pending) = &work.phase {
-                let pending: Pending = pending.clone();
-                dialog::draw(frame, hits, hover, &pending, area);
+                dialog::draw(frame, hits, hover, pending, area);
             }
         }
         Phase::Running { kind, done, total } => page::running(frame, *kind, *done, *total, area),

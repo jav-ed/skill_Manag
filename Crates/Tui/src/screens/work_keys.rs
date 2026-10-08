@@ -17,7 +17,7 @@ impl Work {
             return Action::None;
         }
         match self.phase {
-            Phase::Loading | Phase::Failed(_) => back_only(key),
+            Phase::Loading | Phase::Failed(_) | Phase::Planning(_) => back_only(key),
             Phase::Select if self.filtering => self.filter_key(key),
             Phase::Select => self.select_key(key),
             Phase::Confirm(_) => self.confirm_key(key),
@@ -50,25 +50,26 @@ impl Work {
         } else if CONFIRM.matches(key) {
             return self.confirm_selection();
         } else if self.mode == Mode::List && SYNC.matches(key) {
-            return self.run_now(Kind::Sync);
+            return self.plan(Kind::Sync);
         } else if self.mode == Mode::List && DELETE.matches(key) {
             return self.ask(Kind::Delete);
         }
         Action::None
     }
 
-    /// Enter: sync and push start at once, delete asks first, the list does nothing.
+    /// Enter: sync and push work out what they would write and then ask, delete asks at once, the list
+    /// does nothing.
     fn confirm_selection(&mut self) -> Action {
         match self.mode {
-            Mode::Sync => self.run_now(Kind::Sync),
-            Mode::Push => self.run_now(Kind::Push),
+            Mode::Sync => self.plan(Kind::Sync),
+            Mode::Push => self.plan(Kind::Push),
             Mode::Delete => self.ask(Kind::Delete),
             Mode::List => Action::None,
         }
     }
 
-    fn run_now(&mut self, kind: Kind) -> Action {
-        self.pending(kind).map_or(Action::None, Action::Run)
+    fn plan(&mut self, kind: Kind) -> Action {
+        self.pending(kind).map_or(Action::None, Action::Plan)
     }
 
     fn ask(&mut self, kind: Kind) -> Action {
@@ -105,13 +106,23 @@ impl Work {
 
     fn confirm_key(&mut self, key: Key) -> Action {
         if YES.matches(key) {
-            if let Phase::Confirm(pending) = &self.phase {
-                return Action::Run(pending.clone());
-            }
-        } else if CANCEL.matches(key) {
+            return self.confirmed();
+        }
+        if CANCEL.matches(key) {
             self.phase = Phase::Select;
         }
         Action::None
+    }
+
+    /// The user said yes: the pending run, with its plan, leaves the page.
+    fn confirmed(&mut self) -> Action {
+        match std::mem::replace(&mut self.phase, Phase::Select) {
+            Phase::Confirm(pending) => Action::Run(pending),
+            other => {
+                self.phase = other;
+                Action::None
+            }
+        }
     }
 
     fn done_key(&mut self, key: Key) -> Action {
@@ -177,9 +188,9 @@ impl Work {
         if !matches!(mouse.kind, MouseKind::Down(Button::Left)) {
             return Action::None;
         }
-        match (target, &self.phase) {
-            (Some(Target::Button(0)), Phase::Confirm(pending)) => Action::Run(pending.clone()),
-            (Some(Target::Button(_) | Target::Dismiss), _) => {
+        match target {
+            Some(Target::Button(0)) => self.confirmed(),
+            Some(Target::Button(_) | Target::Dismiss) => {
                 self.phase = Phase::Select;
                 Action::None
             }
