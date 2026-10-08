@@ -1,11 +1,11 @@
 //! `sync` and `push`: plan against the scanned projects, then run the shared pipeline.
 
 use skillmirror_core::backup::RunKind;
-use skillmirror_core::ops::{Workspace, plan_push, plan_sync};
+use skillmirror_core::ops::{Scope, Workspace, plan_push_scoped, plan_sync_scoped};
 use skillmirror_core::plan::Plan;
 use skillmirror_core::scan::ScanReport;
 
-use super::context::{Context, open};
+use super::context::{Context, open, scope_of};
 use super::pipeline::{Hooks, Run, execute};
 use crate::args::{ApplyArgs, Cli};
 use crate::exit::Exit;
@@ -25,10 +25,15 @@ impl Which {
         }
     }
 
-    fn plan(self, workspace: &Workspace, report: &ScanReport) -> Result<Plan, CliError> {
+    fn plan(
+        self,
+        workspace: &Workspace,
+        report: &ScanReport,
+        scope: &Scope,
+    ) -> Result<Plan, CliError> {
         Ok(match self {
-            Self::Sync => plan_sync(workspace, report),
-            Self::Push => plan_push(workspace, report)?,
+            Self::Sync => plan_sync_scoped(workspace, report, scope)?,
+            Self::Push => plan_push_scoped(workspace, report, scope)?,
         })
     }
 
@@ -54,7 +59,8 @@ pub(super) fn run(cli: &Cli, args: &ApplyArgs, which: Which) -> Result<Exit, Cli
     if let Some(message) = nothing_to_do(&workspace, which) {
         return finish_without_plan(&run, message);
     }
-    let plan = which.plan(&workspace, &report)?;
+    let scope = scope_of(&workspace, &args.scope)?;
+    let plan = which.plan(&workspace, &report, &scope)?;
     execute(plan, &report.issues, &run, &Hooks::NONE).map(|done| done.exit)
 }
 

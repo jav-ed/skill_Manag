@@ -6,7 +6,7 @@ use crate::events::ignore_events;
 use crate::testutil::TempTree;
 
 /// A vault with coding, astro and tmux (tmux is mandatory) and four projects in different states.
-fn world(mandatory: &str) -> (TempTree, Workspace) {
+pub(super) fn world(mandatory: &str) -> (TempTree, Workspace) {
     let tree = TempTree::new();
     tree.write_all(&[
         ("vault/coding/SKILL.md", "coding v2"),

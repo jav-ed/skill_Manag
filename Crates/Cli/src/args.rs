@@ -69,11 +69,30 @@ pub(crate) enum Command {
     },
 }
 
+/// Limits a command to some skills, to a vault folder or profile, or to one project.
+#[derive(Debug, Args)]
+pub(crate) struct ScopeArgs {
+    /// Only these skills (default: all of them)
+    #[arg(value_name = "SKILL")]
+    pub(crate) skills: Vec<String>,
+    /// Only the skills below this vault folder, such as `web` or `web/seo`
+    #[arg(long = "group", value_name = "PATH")]
+    pub(crate) groups: Vec<String>,
+    /// Only the skills of a profile defined under `profiles:` in <vault>/config.yaml
+    #[arg(long = "profile", value_name = "NAME")]
+    pub(crate) profiles: Vec<String>,
+    /// Only this project (default: every project under the root)
+    #[arg(long, value_name = "DIR")]
+    pub(crate) project: Option<PathBuf>,
+}
+
 /// Flags shared by `sync` and `push`.
 // Independent command-line switches, not a state machine.
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Args)]
 pub(crate) struct ApplyArgs {
+    #[command(flatten)]
+    pub(crate) scope: ScopeArgs,
     /// Show what would change and write nothing
     #[arg(long, conflicts_with = "check")]
     pub(crate) dry_run: bool,
@@ -134,6 +153,8 @@ pub(crate) struct BridgeArgs {
 
 #[derive(Debug, Args)]
 pub(crate) struct StatusArgs {
+    #[command(flatten)]
+    pub(crate) scope: ScopeArgs,
     /// Also list the projects that are fully up to date, with their skills
     #[arg(long)]
     pub(crate) all: bool,

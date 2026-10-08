@@ -2,7 +2,7 @@
 
 use skillmirror_core::ops;
 
-use super::context::{Context, open};
+use super::context::{Context, open, scope_of};
 use crate::args::{Cli, StatusArgs};
 use crate::exit::Exit;
 use crate::output::{self, ProjectRow, StatusJson, StatusSummary};
@@ -10,7 +10,8 @@ use crate::report::CliError;
 
 pub(super) fn run(cli: &Cli, args: &StatusArgs) -> Result<Exit, CliError> {
     let Context { workspace, report } = open(cli, args.json)?;
-    let status = ops::status(&workspace, &report)?;
+    let scope = scope_of(&workspace, &args.scope)?;
+    let status = ops::status_scoped(&workspace, &report, &scope)?;
     if args.json {
         let rows: Vec<ProjectRow> = status.projects.iter().map(ProjectRow::of).collect();
         output::line(&StatusJson::new(&rows, StatusSummary::of(&status)).render()?);

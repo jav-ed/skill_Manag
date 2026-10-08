@@ -2,11 +2,11 @@
 
 use skillmirror_core::config::{Dirs, EnvOverrides, Flags, Settings};
 use skillmirror_core::events::Event;
-use skillmirror_core::ops::Workspace;
+use skillmirror_core::ops::{Scope, Selection, Workspace, resolve};
 use skillmirror_core::scan::{ScanIssue, ScanReport};
 use skillmirror_tui::Launch;
 
-use crate::args::Cli;
+use crate::args::{Cli, ScopeArgs};
 use crate::output::{self, ScanLine};
 use crate::report::CliError;
 
@@ -89,4 +89,29 @@ pub(super) fn scan_root(settings: &Settings, quiet: bool) -> Result<ScanReport, 
     );
     line.clear();
     Ok(scanned?)
+}
+
+/// What the command line limits a command to. Names, folders and profiles must exist in the vault; a
+/// project is checked against the scan later, where the scan is at hand.
+pub(super) fn scope_of(workspace: &Workspace, args: &ScopeArgs) -> Result<Scope, CliError> {
+    let selection = Selection {
+        skills: args.skills.clone(),
+        groups: args.groups.clone(),
+        profiles: args.profiles.clone(),
+    };
+    let skills = if selection.is_empty() {
+        None
+    } else {
+        Some(resolve(
+            &workspace.vault,
+            workspace.settings.config(),
+            &selection,
+        )?)
+    };
+    let project = args
+        .project
+        .as_deref()
+        .map(std::path::absolute)
+        .transpose()?;
+    Ok(Scope { skills, project })
 }

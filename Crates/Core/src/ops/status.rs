@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
-use super::{BridgeState, Workspace, installed, plan_bridges, plan_push, plan_sync};
+use super::{BridgeState, Scope, Workspace, installed, plan_bridges, plan_push, plan_sync};
 use crate::Hint;
 use crate::plan::{ChangeKind, PlanError, PlanKind, SkillPlan};
 use crate::scan::ScanReport;
@@ -55,6 +55,24 @@ impl ProjectStatus {
             failed: Vec::new(),
             project_problems: Vec::new(),
         }
+    }
+
+    fn limit_to(&mut self, scope: &Scope) {
+        self.up_to_date.retain(|s| scope.keeps(s));
+        self.outdated.retain(|o| scope.keeps(&o.skill));
+        self.missing_mandatory.retain(|s| scope.keeps(s));
+        self.not_in_vault.retain(|s| scope.keeps(s));
+        self.failed.retain(|p| scope.keeps(&p.skill));
+        self.missing_bridges.clear();
+        self.project_problems.clear();
+    }
+
+    fn is_empty(&self) -> bool {
+        self.up_to_date.is_empty()
+            && self.outdated.is_empty()
+            && self.missing_mandatory.is_empty()
+            && self.not_in_vault.is_empty()
+            && self.failed.is_empty()
     }
 
     /// Whether `sync` or `push` would change something here. A skill the vault lacks is no drift: nothing
@@ -160,6 +178,24 @@ pub fn status(workspace: &Workspace, report: &ScanReport) -> Result<StatusReport
             .sort_by(|a, b| a.skill.cmp(&b.skill));
     }
     Ok(StatusReport { projects })
+}
+
+/// [`status`] limited to a scope. With named skills only those skills are listed, and only projects that
+/// have one of them or lack it as a mandatory skill; the links of a project belong to the project, not to a
+/// skill, so they are left out then.
+pub fn status_scoped(
+    workspace: &Workspace,
+    report: &ScanReport,
+    scope: &Scope,
+) -> Result<StatusReport, crate::Error> {
+    let mut out = status(workspace, &scope.narrow(report)?)?;
+    if scope.skills.is_some() {
+        for project in &mut out.projects {
+            project.limit_to(scope);
+        }
+        out.projects.retain(|p| !p.is_empty());
+    }
+    Ok(out)
 }
 
 fn at<'a>(

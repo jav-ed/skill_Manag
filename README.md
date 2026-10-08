@@ -61,14 +61,14 @@ Every command accepts `--vault <DIR>` and `--root <DIR>`. Commands that write as
 | Command | What it does |
 |---|---|
 | `skillmirror` | Opens the interface when stdin and stdout are terminals |
-| `sync [--dry-run] [--check] [--yes] [--json] [--all]` | Updates the skills each project already has; never adds one. `--check` writes nothing and exits 1 when something differs |
-| `push` | Installs the vault's mandatory skills into every project that has a skills folder |
+| `sync [SKILL...] [--group P] [--profile N] [--project DIR] [--dry-run] [--check] [--yes] [--json] [--all]` | Updates the skills each project already has; never adds one. Names, `--group`, `--profile` and `--project` limit it to some skills or one project. `--check` writes nothing and exits 1 when something differs |
+| `push [SKILL...] [--project DIR]` | Installs the vault's mandatory skills into every project that has a skills folder, or only the named ones, or only one project |
 | `add [SKILL...] [--group PATH] [--profile NAME] [--project DIR]` | Installs skills, whole vault folders or profiles into one existing project |
 | `init DIR [SKILL...] [--group] [--profile] [--git] [--no-mandatory]` | Makes a new project folder with the mandatory skills plus a selection |
 | `delete NAME [--project DIR]` | Removes one skill from every project, or from one |
 | `list` | Every installed skill folder, with the ones the vault lacks marked |
 | `skills [--group PATH]` | The vault as a tree of groups |
-| `status [--all]` | How every project stands against the vault: outdated, mandatory missing, not in the vault. Exit 1 when something differs |
+| `status [SKILL...] [--group P] [--project DIR] [--all]` | How every project stands against the vault: outdated, mandatory missing, not in the vault. Exit 1 when something differs |
 | `diff [SKILL] [--project DIR] [--stat]` | The lines a sync would bring in and take away, as unified diffs |
 | `report [-o FILE] [--open]` | One self-contained HTML page: skills against projects, the vault tree, diffs, a filter, dark mode |
 | `bridge [--dry-run]` | Links other agent folders such as `.claude/skills` to `.agents/skills` (see `targets` below) |
