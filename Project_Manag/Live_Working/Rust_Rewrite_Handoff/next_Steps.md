@@ -49,11 +49,7 @@ Done on 2026-10-08: README rewritten for the Rust tool (install, commands, inter
 
 ## 7. [ ] Phase 8: cutover (needs the user's explicit yes)
 
-1. Parity table reviewed, 0 unexpected, new-feature tests green, CI green.
-2. Tag the Go commit as `go-oracle` (`git tag go-oracle c7310f9`) before deleting it, so the oracle can be rebuilt. Decide with the user whether the golden data (11 MB, regenerable) stays out of the repo (recommended: out).
-3. One commit that deletes `main.go`, `cmd/`, `internal/`, `go.mod`, `go.sum`, `styles/`; `git worktree remove --force Scratch/Oracle/src` on any machine that has the oracle worktree.
-4. `cargo build --profile dist`, install check, README and docs final.
-5. Merge `--no-ff` into `main`, push, PR. Each step is outward-facing: ask.
+Prepared, not done: the exact steps, the checks before and after, and the way back are in [cutover_Runbook.md](cutover_Runbook.md). Nothing in the Rust build depends on the Go tree (checked by grep), so deleting it breaks no Rust check. Each step that leaves the machine (a tag, a push to `main`, a branch deletion) needs the user.
 
 ## 8. [ ] Separate track: skills (not part of the rewrite)
 

@@ -10,19 +10,22 @@ The previous lead (a Claude Code session) stopped on 2026-10-08 at the user's re
 
 ## State in one table
 
+State on 2026-10-08, after the second working day on the branch.
+
 | Area | State |
 |---|---|
-| Core engine (`Crates/Core`) | done and reviewed twice; 107 unit tests |
-| CLI (`Crates/Cli`): `sync push list delete skills add init migrate completions tui` | done; 40 integration tests incl. 3 real-PTY tests |
-| TUI (`Crates/Tui`): menu, sync, push, delete, list, setup wizard, mouse, fuzzy filter | done; 39 tests incl. snapshot tests |
-| Parity against the Go tool (oracle, 131 scenarios) | 87 match, 44 expected divergences, 0 unexpected |
-| Backup store and `undo` | done: store, apply and delete keep the old copy, CLI `undo` and `history`, TUI jobs keep backups; 54 new tests |
-| Review round 2 findings (6 medium, 12 low, 1 info) | all fixed or decided on 2026-10-08, each with a test that was red first; a third review round is the next check |
-| `status`, `diff`, `doctor`, targets bridge, registry cache, `indicatif` progress | not started |
-| Web report, TUI add/init/history screens | not started |
-| Docs pass (README, architecture docs), cutover | not started |
+| Core engine (`Crates/Core`) | done; reviewed in rounds 1 to 4 |
+| CLI (`Crates/Cli`) | all commands: `sync push add init delete list skills status diff doctor report bridge undo history migrate completions tui`; `--json`, exit codes 0 to 4, scan progress line |
+| TUI (`Crates/Tui`) | menu, sync, push, delete, list, add, init, history with undo, setup wizard, scan problems, changes page; plan first, job ids, snapshot tests and a real-terminal test per page |
+| Web (`Crates/Web`) | the static HTML report (`report`); the loopback server is not started (needs the user's decision) |
+| Parity against the Go tool (oracle, 131 scenarios) | 90 match, 41 expected divergences, 0 unexpected (the container runs as root) |
+| Backup store, `undo`, `history` | done in Core, CLI and TUI |
+| Review | rounds 1 to 3 fixed; round 4 (self) fixed; a fresh pair of eyes on backup and undo is still welcome |
+| Docs pass | done: README, architecture docs, concept, contract rows Q34 to Q50 |
+| CI | green on every commit since `3172930` |
+| Cutover | not started; waits for the user, runbook in [cutover_Runbook.md](cutover_Runbook.md) |
 
-Totals at hand-off: 186 tests pass (297 after the work of 2026-10-08), `cargo clippy --workspace --all-targets -- -D warnings` is clean, `cargo fmt --check` is clean, no Rust file is over 300 lines of code (my own count; `tokei` is not installed, so `just loc-gate` has never run).
+Totals: 463 tests pass; fmt and clippy `-D warnings` are clean on rustc 1.97 and 1.99; `cargo deny`, `just loc-gate` and `just check-deps` pass. `Scratch/gate.sh` (local, not committed) runs all of it.
 
 ## Branches
 
@@ -63,6 +66,7 @@ Never point the tool at the user's real vault with a writing command while learn
 - [Current state](current_State.md): the architecture as built, the invariants that keep data safe, the command surface and exit codes, measured numbers, tool availability, known gaps. Open it before changing code.
 - [Next steps](next_Steps.md): the ordered backlog with a "done when" for each item: finish backup and `undo`, the review-2 fixes, the rest of phase 5, phases 6 to 8, and the separate skills track. Open it to pick the next piece of work.
 - [Verification playbook](verification_Playbook.md): every way to prove a change works: unit and integration tests, snapshot tests, PTY runs, the Go parity oracle, read-only checks on the real vault, review reproducers, what each layer cannot catch. Open it before calling anything done.
+- [Cutover runbook](cutover_Runbook.md): the steps that replace the Go tool on `main`: the checks before, the tag that keeps the Go oracle rebuildable, the one commit that deletes the Go tree, the merge, promoting and deleting this folder, and the way back. Open it when the user says the cutover may start.
 - [Open questions](open_Questions.md): decisions that belong to the user, with the lead's default for each. Open it before deciding something that changes behaviour, naming, licence or the user's files.
 - [Pitfalls and lessons](pitfalls_And_Lessons.md): mistakes already made once, tool quirks, and traps in this repo. Open it when something behaves strangely.
 
