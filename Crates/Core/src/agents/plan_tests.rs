@@ -310,3 +310,16 @@ fn installed_skills_lists_real_skill_folders_only() {
     assert_eq!(have.into_iter().collect::<Vec<_>>(), ["coding"]);
     assert!(super::installed_skills(&project.path().join("nope")).is_empty());
 }
+
+#[test]
+fn an_insert_into_a_file_without_a_block_is_refused_too() {
+    let project = TempTree::new();
+    project.write("AGENTS.md", "mine\n");
+    let mut plan = plan_for(&project, &Source::builtin(), Intent::ADD);
+    assert_eq!(entry(&plan).action, Action::Insert);
+
+    plan.refuse_missing_skills(|_| std::collections::BTreeSet::new());
+
+    assert!(matches!(&entry(&plan).action, Action::Failed(_)));
+    assert!(entry(&plan).after.is_none());
+}

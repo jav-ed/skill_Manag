@@ -1,6 +1,6 @@
 # Smoke
 
-`check_Smoke.sh` runs a built `skillmirror` binary end to end in a throwaway world, the way a new user would: make a vault, write a skill, install it into a project, change it in the vault, see the drift (`status`, `diff`), `sync`, `undo` and redo, `adopt` a skill a project made by hand, `info`, `add` to a second project, and then start `skillmirror web --allow-write` and talk to it over HTTP with `curl`: the one-time link, the cookie, the refusals (no cookie, a wrong Host header, a change without the JSON header), a plan, its apply, the job, and a plan that cannot run twice.
+`check_Smoke.sh` runs a built `skillmirror` binary end to end in a throwaway world, the way a new user would: make a vault, write a skill, install it into a project, change it in the vault, see the drift (`status`, `diff`), `sync`, `undo` and redo, `adopt` a skill a project made by hand, `info`, `add` to a second project, the AGENTS.md of a project (written by `init`, checked, updated with a diff while your own text beside the block survives, undone, left out with `--no-agents-md`, refused when the vault text cannot be used), and then start `skillmirror web --allow-write` and talk to it over HTTP with `curl`: the one-time link, the cookie, the refusals (no cookie, a wrong Host header, a change without the JSON header), a plan, its apply, the job, and a plan that cannot run twice.
 
 ```bash
 cargo build --locked && Code/Development/Smoke/check_Smoke.sh                       # target/debug/skillmirror
