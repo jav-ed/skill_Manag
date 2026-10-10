@@ -259,3 +259,54 @@ fn entries_come_back_in_the_order_the_projects_were_given_and_are_counted() {
     assert_eq!(plan.count(|a| *a == Action::Unchanged), 1);
     assert_eq!(with_endings("x\n", false), "x\n");
 }
+
+#[test]
+fn a_create_is_refused_when_the_built_in_text_names_skills_the_project_lacks() {
+    let project = TempTree::new();
+    let mut plan = plan_for(&project, &Source::builtin(), Intent::ADD);
+    assert_eq!(entry(&plan).action, Action::Create);
+
+    plan.refuse_missing_skills(|_| ["coding".to_string()].into());
+
+    assert!(matches!(
+        &entry(&plan).action,
+        Action::Failed(why) if why.contains("doc-start, file-tree-optimization") && !why.contains('/')
+    ));
+    assert!(entry(&plan).after.is_none(), "nothing is left to write");
+    assert_eq!(plan.changes(), 0);
+}
+
+#[test]
+fn skills_that_are_there_or_a_vault_text_or_an_entry_that_writes_nothing_are_left_alone() {
+    let all: std::collections::BTreeSet<String> = super::BUILTIN_SKILLS
+        .iter()
+        .map(|s| (*s).to_string())
+        .collect();
+    let project = TempTree::new();
+    let mut ok = plan_for(&project, &Source::builtin(), Intent::ADD);
+    ok.refuse_missing_skills(|_| all.clone());
+    assert_eq!(entry(&ok).action, Action::Create);
+
+    let mut vault_text = plan_for(&project, &source("mine"), Intent::ADD);
+    vault_text.refuse_missing_skills(|_| std::collections::BTreeSet::new());
+    assert_eq!(entry(&vault_text).action, Action::Create);
+
+    let current = TempTree::new();
+    current.write("AGENTS.md", &render(Source::builtin().text()));
+    let mut unchanged = plan_for(&current, &Source::builtin(), Intent::ADD);
+    unchanged.refuse_missing_skills(|_| std::collections::BTreeSet::new());
+    assert_eq!(entry(&unchanged).action, Action::Unchanged);
+}
+
+#[test]
+fn installed_skills_lists_real_skill_folders_only() {
+    let project = TempTree::new();
+    project.write(".agents/skills/coding/SKILL.md", "x");
+    project.write(".agents/skills/.stage-1/SKILL.md", "x");
+    project.write(".agents/skills/stray-file", "x");
+
+    let have = super::installed_skills(project.path());
+
+    assert_eq!(have.into_iter().collect::<Vec<_>>(), ["coding"]);
+    assert!(super::installed_skills(&project.path().join("nope")).is_empty());
+}

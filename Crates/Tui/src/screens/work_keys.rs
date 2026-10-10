@@ -4,8 +4,8 @@ use ratatui::layout::Position;
 
 use super::work::{Action, Phase, Work};
 use crate::binding::{
-    ALL, BACK, CANCEL, CONFIRM, DELETE, DOWN, FILTER, GIT, ISSUES, PAGE_DOWN, PAGE_UP, SYNC,
-    TOGGLE, UP, VIEW, YES,
+    AGENTS_FILE, ALL, BACK, CANCEL, CONFIRM, DELETE, DOWN, FILTER, GIT, ISSUES, PAGE_DOWN, PAGE_UP,
+    SYNC, TOGGLE, UP, VIEW, YES,
 };
 use crate::hit::{HitMap, Target};
 use crate::input::{self, Button, Code, Key, KeyKind, Mouse, MouseKind};
@@ -66,6 +66,10 @@ impl Work {
             if let Some(project) = &mut self.project {
                 project.git = !project.git;
             }
+        } else if self.mode == Mode::Init && AGENTS_FILE.matches(key) {
+            if let Some(project) = &mut self.project {
+                project.agents = !project.agents;
+            }
         } else if self.mode == Mode::List && SYNC.matches(key) {
             return self.plan(Kind::Sync);
         } else if self.mode == Mode::List && DELETE.matches(key) {
@@ -83,6 +87,7 @@ impl Work {
             Mode::Delete => self.ask(Kind::Delete),
             Mode::Add => self.plan(Kind::Add),
             Mode::Init => self.plan(Kind::Init),
+            Mode::Agents => self.plan(Kind::Agents),
             Mode::List | Mode::Skills => Action::None,
         }
     }
@@ -127,9 +132,9 @@ impl Work {
         if YES.matches(key) {
             return self.confirmed();
         }
-        // Only a sync, push, add or init has a plan to show; a delete has none.
+        // Only a sync, push, add, init or Agents write has a plan to show; a delete has none.
         if VIEW.matches(key)
-            && matches!(&self.phase, Phase::Confirm(p) if p.plan.is_some())
+            && matches!(&self.phase, Phase::Confirm(p) if p.plan.is_some() || p.agents.is_some())
             && let Phase::Confirm(pending) = std::mem::replace(&mut self.phase, Phase::Diffing)
         {
             return Action::Diff(pending);

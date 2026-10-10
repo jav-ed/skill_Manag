@@ -14,6 +14,8 @@ fn init_makes_the_project_with_the_mandatory_skills_ticked() {
     ui.code(Code::Enter);
     assert_eq!(place(&ui).stage, Stage::Name, "the root is the parent");
     ui.type_text("fresh").code(Code::Enter).wait_select();
+    // The standard vault has not the skills the built-in AGENTS.md names, so the file is switched off.
+    ui.press('m');
 
     let page = selected_page(&mut ui);
     assert!(page.contains("Select skills for projects/fresh"), "{page}");
@@ -100,6 +102,7 @@ fn init_takes_the_new_folder_back_when_nothing_could_be_installed() {
         .type_text("fresh")
         .code(Code::Enter)
         .wait_select();
+    ui.press('m');
     // Untick the mandatory skills, tick the one that cannot be planned.
     ui.press('a').press('a');
     assert!(ui.screen().contains("0 / 4 selected"), "{}", ui.screen());
@@ -160,6 +163,7 @@ fn a_folder_that_got_files_after_the_question_is_never_touched() {
         .type_text("fresh")
         .code(Code::Enter)
         .wait_select();
+    ui.press('m');
     ui.code(Code::Enter).wait_confirm();
     // Between the question and the yes, the user (or another program) puts a file there.
     ui.world.project_file("fresh/notes.md", "mine");

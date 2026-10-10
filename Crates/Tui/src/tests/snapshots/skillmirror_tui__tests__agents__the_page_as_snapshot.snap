@@ -1,0 +1,24 @@
+---
+source: Crates/Tui/src/tests/agents.rs
+expression: ui.screen()
+---
+ ← skillmirror  ·  javedab.com  ·  agents
+
+ Select projects to write the AGENTS.md block into   1 / 3 selected
+ / to filter
+      project             state
+> [ ] projects/one        current   up to date
+  [ ] projects/three      missing   no AGENTS.md yet
+  [✓] projects/two        outdated  the vault text changed
+
+
+
+
+
+
+
+
+
+
+ rows 1–3 of 3
+ space toggle • a all • / filter • enter write AGENTS.md • ? help • q/alt+← back

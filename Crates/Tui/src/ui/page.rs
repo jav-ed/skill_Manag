@@ -51,6 +51,7 @@ pub(super) fn planning(frame: &mut Frame, kind: Kind, tick: usize, area: Rect) {
         Kind::Sync => "the sync",
         Kind::Push => "the push",
         Kind::Delete => "the delete",
+        Kind::Agents => "the AGENTS.md write",
         Kind::Add => "the add",
         Kind::Init => "the new project",
     };
@@ -86,6 +87,7 @@ pub(super) fn running(frame: &mut Frame, kind: Kind, done: usize, total: usize, 
         Kind::Sync => "Syncing",
         Kind::Push => "Pushing",
         Kind::Delete => "Deleting",
+        Kind::Agents => "Writing",
         Kind::Add => "Adding",
         Kind::Init => "Installing",
     };

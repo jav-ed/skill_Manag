@@ -182,10 +182,23 @@ impl App {
             .unwrap_or_default();
         let plan = pending.plan.take();
         let install = pending.install.take();
+        let agents = pending.agents.take();
         match (kind, plan, install) {
             (Kind::Delete, _, _) => jobs::spawn_delete(tx, id, dirs, pending),
+            (Kind::Agents, _, _) if agents.is_some() => {
+                if let Some(agents) = agents {
+                    jobs::spawn_agents(tx, id, dirs, *agents);
+                }
+            }
             (_, Some(plan), Some(install)) => {
-                jobs_install::spawn_install(tx, id, dirs, kind, plan, install, bridges);
+                let job = jobs_install::InstallJob {
+                    kind,
+                    plan,
+                    install,
+                    bridges,
+                    agents,
+                };
+                jobs_install::spawn_install(tx, id, dirs, job);
             }
             (Kind::Sync | Kind::Push, Some(plan), None) => {
                 jobs::spawn_apply(tx, id, dirs, kind, plan);

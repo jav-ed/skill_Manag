@@ -2,12 +2,16 @@
 //! interface never blocks on the disk. Every report carries the id of its job, so the app can tell a
 //! report that still matters from one that arrives after the screen moved on.
 
+use std::collections::BTreeSet;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
 use std::thread;
 
+use skillmirror_core::agents::{
+    AgentsError, AgentsPlan, Intent, apply_agents, installed_skills, plan_agents,
+};
 use skillmirror_core::apply::{ApplyOptions, apply};
 use skillmirror_core::backup::{Backups, Run, RunKind};
 use skillmirror_core::config::{Dirs, Settings};
@@ -15,7 +19,7 @@ use skillmirror_core::events::Event as CoreEvent;
 use skillmirror_core::ops::{self, diff_of_plan};
 use skillmirror_core::plan::Plan;
 
-use crate::diffview::lines_of;
+use crate::diffview::{lines_of, lines_of_agents};
 use crate::event::{Event, Job, JobId};
 use crate::preview::Preview;
 use crate::results::{Kind, Results};
@@ -46,6 +50,12 @@ pub(crate) fn spawn_check(tx: Sender<Event>, id: JobId, path: PathBuf) {
 /// Works out what a sync or push of the selected targets would do, without writing anything.
 pub(crate) fn spawn_plan(tx: Sender<Event>, id: JobId, session: Arc<Session>, pending: Pending) {
     thread::spawn(move || {
+        if pending.kind == Kind::Agents {
+            return match plan_agents_page(&session, pending) {
+                Ok(planned) => send(&tx, id, Job::Planned(Box::new(planned))),
+                Err(message) => send(&tx, id, Job::Failed(message)),
+            };
+        }
         let vault = &session.workspace.vault;
         let files = &session.workspace.files;
         // Add and init may create `.agents/skills`; sync and push only work where it is.
@@ -55,13 +65,67 @@ pub(crate) fn spawn_plan(tx: Sender<Event>, id: JobId, session: Arc<Session>, pe
             Plan::for_targets(vault, files, pending.targets.clone())
         };
         let preview = Preview::of(&plan);
+        let agents = match init_agents(&session, &pending) {
+            Ok(agents) => agents,
+            Err(message) => return send(&tx, id, Job::Failed(message)),
+        };
         let planned = Pending {
             plan: Some(plan),
             preview: Some(preview),
+            agents,
             ..pending
         };
         send(&tx, id, Job::Planned(Box::new(planned)));
     });
+}
+
+/// The AGENTS.md of a new project, planned like the skills: nothing is made if the text cannot be used or
+/// the skills it names are not among the ones ticked.
+fn init_agents(session: &Session, pending: &Pending) -> Result<Option<Box<AgentsPlan>>, String> {
+    let Some(install) = pending
+        .install
+        .as_ref()
+        .filter(|i| i.agents && pending.kind == Kind::Init)
+    else {
+        return Ok(None);
+    };
+    let source = session.agents.source.clone()?;
+    let skills: BTreeSet<String> = pending.targets.iter().map(|t| t.skill.clone()).collect();
+    source
+        .require_skills(&install.project, &skills)
+        .map_err(|e| match e {
+            // The page has a key for this; the command-line flag would send the user elsewhere.
+            AgentsError::MissingSkills { missing, project } => format!(
+                "The AGENTS.md text names the skills {missing}, which {} would not have\n  tick them on this page, or press m here to leave AGENTS.md out",
+                project.display()
+            ),
+            other => describe(&other),
+        })?;
+    Ok(Some(Box::new(plan_agents(
+        std::slice::from_ref(&install.project),
+        &source,
+        Intent::ADD,
+    ))))
+}
+
+/// Works out what writing the block into the selected projects would do: files made, blocks put in front
+/// of a file that has none, blocks rewritten, and what cannot be written. Nothing is written.
+fn plan_agents_page(session: &Session, pending: Pending) -> Result<Pending, String> {
+    let source = session.agents.source.clone()?;
+    let projects: Vec<PathBuf> = pending.targets.iter().map(|t| t.project.clone()).collect();
+    let intent = Intent {
+        create: true,
+        update: true,
+        force: false,
+    };
+    let mut plan = plan_agents(&projects, &source, intent);
+    plan.refuse_missing_skills(installed_skills);
+    let preview = Preview::of_agents(&plan);
+    Ok(Pending {
+        agents: Some(Box::new(plan)),
+        preview: Some(preview),
+        ..pending
+    })
 }
 
 /// Starts the backup run that keeps what a job replaces or removes.
@@ -71,6 +135,27 @@ pub(crate) fn begin(dirs: &Dirs, kind: RunKind) -> Result<(Backups, Run), String
         .begin(kind)
         .map_err(|e| describe(&skillmirror_core::Error::from(e)))?;
     Ok((backups, run))
+}
+
+/// Writes the AGENTS.md plan the user confirmed.
+pub(crate) fn spawn_agents(tx: Sender<Event>, id: JobId, dirs: Dirs, plan: AgentsPlan) {
+    thread::spawn(move || {
+        let (backups, backup) = match begin(&dirs, RunKind::Agents) {
+            Ok(started) => started,
+            Err(message) => return send(&tx, id, Job::Failed(message)),
+        };
+        let total = plan.entries.len();
+        let done = AtomicUsize::new(0);
+        let progress = |event: CoreEvent| {
+            if matches!(event, CoreEvent::TargetDone { .. }) {
+                let now = done.fetch_add(1, Ordering::Relaxed) + 1;
+                send(&tx, id, Job::Progress { done: now, total });
+            }
+        };
+        let report = apply_agents(&plan, Some(&backup), 0, &progress);
+        let results = Results::from_agents(&report).with_backup(&backup.finish(&backups));
+        send(&tx, id, Job::Finished(Box::new(results)));
+    });
 }
 
 /// Applies the plan the user confirmed (sync and push).
@@ -164,9 +249,16 @@ pub(crate) fn spawn_undo(tx: Sender<Event>, id: JobId, dirs: Dirs, run: String, 
 /// Reads the files that the plan of a question would change and turns the differences into lines.
 pub(crate) fn spawn_diff(tx: Sender<Event>, id: JobId, pending: Pending) {
     thread::spawn(move || {
-        let skills = pending.plan.as_ref().map(diff_of_plan).unwrap_or_default();
+        let mut lines = pending
+            .plan
+            .as_ref()
+            .map(|plan| lines_of(&diff_of_plan(plan)))
+            .unwrap_or_default();
+        if let Some(plan) = &pending.agents {
+            lines.extend(lines_of_agents(plan));
+        }
         let page = DiffPage {
-            lines: lines_of(&skills),
+            lines,
             pending,
             scroll: 0,
         };

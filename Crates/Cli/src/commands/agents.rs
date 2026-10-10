@@ -1,10 +1,10 @@
 //! `agents status`, `agents sync` and `agents add`: the AGENTS.md of projects.
 
-use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
 use skillmirror_core::agents::{
-    AgentsPlan, Intent, Source, apply_agents, inspect_project, load_source, plan_agents,
+    AgentsPlan, Intent, Source, apply_agents, inspect_project, installed_skills, load_source,
+    plan_agents,
 };
 use skillmirror_core::backup::RunKind;
 use skillmirror_core::events::ignore_events;
@@ -106,20 +106,6 @@ fn add(cli: &Cli, args: &AgentsAddArgs) -> Result<Exit, CliError> {
         source.require_skills(dir, &installed_skills(dir))?;
     }
     write("agents add", &plan, &args.flags)
-}
-
-/// The skill folders a project has, by name.
-fn installed_skills(project: &Path) -> BTreeSet<String> {
-    let dir = project.join(".agents").join("skills");
-    fs_err::read_dir(dir)
-        .map(|entries| {
-            entries
-                .filter_map(Result::ok)
-                .filter(|e| e.file_type().is_ok_and(|t| t.is_dir()))
-                .filter_map(|e| e.file_name().to_str().map(str::to_string))
-                .collect()
-        })
-        .unwrap_or_default()
 }
 
 /// Shows the plan, asks, writes, shows the result.

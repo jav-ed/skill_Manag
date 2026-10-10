@@ -7,9 +7,9 @@ use ratatui::widgets::{Block, Borders, Clear, Paragraph};
 
 use crate::app::Screen;
 use crate::binding::{
-    ALL, BACK, BACK_HELP, Binding, CANCEL, CONFIRM_HELP, DELETE, DOWN, FILTER, GIT, HELP, ISSUES,
-    MENU_HELP, MENU_QUIT, OPEN, QUIT, RESULTS_HELP, RUN_ADD, RUN_DELETE, RUN_INIT, RUN_PUSH,
-    RUN_SYNC, SCROLL, SELECT_COMMON, SYNC, TOGGLE, UP, VIEW, YES,
+    AGENTS_FILE, ALL, BACK, BACK_HELP, Binding, CANCEL, CONFIRM_HELP, DELETE, DOWN, FILTER, GIT,
+    HELP, ISSUES, MENU_HELP, MENU_QUIT, OPEN, QUIT, RESULTS_HELP, RUN_ADD, RUN_AGENTS, RUN_DELETE,
+    RUN_INIT, RUN_PUSH, RUN_SYNC, SCROLL, SELECT_COMMON, SYNC, TOGGLE, UP, VIEW, YES,
 };
 use crate::hit::{HitMap, Target};
 use crate::items::Mode;
@@ -32,8 +32,9 @@ fn mode_keys(mode: Mode) -> Vec<&'static Binding> {
         Mode::Delete => vec![&RUN_DELETE],
         Mode::List => vec![&SYNC, &DELETE],
         Mode::Skills => Vec::new(),
+        Mode::Agents => vec![&RUN_AGENTS],
         Mode::Add => vec![&RUN_ADD],
-        Mode::Init => vec![&GIT, &RUN_INIT],
+        Mode::Init => vec![&GIT, &AGENTS_FILE, &RUN_INIT],
     }
 }
 
@@ -73,7 +74,7 @@ fn short(screen: &Screen) -> Vec<Hint> {
 /// The keys of a question; a plan can be looked at, a delete has none.
 fn confirm_hints(pending: &Pending) -> Vec<Hint> {
     let mut keys: Vec<&Binding> = vec![&YES, &CANCEL];
-    if pending.plan.is_some() {
+    if pending.plan.is_some() || pending.agents.is_some() {
         keys.push(&VIEW);
     }
     keys.push(&QUIT);

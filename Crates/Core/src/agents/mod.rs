@@ -11,7 +11,7 @@ mod text;
 pub use apply::{AgentsReport, Applied, Written, apply_agents};
 pub use error::AgentsError;
 pub use inspect::{FileState, inspect_project};
-pub use plan::{Action, AgentsEntry, AgentsPlan, Intent, plan_agents};
+pub use plan::{Action, AgentsEntry, AgentsPlan, Intent, installed_skills, plan_agents};
 pub use text::{BUILTIN_SKILLS, FILE_NAME, Origin, Source, load_source};
 
 #[cfg(test)]

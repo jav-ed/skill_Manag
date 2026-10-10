@@ -235,6 +235,7 @@ fn the_pages_of_add_and_init() {
     ui.code(Code::Enter).type_text("fresh");
     insta::assert_snapshot!("init_name_page", plain(ui.screen()));
     ui.code(Code::Enter).wait_select();
+    ui.press('m');
     ui.press('g').code(Code::Enter).wait_confirm();
     insta::assert_snapshot!("init_question", plain(ui.screen()));
 }

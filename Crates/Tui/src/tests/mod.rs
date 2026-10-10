@@ -2,10 +2,12 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 
 mod add;
+mod agents;
 mod changes;
 mod flow;
 mod history;
 mod init;
+mod init_agents;
 mod issues;
 mod mouse;
 mod place_support;

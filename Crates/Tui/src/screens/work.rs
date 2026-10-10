@@ -3,6 +3,7 @@
 use std::collections::HashSet;
 use std::path::PathBuf;
 
+use skillmirror_core::agents::AgentsPlan;
 use skillmirror_core::plan::Plan;
 use skillmirror_core::scan::Target;
 use tui_input::Input as TextInput;
@@ -23,6 +24,8 @@ pub(crate) struct Install {
     pub(crate) create: bool,
     /// Make the new project a git repository.
     pub(crate) git: bool,
+    /// Init: also write its AGENTS.md.
+    pub(crate) agents: bool,
 }
 
 /// A run waiting for a go-ahead or already started.
@@ -40,6 +43,8 @@ pub(crate) struct Pending {
     pub(crate) preview: Option<Preview>,
     /// Set for add and init.
     pub(crate) install: Option<Install>,
+    /// What the Agents page will write, worked out like the plan above.
+    pub(crate) agents: Option<Box<AgentsPlan>>,
 }
 
 // The plan is a large value without equality; it only matters whether there is one.
@@ -50,6 +55,7 @@ impl PartialEq for Pending {
             && self.skills == other.skills
             && self.install == other.install
             && self.plan.is_some() == other.plan.is_some()
+            && self.agents.is_some() == other.agents.is_some()
     }
 }
 
@@ -217,6 +223,7 @@ impl Work {
             project: project.path.clone(),
             create: self.mode == Mode::Init,
             git: project.git,
+            agents: project.agents,
         });
         (!targets.is_empty()).then_some(Pending {
             kind,
@@ -225,6 +232,7 @@ impl Work {
             plan: None,
             preview: None,
             install,
+            agents: None,
         })
     }
 
@@ -242,6 +250,7 @@ impl Work {
                 "No mandatory skills configured in vault config, or no opted-in projects found."
             }
             Mode::Delete | Mode::List => "No skills found in any project.",
+            Mode::Agents => "No projects with a skills directory found.",
             Mode::Add | Mode::Init | Mode::Skills => "The vault has no skills.",
         }
     }

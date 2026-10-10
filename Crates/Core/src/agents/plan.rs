@@ -1,9 +1,11 @@
 //! What a command would do to the AGENTS.md of each project. Reads, never writes.
 
-use std::path::PathBuf;
+use std::collections::BTreeSet;
+use std::path::{Path, PathBuf};
 
 use similar::TextDiff;
 
+use super::AgentsError;
 use super::block::{render, with_endings};
 use super::inspect::{FileState, Inspection, inspect};
 use super::text::Source;
@@ -102,6 +104,40 @@ impl AgentsPlan {
     pub fn count(&self, pick: impl Fn(&Action) -> bool) -> usize {
         self.entries.iter().filter(|e| pick(&e.action)).count()
     }
+
+    /// Turns every entry that would make the file or put the block in into a failure when the text names
+    /// skills that its project would not have. `have` says which skills a project will have.
+    pub fn refuse_missing_skills(&mut self, have: impl Fn(&Path) -> BTreeSet<String>) {
+        for entry in self
+            .entries
+            .iter_mut()
+            .filter(|e| matches!(e.action, Action::Create | Action::Insert))
+        {
+            if let Err(AgentsError::MissingSkills { missing, .. }) = self
+                .source
+                .require_skills(&entry.project, &have(&entry.project))
+            {
+                entry.action = Action::Failed(format!(
+                    "the text names the skills {missing}, which this project does not have"
+                ));
+                entry.after = None;
+            }
+        }
+    }
+}
+
+/// The skill folders a project has, by name.
+pub fn installed_skills(project: &Path) -> BTreeSet<String> {
+    fs_err::read_dir(project.join(".agents").join("skills"))
+        .map(|entries| {
+            entries
+                .filter_map(Result::ok)
+                .filter(|e| e.file_type().is_ok_and(|t| t.is_dir()))
+                .filter_map(|e| e.file_name().to_str().map(str::to_string))
+                .filter(|name| !name.starts_with('.'))
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 /// Plans `intent` for each project, in the order given.

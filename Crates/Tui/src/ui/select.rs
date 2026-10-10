@@ -21,7 +21,7 @@ const DETAIL_MAX: usize = 40;
 /// The colour that marks selection on this screen, as in the Go tool.
 fn mode_style(mode: Mode) -> Style {
     match mode {
-        Mode::Sync | Mode::Add | Mode::Init => Style::new().fg(theme::SUCCESS),
+        Mode::Sync | Mode::Add | Mode::Init | Mode::Agents => Style::new().fg(theme::SUCCESS),
         Mode::Push => theme::warning(),
         Mode::Delete => Style::new().fg(theme::ERROR),
         Mode::List | Mode::Skills => theme::accent(),
@@ -33,6 +33,7 @@ fn title(work: &Work) -> String {
         Mode::Sync => "Select skills to sync".to_string(),
         Mode::Push => "Select skills to push".to_string(),
         Mode::Delete => "Select skills to delete".to_string(),
+        Mode::Agents => "Select projects to write the AGENTS.md block into".to_string(),
         Mode::Add => format!("Select skills to add to {}", project_label(work)),
         Mode::Init => format!(
             "Select skills for {}{}",
@@ -115,7 +116,11 @@ pub(super) fn draw(frame: &mut Frame, hits: &mut HitMap, work: &mut Work, area: 
     frame.render_widget(Paragraph::new(Line::from(heading)), head);
     draw_filter(frame, work, filter);
     let (name_w, detail_w) = widths(&work.items);
-    let heading = format!("      {:<name_w$}  {:<detail_w$}", "skill", "projects");
+    let heading = if work.mode == Mode::Agents {
+        format!("      {:<name_w$}  {:<detail_w$}", "project", "state")
+    } else {
+        format!("      {:<name_w$}  {:<detail_w$}", "skill", "projects")
+    };
     let heading = match work.mode {
         Mode::List => heading.replace("projects", "project "),
         Mode::Add | Mode::Init | Mode::Skills => heading.replace("projects", "group   "),
@@ -275,8 +280,14 @@ fn highlight(name: &str, matched: &[u32], at_cursor: bool) -> Vec<Span<'static>>
 fn draw_status(frame: &mut Frame, work: &Work, area: Rect) {
     let view = &work.view;
     let len = view.len();
+    // An init page that will not write the AGENTS.md says so where it does not push the count away.
+    let note = if work.mode == Mode::Init && work.project.as_ref().is_some_and(|p| !p.agents) {
+        "   ·   no AGENTS.md"
+    } else {
+        ""
+    };
     let text = format!(
-        " rows {}–{} of {}",
+        " rows {}–{} of {}{note}",
         (view.offset + 1).min(len),
         (view.offset + view.viewport).min(len),
         len

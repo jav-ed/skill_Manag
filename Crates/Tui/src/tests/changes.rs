@@ -109,6 +109,7 @@ fn a_report_of_another_read_is_ignored() {
             plan: None,
             preview: None,
             install: None,
+            agents: None,
         },
         lines: Vec::new(),
         scroll: 0,

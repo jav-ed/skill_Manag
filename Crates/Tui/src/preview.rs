@@ -1,5 +1,6 @@
 //! What a sync or push is about to do, in the numbers and names the confirmation page shows.
 
+use skillmirror_core::agents::{Action, AgentsPlan};
 use skillmirror_core::plan::{ChangeKind, Plan, PlanKind};
 
 use crate::results::short_path;
@@ -26,6 +27,24 @@ pub(crate) struct Preview {
 }
 
 impl Preview {
+    /// The AGENTS.md files a plan would make or change: `created` counts files made or given a block,
+    /// `updated` counts blocks rewritten.
+    pub(crate) fn of_agents(plan: &AgentsPlan) -> Self {
+        let mut preview = Self::default();
+        for entry in &plan.entries {
+            match &entry.action {
+                Action::Create | Action::Insert => preview.created += 1,
+                Action::Update => preview.updated += 1,
+                Action::Failed(why) => preview.failures.push(format!(
+                    "{}: {why}",
+                    short_path(&entry.project.to_string_lossy())
+                )),
+                Action::Unchanged | Action::Skipped(_) => {}
+            }
+        }
+        preview
+    }
+
     pub(crate) fn of(plan: &Plan) -> Self {
         let mut preview = Self::default();
         for entry in &plan.entries {
