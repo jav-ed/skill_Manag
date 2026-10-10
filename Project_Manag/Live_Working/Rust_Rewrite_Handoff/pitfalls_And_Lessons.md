@@ -27,6 +27,9 @@
 - **A string cut at 80 columns hides the thing under test.** The first notes on the Agents page were too long and the assertion on the end of the note failed; the real fix was shorter notes. In the same way a title with two suffixes pushed `2 / 3 selected` off the screen: put state that is not the headline on the status line.
 - **Show a key where the screen offers it.** The question of the Agents page worked with `v` but the footer did not list it, because the footer looked at the skills plan only. A test for the footer text found it.
 - **A mutation that no test can reach is a note, not a test.** `.filter(|_| wrote > 0)` before the AGENTS.md write in the CLI survives because every way to make all skills fail also makes the file fail, and the early "nothing to write" return covers the rest. It is recorded in the handoff; the same line in the interface has a test.
+- **Moving a file's place breaks every helper that writes it.** The vault text moved from the root to `project-files/`; three test helpers wrote `AGENTS.md` at the old place, and 16 tests failed at once with a different checksum and no hint why. `grep -rn 'vault_file("AGENTS\|vault.write("AGENTS'` before the move.
+- **A new `doctor` finding changes what a healthy fixture is.** The warning for a vault without the three skills of the built-in text failed `a_healthy_world_gets_ticks_and_exit_zero` in the CLI tests; the fixtures of both healthy worlds got the two skills. Run the whole gate, not the new tests only, after touching a check that every world runs.
+- **Count before you assert a count in a smoke script.** `status` said `2 out of date` where the script wanted 1: both projects have a block. The tool was right.
 - **Large enum variants are measured.** Adding the AGENTS.md plan to the pending run made `Phase::Confirm` 248 bytes; clippy asked for a box.
 
 ## Web and Ui
