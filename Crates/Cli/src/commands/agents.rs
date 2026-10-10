@@ -1,10 +1,10 @@
-//! `agents status`, `agents sync` and `agents add`: the AGENTS.md of projects.
+//! `agents status`, `agents sync`, `agents add` and `agents seed`: the AGENTS.md of projects, and the text they share.
 
 use std::path::{Path, PathBuf};
 
 use skillmirror_core::agents::{
     AgentsPlan, Intent, Source, apply_agents, inspect_project, installed_skills, load_source,
-    plan_agents,
+    plan_agents, plan_seed, seed_vault_text,
 };
 use skillmirror_core::backup::RunKind;
 use skillmirror_core::events::ignore_events;
@@ -13,12 +13,13 @@ use skillmirror_core::ops;
 use super::backup;
 use super::context::{Context, load_settings, open};
 use crate::args::{
-    AgentsAddArgs, AgentsCommand, AgentsFlags, AgentsStatusArgs, AgentsSyncArgs, Cli,
+    AgentsAddArgs, AgentsCommand, AgentsFlags, AgentsSeedArgs, AgentsStatusArgs, AgentsSyncArgs,
+    Cli,
 };
 use crate::exit::Exit;
 use crate::output::{
-    self, AgentRow, AgentsRunJson, AgentsStatusJson, AgentsTense, render_agents_plan,
-    render_agents_status, render_diffs,
+    self, AgentRow, AgentsRunJson, AgentsSeedJson, AgentsStatusJson, AgentsTense,
+    render_agents_plan, render_agents_seed, render_agents_status, render_diffs,
 };
 use crate::report::CliError;
 
@@ -27,7 +28,25 @@ pub(super) fn run(cli: &Cli, command: &AgentsCommand) -> Result<Exit, CliError> 
         AgentsCommand::Status(args) => status(cli, args),
         AgentsCommand::Sync(args) => sync(cli, args),
         AgentsCommand::Add(args) => add(cli, args),
+        AgentsCommand::Seed(args) => seed(cli, args),
     }
+}
+
+/// Writes the built-in text into the vault, where it can be edited. Never overwrites.
+fn seed(cli: &Cli, args: &AgentsSeedArgs) -> Result<Exit, CliError> {
+    let settings = load_settings(cli)?;
+    let vault = settings.vault()?.value.clone();
+    let path = if args.dry_run {
+        plan_seed(&vault)?
+    } else {
+        seed_vault_text(&vault)?
+    };
+    if args.json {
+        output::line(&AgentsSeedJson::new(args.dry_run, &path).render()?);
+    } else {
+        output::print(&render_agents_seed(&path, args.dry_run));
+    }
+    Ok(Exit::Clean)
 }
 
 /// The text and the projects a command works on: the one named, or every project the scan found.

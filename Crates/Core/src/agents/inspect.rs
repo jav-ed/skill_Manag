@@ -2,7 +2,7 @@
 
 use std::path::{Path, PathBuf};
 
-use super::block::{Found, Search, checksum, search};
+use super::block::{Found, Search, body, checksum, search};
 use super::text::{FILE_NAME, Source};
 
 /// Files above this size are not read: an AGENTS.md is a page of text, not a download.
@@ -110,7 +110,7 @@ fn classify(content: &str, source: &Source) -> (FileState, Option<Found>) {
         Search::None => (FileState::NoBlock, None),
         Search::Broken(why) => (FileState::Broken(why), None),
         Search::Found(found) => {
-            let state = if found.body == source.text() {
+            let state = if found.body == body(source.text()) {
                 FileState::Current
             } else if found.recorded == Some(checksum(&found.body)) {
                 FileState::Outdated

@@ -22,9 +22,9 @@ fn write_block(world: &World, project: &str) {
 /// `one` is current, `two` has a block from an older text, `three` has no file.
 fn world() -> World {
     let world = World::standard();
-    world.vault_file("AGENTS.md", "# Rules\n\n1. old\n");
+    world.vault_file("project-files/AGENTS.md", "# Rules\n\n1. old\n");
     write_block(&world, "two");
-    world.vault_file("AGENTS.md", "# Rules\n\n1. new\n");
+    world.vault_file("project-files/AGENTS.md", "# Rules\n\n1. new\n");
     write_block(&world, "one");
     world
 }
@@ -181,7 +181,7 @@ fn history_lists_the_run_and_undoing_it_brings_the_old_text_back() {
 #[test]
 fn a_missing_file_can_be_ticked_and_is_made() {
     let world = World::standard();
-    world.vault_file("AGENTS.md", "# Rules\n");
+    world.vault_file("project-files/AGENTS.md", "# Rules\n");
     let mut ui = Harness::new(world);
     ui.open("Agents").wait_select();
     assert_eq!(
@@ -245,7 +245,7 @@ fn a_block_edited_by_hand_is_listed_as_such_and_is_not_overwritten() {
 #[test]
 fn a_text_that_cannot_be_used_is_the_whole_page() {
     let world = World::standard();
-    world.vault_file("AGENTS.md", "   \n");
+    world.vault_file("project-files/AGENTS.md", "   \n");
     let mut ui = Harness::new(world);
     ui.open("Agents");
     ui.wait_for("the failure", |app| phase_name(app) == "failed");

@@ -8,8 +8,11 @@ use std::path::{Path, PathBuf};
 use super::AgentsError;
 use super::block::{BEGIN_PREFIX, END_LINE};
 
-/// The file name, in the vault and in every project.
+/// The file name, in the vault folder and in every project.
 pub const FILE_NAME: &str = "AGENTS.md";
+/// The vault folder for files that belong in every project, as opposed to skills. It holds no `SKILL.md`,
+/// so discovery leaves it alone. A root `<vault>/AGENTS.md` is the vault's own file and is never read.
+pub const VAULT_FOLDER: &str = "project-files";
 
 const BUILTIN: &str = include_str!("builtin.md");
 /// The skills the built-in text tells an agent to use. A project without them gets no AGENTS.md from
@@ -88,9 +91,14 @@ impl Source {
     }
 }
 
-/// `<vault>/AGENTS.md` when it exists, otherwise the built-in text.
+/// Where the vault keeps the text: `<vault>/project-files/AGENTS.md`.
+pub fn vault_text_path(vault: &Path) -> PathBuf {
+    vault.join(VAULT_FOLDER).join(FILE_NAME)
+}
+
+/// `<vault>/project-files/AGENTS.md` when it exists, otherwise the built-in text.
 pub fn load_source(vault: &Path) -> Result<Source, AgentsError> {
-    let path = vault.join(FILE_NAME);
+    let path = vault_text_path(vault);
     let bad = |reason: &str| AgentsError::BadSource {
         path: path.clone(),
         reason: reason.to_string(),

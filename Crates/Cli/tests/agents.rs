@@ -23,7 +23,9 @@ fn world() -> World {
 /// The standard world with its own text in the vault, so no skills are required.
 fn world_with_text(text: &str) -> World {
     let world = World::standard();
-    world.vault_file("AGENTS.md", text).commit_vault();
+    world
+        .vault_file("project-files/AGENTS.md", text)
+        .commit_vault();
     world
 }
 
@@ -142,7 +144,7 @@ fn init_uses_the_vault_text_and_does_not_check_skills_for_it() {
         .assert()
         .success()
         .stdout(contains("created (from "))
-        .stdout(contains("vault/AGENTS.md)"));
+        .stdout(contains("vault/project-files/AGENTS.md)"));
 
     let text = std::fs::read_to_string(fresh.join("AGENTS.md")).unwrap();
     assert!(text.contains("# Mine\n\n1. my rule\n"), "{text}");

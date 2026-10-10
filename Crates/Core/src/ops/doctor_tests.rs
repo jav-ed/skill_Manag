@@ -18,6 +18,11 @@ pub(super) fn healthy() -> TempTree {
     tree.write_all(&[
         ("vault/coding/SKILL.md", &skill_md("coding")),
         ("vault/web/astro/SKILL.md", &skill_md("astro")),
+        ("vault/doc-start/SKILL.md", &skill_md("doc-start")),
+        (
+            "vault/file-tree-optimization/SKILL.md",
+            &skill_md("file-tree-optimization"),
+        ),
         (
             "vault/config.yaml",
             &format!(
@@ -80,6 +85,7 @@ fn a_healthy_world_has_no_warning_and_no_error() {
         "vault-git",
         "skill-files",
         "skill-edits",
+        "agents-text",
         "mandatory",
         "profiles",
         "scan",

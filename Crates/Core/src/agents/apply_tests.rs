@@ -11,7 +11,7 @@ use crate::testutil::TempTree;
 
 pub(super) fn source(text: &str) -> Source {
     let vault = TempTree::new();
-    vault.write("AGENTS.md", text);
+    vault.write("project-files/AGENTS.md", text);
     load_source(vault.path()).unwrap()
 }
 

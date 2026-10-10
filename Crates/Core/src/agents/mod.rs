@@ -6,13 +6,17 @@ mod block;
 mod error;
 mod inspect;
 mod plan;
+mod seed;
 mod text;
 
 pub use apply::{AgentsReport, Applied, Written, apply_agents};
 pub use error::AgentsError;
 pub use inspect::{FileState, inspect_project};
 pub use plan::{Action, AgentsEntry, AgentsPlan, Intent, installed_skills, plan_agents};
-pub use text::{BUILTIN_SKILLS, FILE_NAME, Origin, Source, load_source};
+pub use seed::{plan_seed, seed_vault_text};
+pub use text::{
+    BUILTIN_SKILLS, FILE_NAME, Origin, Source, VAULT_FOLDER, load_source, vault_text_path,
+};
 
 #[cfg(test)]
 mod apply_tests;
@@ -22,6 +26,8 @@ mod block_tests;
 mod inspect_tests;
 #[cfg(test)]
 mod plan_tests;
+#[cfg(test)]
+mod seed_tests;
 #[cfg(test)]
 mod text_tests;
 #[cfg(test)]

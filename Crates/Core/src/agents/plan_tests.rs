@@ -8,7 +8,7 @@ use crate::testutil::TempTree;
 /// A source whose text is `text`, read the way a vault file is.
 fn source(text: &str) -> Source {
     let vault = TempTree::new();
-    vault.write("AGENTS.md", text);
+    vault.write("project-files/AGENTS.md", text);
     load_source(vault.path()).unwrap()
 }
 

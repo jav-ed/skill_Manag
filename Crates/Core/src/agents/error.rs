@@ -14,6 +14,8 @@ pub enum AgentsError {
     MissingSkills { project: PathBuf, missing: String },
     #[error("{path}: {reason}")]
     Refused { path: PathBuf, reason: String },
+    #[error("{path} already exists")]
+    Exists { path: PathBuf },
     #[error("{0}")]
     Io(#[from] std::io::Error),
     #[error(transparent)]
@@ -32,6 +34,10 @@ impl Hint for AgentsError {
             Self::MissingSkills { missing, .. } => Some(format!(
                 "make them mandatory (`skillmirror mandatory add {}`), name them as skills, or leave AGENTS.md out (`--no-agents-md`)",
                 missing.replace(", ", " ")
+            )),
+            Self::Exists { path } => Some(format!(
+                "edit {} and run `skillmirror agents sync`; to start again from the built-in text, move it away first",
+                path.display()
             )),
             Self::Apply(e) => e.hint(),
             Self::Refused { .. } | Self::Io(_) | Self::Backup(_) => None,

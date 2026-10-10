@@ -19,6 +19,7 @@ mod pipeline;
 mod report;
 mod skills;
 mod status;
+mod status_agents;
 mod vault;
 mod web;
 

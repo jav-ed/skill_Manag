@@ -10,7 +10,7 @@ use skillmirror_testkit::World;
 /// Two projects with a block written from an old text, one without a file, and a newer text in the vault.
 fn world() -> World {
     let world = World::standard();
-    world.vault_file("AGENTS.md", "# Rules\n\n1. old\n");
+    world.vault_file("project-files/AGENTS.md", "# Rules\n\n1. old\n");
     for name in ["one", "two"] {
         skillmirror(&world)
             .args(["agents", "add", "--yes", "--project"])
@@ -18,7 +18,7 @@ fn world() -> World {
             .assert()
             .success();
     }
-    world.vault_file("AGENTS.md", "# Rules\n\n1. new\n");
+    world.vault_file("project-files/AGENTS.md", "# Rules\n\n1. new\n");
     world
 }
 
@@ -78,7 +78,7 @@ fn agents_writes_the_new_text_into_the_ticked_projects_and_keeps_the_rest_of_the
 #[test]
 fn agents_says_why_when_the_text_cannot_be_used() {
     let world = World::standard();
-    world.vault_file("AGENTS.md", "   \n");
+    world.vault_file("project-files/AGENTS.md", "   \n");
     let mut term = tui(&world);
     term.wait_for("skillmirror");
     term.send("jjjjj\r");

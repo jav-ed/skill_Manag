@@ -2,6 +2,7 @@
 //! trips over it. It reads, never writes, and it keeps going when a layer is broken: a broken config is a
 //! finding, not the end of the report.
 
+mod agents_text;
 mod env;
 mod skills;
 mod vault;

@@ -8,7 +8,7 @@ use clap::{Args, Parser, Subcommand};
 use clap_complete::Shell;
 
 pub(crate) use crate::args_agents::{
-    AgentsAddArgs, AgentsCommand, AgentsFlags, AgentsStatusArgs, AgentsSyncArgs,
+    AgentsAddArgs, AgentsCommand, AgentsFlags, AgentsSeedArgs, AgentsStatusArgs, AgentsSyncArgs,
 };
 pub(crate) use crate::args_more::{
     AdoptArgs, ConfigCommand, ConfigRootArgs, InfoArgs, MandatoryCommand, MandatoryEditArgs,

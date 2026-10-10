@@ -14,6 +14,18 @@ pub(crate) enum AgentsCommand {
     Sync(AgentsSyncArgs),
     /// Make AGENTS.md in a project that has none, or put the block into one that has no block
     Add(AgentsAddArgs),
+    /// Write the built-in text into the vault (project-files/AGENTS.md) so that you can edit it there
+    Seed(AgentsSeedArgs),
+}
+
+#[derive(Debug, Args)]
+pub(crate) struct AgentsSeedArgs {
+    /// Show where the file would be made and write nothing
+    #[arg(long)]
+    pub(crate) dry_run: bool,
+    /// Print one JSON document instead of text
+    #[arg(long)]
+    pub(crate) json: bool,
 }
 
 #[derive(Debug, Args)]

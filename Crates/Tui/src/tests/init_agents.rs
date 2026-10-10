@@ -97,7 +97,7 @@ fn the_file_is_written_with_the_skills_and_both_are_in_one_backup_run() {
 #[test]
 fn the_vault_text_is_used_and_its_skills_are_not_checked() {
     let world = world();
-    world.vault_file("AGENTS.md", "# Mine\n\n1. a rule\n");
+    world.vault_file("project-files/AGENTS.md", "# Mine\n\n1. a rule\n");
     let mut ui = Harness::new(world);
     to_the_skills_page(&mut ui);
 
@@ -108,7 +108,7 @@ fn the_vault_text_is_used_and_its_skills_are_not_checked() {
         "{question}"
     );
     assert!(
-        question.contains("vault/AGENTS.md."),
+        question.contains("vault/project-files/AGENTS.md."),
         "the path of the text is named:\n{question}"
     );
     ui.press('y').wait_done();
@@ -165,7 +165,7 @@ fn skills_the_text_names_that_are_not_ticked_stop_the_page_before_anything_is_ma
 #[test]
 fn a_text_that_cannot_be_used_stops_the_page_too() {
     let world = world();
-    world.vault_file("AGENTS.md", "  \n");
+    world.vault_file("project-files/AGENTS.md", "  \n");
     let mut ui = Harness::new(world);
     to_the_skills_page(&mut ui);
 
@@ -179,7 +179,7 @@ fn a_text_that_cannot_be_used_stops_the_page_too() {
 #[test]
 fn no_file_is_made_when_no_skill_could_be_installed() {
     let world = world();
-    world.vault_file("AGENTS.md", "# Mine\n");
+    world.vault_file("project-files/AGENTS.md", "# Mine\n");
     // In the vault but not in git: the plan for it fails, so nothing can be installed.
     world.vault_file("fresh/SKILL.md", "untracked");
     let mut ui = Harness::new(world);

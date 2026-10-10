@@ -61,6 +61,8 @@ mod bridge_tests;
 #[cfg(test)]
 mod diff_tests;
 #[cfg(test)]
+mod doctor_agents_tests;
+#[cfg(test)]
 mod doctor_machine_tests;
 #[cfg(test)]
 mod doctor_tests;
