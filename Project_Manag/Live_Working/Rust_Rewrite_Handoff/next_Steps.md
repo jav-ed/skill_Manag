@@ -42,6 +42,12 @@ Run `just parity` as a normal user (87 / 44 / 0 was the result before the lead r
 
 [open_Questions.md](open_Questions.md): one batch, with the lead's default for each.
 
+### A7b. [ ] Use the AGENTS.md feature on the real vault and finish its edges (gap 10)
+
+Built on 2026-10-10 and tested only in throwaway worlds. Do, read-only first: `skillmirror agents status` on the real tree (every project is `missing` until a file exists; that is normal), then put the text you want in `<vault>/AGENTS.md` (or keep the built-in five rules), make sure `doc-start`, `coding` and `file-tree-optimization` are mandatory, and only with the user's yes run `skillmirror init` for a new project or `skillmirror agents add --project DIR` for one existing project. Open edges, none of them blocking: the web view has no row for it (`Docs/Architecture/web_Api.md`, `Ui/`), `doctor` does not read `<vault>/AGENTS.md`, `status` does not say how many blocks are out of date, a roll-out to every project at once is `agents add` per project today (no `--all` for `add`, on purpose: it writes into about 60 projects), and the `wrote > 0` condition in `commands/pipeline.rs` survives a mutation check.
+
+Done when: the user has seen the block in a real project, the text they want is in the vault, and each edge above is either built or crossed out here with the user's word.
+
 ### A8. [ ] Promote this folder, then ask about the branch
 
 [cutover_Runbook.md](cutover_Runbook.md), last section.
@@ -56,7 +62,8 @@ Run `just parity` as a normal user (87 / 44 / 0 was the result before the lead r
 6. **[x] What a regular user needs.** Scoped `sync`/`push`/`status` (skill names, group, profile, project; Q51), `info` (Q52), `new`, `adopt`, `vault init` (Q53), `config`, `mandatory` (Q54).
 7. **[x] Build cost.** `[profile.dev] debug = false, incremental = false`, documented in `Docs/Setup/build_Resources.md` with measured numbers and the switches to turn them back on.
 8. **[x] Documentation pass.** README, architecture, `sync_Concept.md`, the contract rows, the web API page, `doc_Start.md`; the Astro leftovers of an earlier website idea are gone.
-9. **[x] Cutover, the code part.** The Go tree is deleted; the merge into `main` is done (pull request 1). What is left of the cutover is A4 and A8.
+9. **[x] The AGENTS.md of a project (2026-10-10).** Contract Q57 to Q62, decision record section 8. Core `agents/` (text, block, inspect, plan, apply), single-file entries in the backup store (`Subject::Agents`, `file_entry.rs`, `undo_file.rs`), `agents status|sync|add` and `init` writing the file (`--no-agents-md`), the Agents page and `m` on the Init page. Tests: `agents/*_tests.rs` in Core, `Cli/tests/agents.rs` and `agents_write.rs`, `Tui/src/tests/agents.rs` and `init_agents.rs`, `Cli/tests/interface_agents.rs`, and the AGENTS.md section of `Code/Development/Smoke/check_Smoke.sh`. 24 of 25 guard mutations are caught.
+10. **[x] Cutover, the code part.** The Go tree is deleted; the merge into `main` is done (pull request 1). What is left of the cutover is A4 and A8.
 
 ## C. Separate track: skills (not part of the rewrite; unchanged since the first handoff)
 

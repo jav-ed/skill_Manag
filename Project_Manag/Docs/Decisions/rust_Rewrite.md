@@ -89,6 +89,23 @@ Opt-in rule (unchanged): `sync` updates only skills a project already has; `push
 - Licence: the project is Hippocratic License 3.0 (not OSI). Permissive and MPL-2.0 dependencies are fine (MPL marked: `nucleo-matcher`, `termina` used under MIT). `license-file = "LICENSE"`, `publish = false`. `deny.toml` allow-list in phase 2. Blocked or not used: `git2` (libgit2 is GPL-2.0 with a linking exception, xdiff is LGPL), `skiller` (SUL-1.0, read only), cargo-binstall libraries (GPL-3.0), `bacon` (AGPL), `slint` (GPL). Distribution: Homebrew core, Debian main and probably Fedora are closed by the licence; AUR and `just install` (`cargo install --path Crates/Cli --locked`) are the channels.
 - Tools: nextest and just are installed; `cargo-deny`, `tokei`, `typos`, `taplo`, `cargo-shear`, `hyperfine`, `samply` will inshallah come through mise (prebuilt binaries, not `cargo install`).
 
+### 8. The AGENTS.md of a project (2026-10-10, asked for by the user)
+
+The user wanted every new project to start with the same `AGENTS.md` (five rules for coding agents), the text to be changeable later in one place, an easy way to see which projects have it and which are out of date, a place on the interface to push a new text, and the rest of each file left free for the project's own sections.
+
+Options weighed:
+
+| Option | For | Against | Decision |
+|---|---|---|---|
+| A. One marked block inside each `AGENTS.md`, the text in the vault | The text is inline, so every agent tool reads it; the project's own sections stay its own; one command updates all; a read-only check exists | Needs its own plan, write and undo for a file (the backup store knew only skill folders) | **Chosen** |
+| B. The text in a mandatory skill, `AGENTS.md` holds only a pointer | Updates ride the existing sync, push, interface and web with no new code | An agent has to choose to follow a pointer; inline text is far more reliable | Rejected as the only mechanism |
+| C. Mirror the whole file like a skill | Simplest | Each sync would overwrite the project's own sections | Rejected |
+| D. Fold it into `sync` and `push` as an extra item | Natural to use | The plan and apply code is skill-folder shaped and the web JSON depends on it; can still be added on top of A, the engine is the same | Later, if wanted |
+
+Choices inside A: the markers carry a checksum of what was written, so an out of date block (the text changed) is told from one edited by hand (never replaced unless `--force`); the text is `<vault>/AGENTS.md` when there is one and the built-in five rules otherwise (the vault file is how it is changed without a release); the built-in text names three skills, so `init` and `agents add` stop with a hard error when the project would not have them, while a vault text is not checked; the markers are in the very first file written because an inline copy without them could not be recognised later; the file is created only where none exists (`init`, `agents add`), never overwritten, and `add` for skills does not write it. Contract rows Q57 to Q62.
+
+Not done: the web view does not show or write AGENTS.md (the JSON API and the pages have no row for it); `doctor` does not check the vault text; `status` does not say how many projects have an out of date block.
+
 ## Overruled or adjusted research recommendations
 
 1. **Git index: one subprocess per run instead of `gix-index`.** The engine report recommends `gix-index` (0.10 ms, 83 crates, 136 CPU-s compile, +0.6 MB) and itself offers one `git ls-files` spawn (1.9 ms, zero crates) as the alternative. Speed is no argument (the Go cost came from 395 spawns, one per target, not from spawning). The cost rule of the requirements ("a crate that saves 30 lines but adds 40 dependencies is a no") decides: the spawn wins. The rule "no subprocess" in the requirements was written from the Go flaw and is relaxed to "no spawn per target". Revisit `gix-index` only if the tool must run where `git` is absent.

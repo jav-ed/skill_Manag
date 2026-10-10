@@ -21,6 +21,14 @@
 - **zsh globbing**: `grep --include=*.rs` fails with "no matches found"; quote the glob.
 - **Shell state does not persist** between tool calls in the agent harness: use absolute paths, do not rely on `cd`.
 
+## Adding a feature to every layer
+
+- **An extra default changes every old test of the command.** `init` now writes an AGENTS.md by default and the built-in text needs three skills, so every older `init` test failed until it passed `--no-agents-md` (or `m` on the page). Count the callers (`grep -rn '"init"'`) before changing what a command does by default.
+- **A string cut at 80 columns hides the thing under test.** The first notes on the Agents page were too long and the assertion on the end of the note failed; the real fix was shorter notes. In the same way a title with two suffixes pushed `2 / 3 selected` off the screen: put state that is not the headline on the status line.
+- **Show a key where the screen offers it.** The question of the Agents page worked with `v` but the footer did not list it, because the footer looked at the skills plan only. A test for the footer text found it.
+- **A mutation that no test can reach is a note, not a test.** `.filter(|_| wrote > 0)` before the AGENTS.md write in the CLI survives because every way to make all skills fail also makes the file fail, and the early "nothing to write" return covers the rest. It is recorded in the handoff; the same line in the interface has a test.
+- **Large enum variants are measured.** Adding the AGENTS.md plan to the pending run made `Phase::Confirm` 248 bytes; clippy asked for a box.
+
 ## Web and Ui
 
 - **A git-ignored generated file hides a bug from the working tree.** `Ui/.astro/types.d.ts` (written by any Astro command) was the only thing that declared `*.css` imports, so the type check passed locally and failed in a fresh clone (TS2882). `Ui/src/env.d.ts` now declares them. Whenever a check passes only after another command ran first, look for a generated, ignored file.

@@ -16,7 +16,7 @@ How the three front ends use Core. None of them contains engine logic: each read
 
 A pure state machine: `App::handle(Event)` takes a key, a mouse event or a job report and changes state; `ui/` draws state and records every clickable rectangle in a `HitMap`; nothing in `app/` touches the terminal.
 
-- Screens (`screens/`): `menu`, `work` (sync, push, delete, list, skills, add, init as phases `Loading`, `Select`, `Planning`, `Confirm`, `Diffing`, `Diff`, `Running`, `Done`), `history` (runs, question, results), `place` (folder picker and name for add and init), `setup` (the wizard).
+- Screens (`screens/`): `menu`, `work` (sync, push, delete, list, skills, agents, add, init as phases `Loading`, `Select`, `Planning`, `Confirm`, `Diffing`, `Diff`, `Running`, `Done`), `history` (runs, question, results), `place` (folder picker and name for add and init), `setup` (the wizard).
 - Jobs (`jobs.rs`, `jobs_install.rs`, `undo.rs`): every disk read or write runs on its own thread and answers over one `mpsc` channel (`event.rs`). Each answer carries a job id; the app keeps the id it waits for and drops any other answer (`app/jobs_events.rs`). A page that works out a plan applies exactly that plan.
 - Discipline: the header arrow, keys and a second job are refused while a job writes; the first Ctrl-C during a write only warns.
 - Input: `backend.rs` on `ratatui-termina`, own key tables in `binding.rs` that also produce the help text, `tui-input` for text fields, `nucleo-matcher` for the fuzzy filter.

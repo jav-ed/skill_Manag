@@ -12,6 +12,7 @@ The Rust tool is on `main` (merged 2026-10-08, pull request 1). What follows is 
 | Tag `go-oracle` at `c7310f9` | not pushed (needs the user's yes) | [next steps A4](Rust_Rewrite_Handoff/next_Steps.md) |
 | Fresh review of the backup and undo code and of the web server | not done: rounds 3 and 4 were self reviews | [next steps A5](Rust_Rewrite_Handoff/next_Steps.md) |
 | Other machines: run as a normal user, another browser, a small machine | not done | [next steps A6](Rust_Rewrite_Handoff/next_Steps.md) |
+| AGENTS.md of a project: use it on the real vault, then the web view, `doctor` and a hint in `status` | built on 2026-10-10, tested in throwaway worlds only | [next steps A7b](Rust_Rewrite_Handoff/next_Steps.md) |
 | Decisions that wait for the user | listed with defaults | [open questions](Rust_Rewrite_Handoff/open_Questions.md) |
 | Promote the handoff folder, then delete it and the branch `rust-rewrite-handoff` | not started; deleting needs the user's yes | [cutover runbook](Rust_Rewrite_Handoff/cutover_Runbook.md) |
 | Provenance lock | deferred by the user | [next steps D](Rust_Rewrite_Handoff/next_Steps.md) |
