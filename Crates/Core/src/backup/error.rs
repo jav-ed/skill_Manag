@@ -22,6 +22,8 @@ pub enum BackupError {
     ProjectGone { path: PathBuf },
     #[error("{path} is not a folder")]
     NotAFolder { path: PathBuf },
+    #[error("{path} is not a regular file (a link is never written through)")]
+    NotAFile { path: PathBuf },
     #[error("done, but {path} could not be removed afterwards: {reason}")]
     Leftover { path: PathBuf, reason: String },
 }

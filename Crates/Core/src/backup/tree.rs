@@ -29,6 +29,25 @@ pub(crate) fn move_tree(from: &Path, to: &Path) -> io::Result<Option<io::Error>>
     }
 }
 
+/// Moves a file to `to`, which must not exist (its parent must). Like [`move_tree`]: one rename, or a copy and
+/// a removal across filesystems; `Ok(Some(error))` means the copy is complete but `from` stayed.
+pub(crate) fn move_file(from: &Path, to: &Path) -> io::Result<Option<io::Error>> {
+    match std::fs::rename(from, to) {
+        Ok(()) => Ok(None),
+        Err(e) if e.raw_os_error() == Some(Errno::XDEV.raw_os_error()) => {
+            if let Err(cause) = fs_err::copy(from, to) {
+                drop(fs_err::remove_file(to));
+                return Err(cause);
+            }
+            Ok(fs_err::remove_file(from).err())
+        }
+        Err(e) => Err(io::Error::new(
+            e.kind(),
+            format!("cannot move {} to {}: {e}", from.display(), to.display()),
+        )),
+    }
+}
+
 /// Copies files, folders and symlinks with their permission bits. `to` must not exist.
 pub(crate) fn copy_tree(from: &Path, to: &Path) -> io::Result<()> {
     let permissions = fs_err::symlink_metadata(from)?.permissions();

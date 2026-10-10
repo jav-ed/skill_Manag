@@ -9,6 +9,7 @@ mod swap;
 pub use error::ApplyError;
 pub(crate) use place::{Keep, Replaces, discard, place};
 pub use run::{Applied, ApplyOptions, ApplyReport, Failure, Leftover, Outcome, apply};
+pub(crate) use swap::{exchange, place_new};
 
 #[cfg(test)]
 mod guard_tests;

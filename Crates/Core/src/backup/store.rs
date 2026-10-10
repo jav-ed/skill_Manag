@@ -19,8 +19,10 @@ use crate::scan::Target;
 /// Runs kept after a run that stored something. Older runs are removed.
 pub const KEEP_RUNS: usize = 30;
 
-const ENTRY_FILE: &str = "entry.json";
+pub(super) const ENTRY_FILE: &str = "entry.json";
 const TREE_DIR: &str = "tree";
+/// Where an entry about a single file keeps the old file.
+pub(super) const FILE_SLOT: &str = "file";
 
 /// The command that made a run.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -56,6 +58,25 @@ pub enum Change {
     Deleted,
 }
 
+/// What an entry is about.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Subject {
+    /// A skill folder, saved as a tree. Notes written before AGENTS.md existed have no subject: this.
+    #[default]
+    Skill,
+    /// The project's AGENTS.md, saved as one file; the entry's `skill` holds its file name.
+    Agents,
+}
+
+impl Subject {
+    // Serde calls the `skip_serializing_if` function with a reference, whatever the type is.
+    #[allow(clippy::trivially_copy_pass_by_ref)]
+    fn is_skill(&self) -> bool {
+        *self == Self::Skill
+    }
+}
+
 /// The note stored next to a saved tree.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Entry {
@@ -64,6 +85,8 @@ pub struct Entry {
     pub project: PathBuf,
     pub skill: String,
     pub change: Change,
+    #[serde(default, skip_serializing_if = "Subject::is_skill")]
+    pub subject: Subject,
 }
 
 /// All backups, on disk.
@@ -184,8 +207,8 @@ impl Backups {
 pub struct Run {
     id: String,
     kind: RunKind,
-    dir: PathBuf,
-    stored: AtomicUsize,
+    pub(super) dir: PathBuf,
+    pub(super) stored: AtomicUsize,
 }
 
 /// What a finished run left behind.
@@ -266,14 +289,21 @@ impl Run {
         target: &Target,
         change: Change,
     ) -> Result<(), BackupError> {
+        self.write_note(
+            index,
+            &Entry {
+                kind: self.kind,
+                project: target.project.clone(),
+                skill: target.skill.clone(),
+                change,
+                subject: Subject::Skill,
+            },
+        )
+    }
+
+    pub(super) fn write_note(&self, index: usize, entry: &Entry) -> Result<(), BackupError> {
         let slot = self.dir.join(index.to_string());
         fs_err::create_dir_all(&slot)?;
-        let entry = Entry {
-            kind: self.kind,
-            project: target.project.clone(),
-            skill: target.skill.clone(),
-            change,
-        };
         let path = slot.join(ENTRY_FILE);
         let text = serde_json::to_string(&entry).map_err(|e| BackupError::Note {
             path: path.clone(),
@@ -326,11 +356,14 @@ fn read_entry(index: usize, dir: PathBuf) -> Result<LoadedEntry, BackupError> {
         path: path.clone(),
         reason: e.to_string(),
     })?;
-    let entry = serde_json::from_str(&text).map_err(|e| BackupError::BadEntry {
+    let entry: Entry = serde_json::from_str(&text).map_err(|e| BackupError::BadEntry {
         path,
         reason: e.to_string(),
     })?;
-    let has_tree = dir.join(TREE_DIR).is_dir();
+    let has_tree = match entry.subject {
+        Subject::Skill => dir.join(TREE_DIR).is_dir(),
+        Subject::Agents => dir.join(FILE_SLOT).is_file(),
+    };
     Ok(LoadedEntry {
         index,
         dir,

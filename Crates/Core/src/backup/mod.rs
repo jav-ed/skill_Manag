@@ -2,15 +2,17 @@
 
 mod clock;
 mod error;
+mod file_entry;
 mod pathjson;
 mod store;
 mod tree;
 mod undo;
+mod undo_file;
 
 pub use clock::{describe as describe_run, now_utc};
 pub use error::{BackupError, UndoError};
 pub use store::{
-    Backups, Change, Entry, Finished, KEEP_RUNS, LoadedEntry, LoadedRun, Run, RunKind,
+    Backups, Change, Entry, Finished, KEEP_RUNS, LoadedEntry, LoadedRun, Run, RunKind, Subject,
 };
 pub use undo::{Filter, Restored, UndoReport, Undone, undo};
 
@@ -18,6 +20,8 @@ pub use undo::{Filter, Restored, UndoReport, Undone, undo};
 mod apply_tests;
 #[cfg(test)]
 mod delete_tests;
+#[cfg(test)]
+mod file_entry_tests;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
