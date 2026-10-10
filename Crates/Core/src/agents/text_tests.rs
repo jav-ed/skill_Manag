@@ -129,3 +129,45 @@ fn a_vault_file_that_is_not_utf8_or_not_a_file_or_too_big_is_refused() {
     std::fs::write(vault.path().join("AGENTS.md"), "x".repeat(70 * 1024)).unwrap();
     assert_eq!(bad_reason(&vault), "is larger than 64 KiB");
 }
+
+#[test]
+fn require_skills_names_every_missing_skill_of_the_built_in_text() {
+    let have: std::collections::BTreeSet<String> =
+        ["coding".to_string(), "other".to_string()].into();
+
+    let error = Source::builtin()
+        .require_skills(std::path::Path::new("/p"), &have)
+        .unwrap_err();
+
+    let AgentsError::MissingSkills { missing, .. } = &error else {
+        panic!("{error:?}");
+    };
+    assert_eq!(missing, "doc-start, file-tree-optimization");
+    assert!(
+        crate::Hint::hint(&error)
+            .unwrap()
+            .contains("mandatory add doc-start file-tree-optimization")
+    );
+}
+
+#[test]
+fn require_skills_passes_with_all_three_and_never_checks_a_vault_text() {
+    let all: std::collections::BTreeSet<String> =
+        BUILTIN_SKILLS.iter().map(|s| (*s).to_string()).collect();
+    assert!(
+        Source::builtin()
+            .require_skills(std::path::Path::new("/p"), &all)
+            .is_ok()
+    );
+
+    let vault = TempTree::new();
+    vault.write("AGENTS.md", "mine");
+    let mine = load_source(vault.path()).unwrap();
+    assert!(
+        mine.require_skills(
+            std::path::Path::new("/p"),
+            &std::collections::BTreeSet::new()
+        )
+        .is_ok()
+    );
+}

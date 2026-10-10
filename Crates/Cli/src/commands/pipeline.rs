@@ -8,7 +8,7 @@ use skillmirror_core::scan::ScanIssue;
 
 use super::backup;
 use crate::exit::Exit;
-use crate::output::{self, BridgeRow, Row, RunJson, Summary, Tense};
+use crate::output::{self, AgentRow, BridgeRow, Row, RunJson, Summary, Tense};
 use crate::report::CliError;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -68,18 +68,32 @@ impl Executed {
     }
 }
 
+/// The AGENTS.md that `init` writes into the new project, in the same confirmed run and backup run.
+pub(super) struct AgentsHook<'a> {
+    /// What is planned for it, shown with the skills.
+    pub(super) planned: AgentRow,
+    /// Where the text comes from, for the output.
+    pub(super) source: String,
+    /// Writes it after the skills, into the run that kept what they replaced; the number is how many
+    /// slots of that run the skills used.
+    pub(super) write: &'a dyn Fn(&skillmirror_core::backup::Run, usize) -> Option<AgentRow>,
+}
+
 /// What a command does around the write.
 pub(super) struct Hooks<'a> {
     /// Runs once, after the user agreed and before the first byte is written.
     pub(super) before_write: &'a dyn Fn() -> Result<(), CliError>,
     /// Runs after a write that created or updated skill folders, with how many; what it returns is reported.
     pub(super) after_write: &'a dyn Fn(usize) -> Vec<BridgeRow>,
+    /// The AGENTS.md written along with the skills; only `init` has one.
+    pub(super) agents: Option<AgentsHook<'a>>,
 }
 
 impl Hooks<'_> {
     pub(super) const NONE: Hooks<'static> = Hooks {
         before_write: &|| Ok(()),
         after_write: &|_| Vec::new(),
+        agents: None,
     };
 }
 
@@ -98,11 +112,12 @@ pub(super) fn execute(
     let summary = Summary::of(&rows);
     // Nothing to write, whether the plan is clean or only holds failures: show it like a dry run, never ask,
     // and never run the hooks (`init` would create a directory for nothing).
+    let planned_agents = hooks.agents.as_ref();
     if mode != Mode::Apply || summary.changes() == 0 {
-        show_plan(run, mode, &rows, issues)?;
+        show_plan(run, mode, &rows, issues, planned_agents)?;
         return Ok(Executed::nothing(exit_for_plan(mode, &summary)));
     }
-    if !run.yes && !confirm_write(&rows, &summary, run.json)? {
+    if !run.yes && !confirm_write(&rows, &summary, run.json, planned_agents)? {
         output::line("Cancelled, nothing was written.");
         return Ok(Executed::nothing(Exit::Clean));
     }
@@ -112,7 +127,19 @@ pub(super) fn execute(
         backup: Some(&backup_run),
         ..ApplyOptions::default()
     };
+    let slots = plan.entries.len();
     let done = apply(plan, options, &ignore_events)?;
+    let wrote = done
+        .applied
+        .iter()
+        .filter(|a| matches!(a.outcome, Outcome::Created | Outcome::Updated))
+        .count();
+    // Nothing installed means the project is taken back, so no file goes into it.
+    let agents = hooks
+        .agents
+        .as_ref()
+        .filter(|_| wrote > 0)
+        .and_then(|hook| (hook.write)(&backup_run, slots).map(|row| (hook.source.as_str(), row)));
     let finished = backup_run.finish(&backups);
     for left in done.applied.iter().filter_map(|a| a.leftover.as_ref()) {
         output::warn_line(&format!(
@@ -122,19 +149,25 @@ pub(super) fn execute(
         ));
     }
     let rows: Vec<Row> = done.applied.iter().map(Row::from_applied).collect();
-    let wrote = done
-        .applied
-        .iter()
-        .filter(|a| matches!(a.outcome, Outcome::Created | Outcome::Updated))
-        .count();
     let bridges = if wrote > 0 {
         (hooks.after_write)(wrote)
     } else {
         Vec::new()
     };
-    show_done(run, &rows, issues, backup::saved(&finished), &bridges)?;
+    let agents_row = agents.as_ref().map(|(source, row)| (*source, row));
+    show_done(
+        run,
+        &rows,
+        issues,
+        backup::saved(&finished),
+        &bridges,
+        agents_row,
+    )?;
     backup::announce(&finished, run.json);
-    let exit = if done.failed() > 0 {
+    let agents_failed = agents
+        .as_ref()
+        .is_some_and(|(_, row)| row.action == "failed");
+    let exit = if done.failed() > 0 || agents_failed {
         Exit::Partial
     } else {
         Exit::Clean
@@ -166,12 +199,18 @@ fn show_plan(
     mode: Mode,
     rows: &[Row],
     issues: &[ScanIssue],
+    agents: Option<&AgentsHook<'_>>,
 ) -> Result<(), CliError> {
     if run.json {
-        output::line(&RunJson::new(run.kind.name(), mode.name(), rows, issues).render()?);
+        let document = RunJson::new(run.kind.name(), mode.name(), rows, issues)
+            .with_agents(agents.map(|a| &a.planned));
+        output::line(&document.render()?);
         return Ok(());
     }
     output::print(&output::render_rows(rows, Tense::Plan, run.all));
+    if let Some(hook) = agents {
+        output::print(&output::render_agents_line(&hook.planned, &hook.source));
+    }
     let note = if mode == Mode::DryRun { "dry run" } else { "" };
     output::print(&output::render_summary(
         &Summary::of(rows),
@@ -187,6 +226,7 @@ fn show_done(
     issues: &[ScanIssue],
     backup: Option<&str>,
     bridges: &[BridgeRow],
+    agents: Option<(&str, &AgentRow)>,
 ) -> Result<(), CliError> {
     if run.json {
         let document = RunJson::new(run.kind.name(), Mode::Apply.name(), rows, issues);
@@ -194,18 +234,27 @@ fn show_done(
             &document
                 .with_backup(backup)
                 .with_bridges(bridges)
+                .with_agents(agents.map(|(_, row)| row))
                 .render()?,
         );
         return Ok(());
     }
     output::print(&output::render_rows(rows, Tense::Done, run.all));
+    if let Some((source, row)) = agents {
+        output::print(&output::render_agents_line(row, source));
+    }
     output::print(&output::render_summary(&Summary::of(rows), Tense::Done, ""));
     output::print(&output::render_bridge_notes(bridges));
     Ok(())
 }
 
 /// Shows what will be written and asks. Without a terminal the answer must come from `--yes`.
-fn confirm_write(rows: &[Row], summary: &Summary, json: bool) -> Result<bool, CliError> {
+fn confirm_write(
+    rows: &[Row],
+    summary: &Summary,
+    json: bool,
+    agents: Option<&AgentsHook<'_>>,
+) -> Result<bool, CliError> {
     // The rows and the question would land on stdout in front of the document that `--json` promises.
     if json {
         return Err(CliError::usage(
@@ -220,8 +269,16 @@ fn confirm_write(rows: &[Row], summary: &Summary, json: bool) -> Result<bool, Cl
         ));
     }
     output::print(&output::render_rows(rows, Tense::Plan, false));
+    if let Some(hook) = agents {
+        output::print(&output::render_agents_line(&hook.planned, &hook.source));
+    }
+    let and_file = if agents.is_some() {
+        " and AGENTS.md"
+    } else {
+        ""
+    };
     let question = format!(
-        "Write {} skill folder(s) in {} project(s)?",
+        "Write {} skill folder(s){and_file} in {} project(s)?",
         summary.changes(),
         summary.projects
     );

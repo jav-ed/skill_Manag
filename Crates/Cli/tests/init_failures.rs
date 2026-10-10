@@ -21,7 +21,7 @@ fn init_with_nothing_installable_creates_no_directory_and_can_be_repeated() {
 
     for _ in 0..2 {
         skillmirror(&world)
-            .args(["init", "--yes"])
+            .args(["init", "--no-agents-md", "--yes"])
             .arg(&dir)
             .assert()
             .code(4)
@@ -36,7 +36,7 @@ fn init_with_git_and_nothing_installable_creates_no_repository() {
     let dir = world.root().join("new2");
 
     skillmirror(&world)
-        .args(["init", "--git", "--yes"])
+        .args(["init", "--no-agents-md", "--git", "--yes"])
         .arg(&dir)
         .assert()
         .code(4);
@@ -52,7 +52,7 @@ fn init_does_not_even_ask_when_there_is_nothing_to_write() {
     // Without --yes and without a terminal a write would be refused (exit 2); a plan of failures only
     // is shown like a dry run instead.
     skillmirror(&world)
-        .arg("init")
+        .args(["init", "--no-agents-md"])
         .arg(&dir)
         .assert()
         .code(4)
@@ -71,7 +71,7 @@ fn init_removes_what_it_made_when_every_write_failed() {
     let dir = world.root().join("new4");
 
     skillmirror(&world)
-        .args(["init", "--git", "--yes"])
+        .args(["init", "--no-agents-md", "--git", "--yes"])
         .arg(&dir)
         .assert()
         .code(4);
@@ -79,7 +79,7 @@ fn init_removes_what_it_made_when_every_write_failed() {
     assert!(!dir.exists(), "{} was left behind", dir.display());
     std::fs::remove_file(state.join("backups")).unwrap();
     skillmirror(&world)
-        .args(["init", "--git", "--yes"])
+        .args(["init", "--no-agents-md", "--git", "--yes"])
         .arg(&dir)
         .assert()
         .success();
@@ -94,7 +94,7 @@ fn init_keeps_an_existing_empty_directory_but_removes_the_repository_it_made() {
     std::fs::create_dir_all(&dir).unwrap();
 
     skillmirror(&world)
-        .args(["init", "--git", "--yes"])
+        .args(["init", "--no-agents-md", "--git", "--yes"])
         .arg(&dir)
         .assert()
         .code(4);
@@ -111,7 +111,7 @@ fn a_partial_failure_keeps_the_project_with_what_was_installed() {
     let dir = world.root().join("new6");
 
     skillmirror(&world)
-        .args(["init", "--yes"])
+        .args(["init", "--no-agents-md", "--yes"])
         .arg(&dir)
         .assert()
         .code(4);
@@ -128,7 +128,7 @@ fn init_git_ignores_a_git_dir_from_the_environment() {
 
     skillmirror(&world)
         .env("GIT_DIR", &elsewhere)
-        .args(["init", "--git", "--yes"])
+        .args(["init", "--no-agents-md", "--git", "--yes"])
         .arg(&dir)
         .assert()
         .success();

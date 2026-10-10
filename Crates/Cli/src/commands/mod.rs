@@ -1,5 +1,6 @@
 //! One module per command.
 
+mod agents;
 mod author;
 mod backup;
 mod bridge;
@@ -71,6 +72,7 @@ fn dispatch(cli: &Cli, command: &Command) -> Result<Exit, CliError> {
         Command::Status(args) => status::run(cli, args),
         Command::Diff(args) => diff::run(cli, args),
         Command::Doctor(args) => doctor::run(cli, args),
+        Command::Agents(command) => agents::run(cli, command),
         Command::Add(args) => install::add(cli, args),
         Command::Init(args) => install::init(cli, args),
         Command::Undo(args) => backup::run_undo(args),

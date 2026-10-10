@@ -2,6 +2,7 @@
 //! The layering is deliberate and shown wherever the text is used; a vault file that cannot be used is an
 //! error, never a silent drop back to the built-in text.
 
+use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
 use super::AgentsError;
@@ -60,6 +61,30 @@ impl Source {
             Origin::Builtin => BUILTIN_SKILLS,
             Origin::Vault(_) => &[],
         }
+    }
+}
+
+impl Source {
+    /// Fails, naming what is missing, when the text relies on skills that `project` would not have. Nothing
+    /// is checked for a vault text.
+    pub fn require_skills(
+        &self,
+        project: &Path,
+        have: &BTreeSet<String>,
+    ) -> Result<(), AgentsError> {
+        let missing: Vec<&str> = self
+            .required_skills()
+            .iter()
+            .copied()
+            .filter(|skill| !have.contains(*skill))
+            .collect();
+        if missing.is_empty() {
+            return Ok(());
+        }
+        Err(AgentsError::MissingSkills {
+            project: project.to_path_buf(),
+            missing: missing.join(", "),
+        })
     }
 }
 

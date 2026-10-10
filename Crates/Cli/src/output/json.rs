@@ -2,8 +2,8 @@
 
 use serde::Serialize;
 
-use super::BridgeRow;
 use super::view::{DeleteRow, InstalledRow, Row, SkillRow, Summary};
+use super::{AgentRow, BridgeRow};
 
 #[derive(Serialize)]
 struct Issue {
@@ -25,6 +25,9 @@ pub(crate) struct RunJson<'a> {
     /// The links to `.agents/skills` that `add` or `init` made or could not make; left out when none.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     bridges: Vec<BridgeRow>,
+    /// The AGENTS.md that `init` writes into the new project; left out when it writes none.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    agents: Option<AgentRow>,
 }
 
 impl<'a> RunJson<'a> {
@@ -48,6 +51,7 @@ impl<'a> RunJson<'a> {
                 .collect(),
             backup: None,
             bridges: Vec::new(),
+            agents: None,
         }
     }
 
@@ -58,6 +62,11 @@ impl<'a> RunJson<'a> {
 
     pub(crate) fn with_bridges(mut self, bridges: &[BridgeRow]) -> Self {
         self.bridges = bridges.to_vec();
+        self
+    }
+
+    pub(crate) fn with_agents(mut self, agents: Option<&AgentRow>) -> Self {
+        self.agents = agents.cloned();
         self
     }
 

@@ -145,9 +145,18 @@ fn confirm(backups: &Backups, preview: &UndoReport) -> Result<bool, CliError> {
         .map_or("run", RunKind::name);
     let projects: BTreeSet<_> = preview.entries.iter().map(|e| &e.project).collect();
     let question = format!(
-        "Undo the {command} of {}: {} folder(s) in {} project(s)?",
+        "Undo the {command} of {}: {} {}(s) in {} project(s)?",
         describe_run(&preview.from),
         preview.entries.len(),
+        if preview
+            .entries
+            .iter()
+            .any(|e| e.skill == skillmirror_core::agents::FILE_NAME)
+        {
+            "item"
+        } else {
+            "folder"
+        },
         projects.len()
     );
     Ok(output::confirm(&question)?)

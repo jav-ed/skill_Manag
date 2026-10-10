@@ -70,6 +70,7 @@ macro_rules! from_core_error {
 }
 
 from_core_error!(
+    skillmirror_core::agents::AgentsError,
     skillmirror_core::backup::BackupError,
     skillmirror_core::config::ConfigError,
     skillmirror_core::ops::DeleteError,

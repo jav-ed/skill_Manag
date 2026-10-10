@@ -3,6 +3,8 @@
 
 #[macro_use]
 mod macros;
+mod agents;
+mod agents_json;
 mod author;
 mod backup;
 mod bridge;
@@ -20,6 +22,11 @@ mod view;
 
 use std::io::{BufRead, IsTerminal, Write};
 
+pub(crate) use agents::{
+    AgentRow, Tense as AgentsTense, render_agents_line, render_agents_plan, render_agents_status,
+    render_diffs,
+};
+pub(crate) use agents_json::{AgentsRunJson, AgentsStatusJson, StatusCounts as AgentsStatusCounts};
 pub(crate) use author::{AuthoredJson, Pointer, VaultInitJson, render_authored, render_vault_init};
 pub(crate) use backup::{
     HistoryJson, HistoryRow, UndoJson, UndoRow, UndoStatus, render_history, render_undo,

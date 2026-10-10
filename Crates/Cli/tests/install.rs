@@ -103,7 +103,7 @@ fn init_creates_the_project_with_mandatory_skills_and_the_profile() {
     let world = world();
     let dir = world.root().join("fresh");
     skillmirror(&world)
-        .arg("init")
+        .args(["init", "--no-agents-md"])
         .arg(&dir)
         .args(["--profile", "site", "--yes", "--git"])
         .assert()
@@ -125,7 +125,7 @@ fn init_creates_the_project_with_mandatory_skills_and_the_profile() {
 fn init_with_no_mandatory_installs_only_the_selection() {
     let world = world();
     skillmirror(&world)
-        .arg("init")
+        .args(["init", "--no-agents-md"])
         .arg(world.root().join("lean"))
         .args(["seo", "--no-mandatory", "--yes"])
         .assert()
@@ -138,7 +138,7 @@ fn init_with_no_mandatory_installs_only_the_selection() {
 fn init_dry_run_creates_no_directory() {
     let world = world();
     skillmirror(&world)
-        .arg("init")
+        .args(["init", "--no-agents-md"])
         .arg(world.root().join("ghost"))
         .args(["--dry-run"])
         .assert()
@@ -150,7 +150,7 @@ fn init_dry_run_creates_no_directory() {
 fn init_refuses_a_non_empty_directory_and_creates_nothing() {
     let world = world();
     skillmirror(&world)
-        .arg("init")
+        .args(["init", "--no-agents-md"])
         .arg(world.root().join("one"))
         .arg("--yes")
         .assert()
@@ -161,7 +161,7 @@ fn init_refuses_a_non_empty_directory_and_creates_nothing() {
 fn init_with_an_unknown_profile_creates_no_directory() {
     let world = world();
     skillmirror(&world)
-        .arg("init")
+        .args(["init", "--no-agents-md"])
         .arg(world.root().join("never"))
         .args(["--profile", "nope", "--yes"])
         .assert()
@@ -174,7 +174,7 @@ fn init_with_an_unknown_profile_creates_no_directory() {
 fn init_without_yes_and_without_a_terminal_is_a_usage_error() {
     let world = world();
     skillmirror(&world)
-        .arg("init")
+        .args(["init", "--no-agents-md"])
         .arg(world.root().join("unasked"))
         .assert()
         .code(2);
@@ -187,7 +187,7 @@ fn init_works_without_a_vault_root_flag() {
     bare(&world)
         .arg("--vault")
         .arg(world.vault())
-        .arg("init")
+        .args(["init", "--no-agents-md"])
         .arg(world.root().join("solo"))
         .args(["--yes"])
         .assert()

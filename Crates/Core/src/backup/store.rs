@@ -34,6 +34,8 @@ pub enum RunKind {
     Add,
     Init,
     Undo,
+    /// `agents add` and `agents sync`: the AGENTS.md files of projects.
+    Agents,
 }
 
 impl RunKind {
@@ -45,6 +47,7 @@ impl RunKind {
             Self::Add => "add",
             Self::Init => "init",
             Self::Undo => "undo",
+            Self::Agents => "agents",
         }
     }
 }

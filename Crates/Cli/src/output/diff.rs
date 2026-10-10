@@ -184,22 +184,27 @@ fn file_text(file: &FileDiff) -> String {
                 "{HEADER}mode {path}{HEADER:#} {MUTED}{before:o} → {after:o}{MUTED:#}"
             );
         }
-        (None, _) => {
-            for line in file.text.lines() {
-                let style = if line.starts_with("+++") || line.starts_with("---") {
-                    HEADER
-                } else if line.starts_with("@@") {
-                    HUNK
-                } else if line.starts_with('+') {
-                    ADDED
-                } else if line.starts_with('-') {
-                    REMOVED
-                } else {
-                    MUTED
-                };
-                putln!(out, "{style}{line}{style:#}");
-            }
-        }
+        (None, _) => out.push_str(&styled_diff(&file.text)),
+    }
+    out
+}
+
+/// The lines of a unified diff, coloured: headers bold, hunks cyan, added green, removed red.
+pub(super) fn styled_diff(text: &str) -> String {
+    let mut out = String::new();
+    for line in text.lines() {
+        let style = if line.starts_with("+++") || line.starts_with("---") {
+            HEADER
+        } else if line.starts_with("@@") {
+            HUNK
+        } else if line.starts_with('+') {
+            ADDED
+        } else if line.starts_with('-') {
+            REMOVED
+        } else {
+            MUTED
+        };
+        putln!(out, "{style}{line}{style:#}");
     }
     out
 }
