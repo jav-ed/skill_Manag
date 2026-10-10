@@ -3,6 +3,7 @@
 use skillmirror_core::ops;
 
 use super::context::{Context, open, scope_of};
+use super::status_agents;
 use crate::args::{Cli, StatusArgs};
 use crate::exit::Exit;
 use crate::output::{self, ProjectRow, StatusJson, StatusSummary};
@@ -19,6 +20,10 @@ pub(super) fn run(cli: &Cli, args: &StatusArgs) -> Result<Exit, CliError> {
         output::line("No projects with a skills directory found.");
     } else {
         output::print(&output::render_status(&status, args.all));
+        status_agents::hint(
+            &workspace.vault.path,
+            status.projects.iter().map(|p| p.project.as_path()),
+        );
     }
     // Like `sync --check`: failures first, then drift, else clean.
     Ok(if status.failed() > 0 {

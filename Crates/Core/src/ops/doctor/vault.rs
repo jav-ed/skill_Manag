@@ -1,7 +1,8 @@
 //! The vault side: discovery, git, the config's mandatory list and profiles.
 
-use super::{Report, Severity, skills};
+use super::{Report, Severity, agents_text, skills};
 use crate::Hint;
+use crate::agents::VAULT_FOLDER;
 use crate::config::Settings;
 use crate::ops::{SelectError, Selection, resolve};
 use crate::vault::{IgnoredReason, discover, read_files};
@@ -34,7 +35,12 @@ pub(super) fn check(report: &mut Report, settings: &Settings) {
             return;
         }
     };
+    let text_folder = path.join(VAULT_FOLDER);
     for ignored in &vault.ignored {
+        // The folder for the files that go into every project is meant to hold no skill.
+        if ignored.path == text_folder {
+            continue;
+        }
         let (severity, message) = match ignored.reason {
             IgnoredReason::Symlink => (
                 Severity::Warning,
@@ -50,6 +56,8 @@ pub(super) fn check(report: &mut Report, settings: &Settings) {
             None,
         );
     }
+
+    agents_text::check(report, &vault);
 
     report.ran("vault-git");
     let files = match read_files(&vault) {

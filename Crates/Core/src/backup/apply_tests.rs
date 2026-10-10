@@ -33,6 +33,7 @@ fn an_update_stores_the_old_folder_with_its_modes() {
             project: target.project.clone(),
             skill: "coding".to_string(),
             change: Change::Updated,
+            subject: Subject::Skill,
         }
     );
     assert_eq!(files_of(&run.entries[0].tree()), before);

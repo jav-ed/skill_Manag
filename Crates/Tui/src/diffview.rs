@@ -1,5 +1,6 @@
 //! The changes a plan would make, as the lines the diff page shows.
 
+use skillmirror_core::agents::AgentsPlan;
 use skillmirror_core::ops::{DiffKind, FileDiff, SkillDiff, Skipped};
 
 use crate::results::short_path;
@@ -34,6 +35,53 @@ fn line(tone: Tone, text: impl Into<String>) -> DiffLine {
     }
 }
 
+/// The lines of the AGENTS.md files a plan would write.
+pub(crate) fn lines_of_agents(plan: &AgentsPlan) -> Vec<DiffLine> {
+    let mut out = Vec::new();
+    for entry in plan.entries.iter().filter(|e| e.writes()) {
+        if !out.is_empty() {
+            out.push(line(Tone::Plain, ""));
+        }
+        out.push(line(
+            Tone::Skill,
+            format!(
+                "AGENTS.md in {}",
+                short_path(&entry.project.to_string_lossy())
+            ),
+        ));
+        // The first two lines are the `---` and `+++` headers; the line above names the file.
+        for text in entry.diff().lines().skip(2) {
+            out.push(text_line(text));
+        }
+    }
+    cut(out)
+}
+
+fn text_line(text: &str) -> DiffLine {
+    let tone = if text.starts_with("@@") {
+        Tone::Hunk
+    } else if text.starts_with('+') {
+        Tone::Added
+    } else if text.starts_with('-') {
+        Tone::Removed
+    } else {
+        Tone::Plain
+    };
+    line(tone, format!("    {text}"))
+}
+
+fn cut(mut out: Vec<DiffLine>) -> Vec<DiffLine> {
+    if out.len() > MAX_LINES {
+        let more = out.len() - MAX_LINES;
+        out.truncate(MAX_LINES);
+        out.push(line(
+            Tone::Note,
+            format!("… {more} more lines are not shown; `skillmirror diff` shows them all"),
+        ));
+    }
+    out
+}
+
 pub(crate) fn lines_of(skills: &[SkillDiff]) -> Vec<DiffLine> {
     let mut out = Vec::new();
     for skill in skills {
@@ -52,15 +100,7 @@ pub(crate) fn lines_of(skills: &[SkillDiff]) -> Vec<DiffLine> {
             file_lines(file, &mut out);
         }
     }
-    if out.len() > MAX_LINES {
-        let more = out.len() - MAX_LINES;
-        out.truncate(MAX_LINES);
-        out.push(line(
-            Tone::Note,
-            format!("… {more} more lines are not shown; `skillmirror diff` shows them all"),
-        ));
-    }
-    out
+    cut(out)
 }
 
 fn file_lines(file: &FileDiff, out: &mut Vec<DiffLine>) {
@@ -92,15 +132,6 @@ fn file_lines(file: &FileDiff, out: &mut Vec<DiffLine>) {
     }
     // The first two lines of the text are the `---` and `+++` headers; the page names the file itself.
     for text in file.text.lines().skip(2) {
-        let tone = if text.starts_with("@@") {
-            Tone::Hunk
-        } else if text.starts_with('+') {
-            Tone::Added
-        } else if text.starts_with('-') {
-            Tone::Removed
-        } else {
-            Tone::Plain
-        };
-        out.push(line(tone, format!("    {text}")));
+        out.push(text_line(text));
     }
 }

@@ -4,8 +4,9 @@
 
 use std::path::{Path, PathBuf};
 
-use super::store::{Backups, Change, Entry, LoadedEntry, Run, RunKind};
+use super::store::{Backups, Change, Entry, LoadedEntry, Run, RunKind, Subject};
 use super::tree::copy_tree;
+use super::undo_file::restore_file;
 use super::{BackupError, Finished, UndoError};
 use crate::apply::{Keep, Replaces, discard, place};
 use crate::events::{Event, Observer, Status};
@@ -93,7 +94,10 @@ pub fn undo(
             target: Target {
                 project: entry.entry.project.clone(),
                 skill: entry.entry.skill.clone(),
-                path: skill_path(&entry.entry.project, &entry.entry.skill),
+                path: match entry.entry.subject {
+                    Subject::Skill => skill_path(&entry.entry.project, &entry.entry.skill),
+                    Subject::Agents => entry.entry.project.join(&entry.entry.skill),
+                },
             },
             status: status_of(entry.entry.change, &result),
         });
@@ -142,6 +146,9 @@ fn restore(
     index: usize,
     token: &str,
 ) -> Result<Undone, UndoError> {
+    if entry.entry.subject == Subject::Agents {
+        return restore_file(entry, new_run, index, token);
+    }
     let target = target_of(entry)?;
     let current = current_state(&target)?;
     let dry = new_run.is_none();

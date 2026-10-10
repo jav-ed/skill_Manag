@@ -133,6 +133,11 @@ pub(crate) const RUN_PUSH: Binding = Binding {
     label: "enter",
     help: "push",
 };
+pub(crate) const RUN_AGENTS: Binding = Binding {
+    keys: &[(Code::Enter, N)],
+    label: "enter",
+    help: "write AGENTS.md",
+};
 pub(crate) const RUN_DELETE: Binding = Binding {
     keys: &[(Code::Enter, N)],
     label: "enter",
@@ -147,6 +152,11 @@ pub(crate) const RUN_INIT: Binding = Binding {
     keys: &[(Code::Enter, N)],
     label: "enter",
     help: "create",
+};
+pub(crate) const AGENTS_FILE: Binding = Binding {
+    keys: &[(Code::Char('m'), N)],
+    label: "m",
+    help: "AGENTS.md",
 };
 pub(crate) const GIT: Binding = Binding {
     keys: &[(Code::Char('g'), N)],

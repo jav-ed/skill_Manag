@@ -6,10 +6,12 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
 use std::thread;
 
+use skillmirror_core::agents::{AgentsPlan, apply_agents};
 use skillmirror_core::apply::{ApplyOptions, Outcome, apply};
 use skillmirror_core::backup::RunKind;
 use skillmirror_core::config::Dirs;
 use skillmirror_core::events::Event as CoreEvent;
+use skillmirror_core::events::ignore_events;
 use skillmirror_core::ops::{self, BridgeState};
 use skillmirror_core::plan::Plan;
 
@@ -51,6 +53,7 @@ fn check(purpose: Purpose, path: PathBuf) -> Result<Placed, String> {
             path,
             installed,
             git: false,
+            agents: true,
         },
     })
 }
@@ -75,17 +78,27 @@ fn installed_in(project: &std::path::Path) -> Result<BTreeSet<String>, String> {
     Ok(names)
 }
 
+/// What the install job needs besides where to report.
+pub(crate) struct InstallJob {
+    pub(crate) kind: Kind,
+    pub(crate) plan: Plan,
+    pub(crate) install: Install,
+    /// The agent folders to link to `.agents/skills` after a write.
+    pub(crate) bridges: Vec<String>,
+    /// The AGENTS.md of a new project, written in the same backup run after the skills.
+    pub(crate) agents: Option<Box<AgentsPlan>>,
+}
+
 /// Installs the plan the user confirmed. Init makes the folder first and takes it back when nothing could
 /// be written; the links the vault config asks for are made after a write.
-pub(crate) fn spawn_install(
-    tx: Sender<Event>,
-    id: JobId,
-    dirs: Dirs,
-    kind: Kind,
-    plan: Plan,
-    install: Install,
-    bridges: Vec<String>,
-) {
+pub(crate) fn spawn_install(tx: Sender<Event>, id: JobId, dirs: Dirs, job: InstallJob) {
+    let InstallJob {
+        kind,
+        plan,
+        install,
+        bridges,
+        agents,
+    } = job;
     thread::spawn(move || {
         let run_kind = if kind == Kind::Init {
             RunKind::Init
@@ -124,6 +137,11 @@ pub(crate) fn spawn_install(
                 .filter(|a| matches!(a.outcome, Outcome::Created | Outcome::Updated))
                 .count()
         });
+        // The file of a new project goes in the same run, after the skills, and only when some were installed.
+        let agents_report = agents
+            .as_ref()
+            .filter(|_| wrote > 0)
+            .map(|plan| apply_agents(plan, Some(&backup), total, &ignore_events));
         let mut warnings = Vec::new();
         // Nothing got installed: the folder and repository this job made go, so it can be run again.
         if wrote == 0
@@ -136,6 +154,11 @@ pub(crate) fn spawn_install(
             Ok(report) => {
                 let mut results =
                     Results::from_applied(report, kind).with_backup(&backup.finish(&backups));
+                if let Some(report) = &agents_report {
+                    let file = Results::from_agents(report);
+                    results.skills.extend(file.skills);
+                    results.warnings.extend(file.warnings);
+                }
                 results.warnings.extend(warnings);
                 if wrote > 0 {
                     link(&bridges, &install.project, &mut results);

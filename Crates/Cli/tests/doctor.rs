@@ -13,6 +13,12 @@ fn healthy() -> World {
     world
         .vault_file("coding/SKILL.md", &HEADER.replace("NAME", "coding"))
         .vault_file("tmux/SKILL.md", &HEADER.replace("NAME", "tmux"))
+        // The skills the built-in AGENTS.md text names; without them `doctor` has a warning.
+        .vault_file("doc-start/SKILL.md", &HEADER.replace("NAME", "doc-start"))
+        .vault_file(
+            "file-tree-optimization/SKILL.md",
+            &HEADER.replace("NAME", "file-tree-optimization"),
+        )
         .project_file(
             "one/.agents/skills/coding/SKILL.md",
             &HEADER.replace("NAME", "coding"),

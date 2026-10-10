@@ -88,8 +88,21 @@ impl<'a> HistoryJson<'a> {
     }
 }
 
+/// What the entries of an undo are: skill folders, or items when the AGENTS.md of a project is among them.
+fn noun_of(rows: &[UndoRow]) -> &'static str {
+    if rows
+        .iter()
+        .any(|r| r.skill == skillmirror_core::agents::FILE_NAME)
+    {
+        "item"
+    } else {
+        "folder"
+    }
+}
+
 pub(crate) fn render_undo(rows: &[UndoRow], dry_run: bool) -> String {
     let mut out = String::new();
+    let noun = noun_of(rows);
     let (mut restored, mut removed, mut failed) = (0, 0, 0);
     for row in rows {
         let name = pad(&row.skill);
@@ -145,7 +158,7 @@ pub(crate) fn render_undo(rows: &[UndoRow], dry_run: bool) -> String {
     };
     for (count, label) in [(restored, back), (removed, gone), (failed, "failed")] {
         if count > 0 {
-            parts.push(format!("{} {label}", plural(count, "folder")));
+            parts.push(format!("{} {label}", plural(count, noun)));
         }
     }
     let note = if dry_run { " (dry run)" } else { "" };
@@ -175,7 +188,14 @@ pub(crate) fn render_history(rows: &[HistoryRow]) -> String {
             "{NAME}{}{NAME:#}  {:<7} {} in {}  {MUTED}{}{MUTED:#}",
             row.date,
             row.command.unwrap_or("?"),
-            plural(row.skills, "folder"),
+            plural(
+                row.skills,
+                if row.command == Some("agents") {
+                    "file"
+                } else {
+                    "folder"
+                }
+            ),
             plural(row.projects, "project"),
             row.id
         );

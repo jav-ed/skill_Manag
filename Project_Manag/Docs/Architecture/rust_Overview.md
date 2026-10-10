@@ -39,6 +39,7 @@ See [core_Modules.md](core_Modules.md).
 - **Hard errors, no fallbacks.** A missing vault, a vault that is not a git repository, a mandatory name the vault lacks: each is an error with a message and a hint, not a quiet default.
 - **Never write through a link.** A project whose `.agents` or `skills` is a link, a destination that is a link, a tracked symlink in a skill: all refused.
 - **A backup before any replace or removal.** `backup` keeps `<state>/backups/<run>/<n>/{entry.json,tree/}` and the newest 30 runs; `undo` is itself a run.
+- **The AGENTS.md of a project has one block the tool owns.** Everything outside the markers is left byte for byte; a block edited by hand is never replaced unseen (`--force` says so); a file is written like a skill (stage, swap, compare, backup) and never through a link. See contract Q57 to Q62.
 - **Per-target failure.** Exit code 4 means the command ran and some targets failed; nothing is left half written.
 - **No work on the interface thread.** The TUI runs every scan, plan and write in a job thread.
 - **Odd paths survive.** Paths are `OsStr` everywhere; JSON output shows lossy text, notes on disk keep the exact bytes.

@@ -42,6 +42,12 @@ Run `just parity` as a normal user (87 / 44 / 0 was the result before the lead r
 
 [open_Questions.md](open_Questions.md): one batch, with the lead's default for each.
 
+### A7b. [ ] Use the AGENTS.md feature on the real vault and finish its edges (gap 10)
+
+Built on 2026-10-10 and tested only in throwaway worlds. Do, read-only first: `skillmirror agents status` on the real tree (every project is `missing` until a file exists; that is normal) and `skillmirror doctor` (its `agents-text` check names a vault text that cannot be used, or a built-in text whose three skills the vault lacks). Then `skillmirror agents seed --dry-run`, and only with the user's yes `skillmirror agents seed`: it writes the built-in rules to `<vault>/project-files/AGENTS.md`, never over a file; the user edits that file, commits it in the vault, and `agents sync` brings the blocks along (their closing note says that only what comes below the block may be changed). Make sure `doc-start`, `coding` and `file-tree-optimization` are mandatory when the built-in text is kept, and only with the user's yes run `skillmirror init` for a new project or `skillmirror agents add --project DIR` for one existing project. Open edges, none of them blocking: the web view has no row for it (`Docs/Architecture/web_Api.md`, `Ui/`); `sync` and `push` do not carry the blocks (decision record section 8, option D: refresh the blocks that exist, never create the file, in the same plan, backup run and undo); the interface has no key to seed the vault text; a roll-out to every project at once is `agents add` per project (no `--all` for `add`, on purpose: it writes into about 60 projects); several named texts (by profile, group or project) are deferred until the user has different texts for different kinds of project; two mutations survive (`wrote > 0` in `commands/pipeline.rs`, and the take-back and race paths of `agents/seed.rs`). The folder name `project-files` is the lead's pick (the user said "think about the name"); ask whether it is wanted.
+
+Done when: the user has seen the block in a real project, the text they want is in the vault, and each edge above is either built or crossed out here with the user's word.
+
 ### A8. [ ] Promote this folder, then ask about the branch
 
 [cutover_Runbook.md](cutover_Runbook.md), last section.
@@ -56,7 +62,8 @@ Run `just parity` as a normal user (87 / 44 / 0 was the result before the lead r
 6. **[x] What a regular user needs.** Scoped `sync`/`push`/`status` (skill names, group, profile, project; Q51), `info` (Q52), `new`, `adopt`, `vault init` (Q53), `config`, `mandatory` (Q54).
 7. **[x] Build cost.** `[profile.dev] debug = false, incremental = false`, documented in `Docs/Setup/build_Resources.md` with measured numbers and the switches to turn them back on.
 8. **[x] Documentation pass.** README, architecture, `sync_Concept.md`, the contract rows, the web API page, `doc_Start.md`; the Astro leftovers of an earlier website idea are gone.
-9. **[x] Cutover, the code part.** The Go tree is deleted; the merge into `main` is done (pull request 1). What is left of the cutover is A4 and A8.
+9. **[x] The AGENTS.md of a project (2026-10-10).** Contract Q57 to Q64, decision record section 8. Core `agents/` (also `seed.rs`; the text is in `<vault>/project-files/AGENTS.md`) (text, block, inspect, plan, apply), single-file entries in the backup store (`Subject::Agents`, `file_entry.rs`, `undo_file.rs`), `agents status|sync|add` and `init` writing the file (`--no-agents-md`), the Agents page and `m` on the Init page. Tests: `agents/*_tests.rs` in Core, `Cli/tests/agents.rs`, `agents_write.rs` and `agents_text.rs`, `Tui/src/tests/agents.rs` and `init_agents.rs`, `Cli/tests/interface_agents.rs`, and the AGENTS.md section of `Code/Development/Smoke/check_Smoke.sh`. 24 of 25 guard mutations are caught, and 12 of 12 for the folder, the closing note, `seed`, `doctor` and the `status` line (contract Q63, Q64).
+10. **[x] Cutover, the code part.** The Go tree is deleted; the merge into `main` is done (pull request 1). What is left of the cutover is A4 and A8.
 
 ## C. Separate track: skills (not part of the rewrite; unchanged since the first handoff)
 

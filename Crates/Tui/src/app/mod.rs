@@ -169,6 +169,7 @@ impl App {
                 Mode::Delete => "delete",
                 Mode::List => "list",
                 Mode::Skills => "skills",
+                Mode::Agents => "agents",
                 Mode::Add => "add",
                 Mode::Init => "init",
             }),
@@ -241,7 +242,9 @@ fn entry_of(mode: Mode) -> Dest {
     match mode {
         Mode::Add => Dest::Place(Purpose::Add),
         Mode::Init => Dest::Place(Purpose::Init),
-        Mode::Sync | Mode::Push | Mode::Delete | Mode::List | Mode::Skills => Dest::Work(mode),
+        Mode::Sync | Mode::Push | Mode::Delete | Mode::List | Mode::Skills | Mode::Agents => {
+            Dest::Work(mode)
+        }
     }
 }
 

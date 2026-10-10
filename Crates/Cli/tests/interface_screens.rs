@@ -44,8 +44,8 @@ fn history_undoes_a_sync() {
     term.send("q");
     term.wait_for("Refresh the skills each project already has");
 
-    // History is the eighth entry of the menu.
-    term.send("jjjjjjj\r");
+    // History is the ninth entry of the menu.
+    term.send("jjjjjjjj\r");
     term.wait_for("1 run");
     term.wait_for("sync");
     term.send("\r");
@@ -75,8 +75,8 @@ fn add_installs_a_skill_into_a_project() {
     let world = World::standard();
     let mut term = tui(&world);
     term.wait_for("skillmirror");
-    // Add is the sixth entry of the menu.
-    term.send("jjjjj\r");
+    // Add is the seventh entry of the menu.
+    term.send("jjjjjj\r");
     term.wait_for("The project that gets the skills.");
     // The picker starts in the root: one, plain, three, two. Walk into `two` and choose it.
     term.send("jjjl");
@@ -107,8 +107,8 @@ fn init_makes_a_new_project() {
     let world = World::standard();
     let mut term = tui(&world);
     term.wait_for("skillmirror");
-    // Init is the seventh entry of the menu.
-    term.send("jjjjjj\r");
+    // Init is the eighth entry of the menu.
+    term.send("jjjjjjj\r");
     term.wait_for("The folder the new project goes in.");
     term.send("\r");
     term.wait_for("The name of the new project folder:");
@@ -116,6 +116,9 @@ fn init_makes_a_new_project() {
     term.send("quick\r");
     term.wait_for("Select skills for");
     term.wait_for("2 / 3 selected");
+    // The standard vault has not the skills the built-in AGENTS.md names, so the file is switched off.
+    term.send("m");
+    term.wait_for("no AGENTS.md");
     term.send("g\r");
     term.wait_for("Create ");
     term.wait_for("It becomes a git repository.");

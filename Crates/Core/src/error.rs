@@ -1,5 +1,6 @@
 //! Error plumbing shared by the engine: a "what to do next" hint and the top-level error.
 
+use crate::agents::AgentsError;
 use crate::apply::ApplyError;
 use crate::backup::BackupError;
 use crate::config::ConfigError;
@@ -44,6 +45,8 @@ pub enum Error {
     VaultInit(#[from] VaultInitError),
     #[error(transparent)]
     Mandatory(#[from] MandatoryError),
+    #[error(transparent)]
+    Agents(#[from] AgentsError),
 }
 
 impl Hint for Error {
@@ -62,6 +65,7 @@ impl Hint for Error {
             Self::Author(e) => e.hint(),
             Self::VaultInit(e) => e.hint(),
             Self::Mandatory(e) => e.hint(),
+            Self::Agents(e) => e.hint(),
         }
     }
 }

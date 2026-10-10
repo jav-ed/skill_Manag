@@ -7,6 +7,7 @@
 #[cfg(not(target_os = "linux"))]
 compile_error!("skillmirror supports Linux only");
 
+pub mod agents;
 pub mod apply;
 pub mod backup;
 pub mod brand;

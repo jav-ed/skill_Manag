@@ -158,7 +158,7 @@ fn init_links_the_new_project() {
     let dir = world.root().join("fresh");
 
     skillmirror(&world)
-        .arg("init")
+        .args(["init", "--no-agents-md"])
         .arg(&dir)
         .arg("--yes")
         .assert()
