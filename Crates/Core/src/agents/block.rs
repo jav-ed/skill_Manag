@@ -86,7 +86,13 @@ pub(super) fn search(content: &str) -> Search {
     let mut offset = 0;
     for (index, raw) in content.split_inclusive('\n').enumerate() {
         let line_no = index + 1;
-        let text = raw.trim_end_matches(['\r', '\n']);
+        // A byte order mark in front of the first line belongs to the file, not to a marker after it.
+        let bom = if index == 0 && raw.starts_with('\u{feff}') {
+            '\u{feff}'.len_utf8()
+        } else {
+            0
+        };
+        let text = raw[bom..].trim_end_matches(['\r', '\n']);
         if text.starts_with(BEGIN_PREFIX) && text.ends_with("-->") {
             if let Some(first) = &open {
                 return Search::Broken(format!(
@@ -100,7 +106,7 @@ pub(super) fn search(content: &str) -> Search {
                 ));
             }
             open = Some(Open {
-                start: offset,
+                start: offset + bom,
                 body_start: offset + raw.len(),
                 recorded: recorded_checksum(text),
                 line: line_no,

@@ -62,6 +62,20 @@ fn crlf_files_are_read_the_same_and_the_body_is_normalised() {
 }
 
 #[test]
+fn a_byte_order_mark_in_front_of_the_block_is_not_part_of_it() {
+    let block = render("a\nb");
+    let content = format!("\u{feff}{block}# Mine\n");
+
+    let f = found(&content);
+
+    assert_eq!(f.start, '\u{feff}'.len_utf8());
+    assert_eq!(&content[..f.start], "\u{feff}");
+    assert_eq!(f.body, body("a\nb"));
+    assert_eq!(f.recorded, Some(checksum(&body("a\nb"))));
+    assert_eq!(&content[f.end..], "# Mine\n");
+}
+
+#[test]
 fn a_block_at_the_end_of_a_file_without_a_final_newline_ends_at_the_file_end() {
     let content = render("x").trim_end().to_string();
 

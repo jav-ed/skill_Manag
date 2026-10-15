@@ -65,6 +65,23 @@ fn a_byte_order_mark_stays_first_when_the_block_is_put_in() {
 }
 
 #[test]
+fn a_file_with_a_byte_order_mark_is_found_again_and_updated_after_the_insert() {
+    let project = TempTree::new();
+    project.write("AGENTS.md", "\u{feff}# Mine\r\nline\r\n");
+    let inserted = after(&plan_for(&project, &source("a"), Intent::ADD));
+    project.write("AGENTS.md", &inserted);
+
+    let plan = plan_for(&project, &source("a\nb"), Intent::SYNC);
+
+    assert_eq!(entry(&plan).action, Action::Update);
+    let updated = after(&plan);
+    assert!(updated.starts_with('\u{feff}'));
+    assert_eq!(updated.matches('\u{feff}').count(), 1);
+    assert!(updated.contains("a\r\nb\r\n"));
+    assert!(updated.ends_with("# Mine\r\nline\r\n"));
+}
+
+#[test]
 fn a_crlf_file_stays_crlf_everywhere_after_an_insert_and_an_update() {
     let project = TempTree::new();
     project.write("AGENTS.md", "# Mine\r\nline\r\n");
