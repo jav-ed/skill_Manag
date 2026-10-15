@@ -26,7 +26,13 @@ impl Drop for Running {
     }
 }
 
+/// The server only starts when the vault config has `web: true`; this is what `config web on` writes.
+fn switch_on(world: &World) {
+    world.vault_config_with(&["coding", "tmux"], "web: true");
+}
+
 fn start(world: &World, extra: &[&str]) -> Running {
+    switch_on(world);
     let mut command = Command::new(env!("CARGO_BIN_EXE_skillmirror"));
     command
         .env_clear()
@@ -225,6 +231,7 @@ fn it_refuses_to_start_without_a_vault_and_prints_no_link() {
 #[test]
 fn a_taken_port_is_an_error_with_the_port_in_it() {
     let world = World::standard();
+    switch_on(&world);
     let blocker = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
     let port = blocker.local_addr().unwrap().port().to_string();
 
@@ -274,4 +281,30 @@ fn the_idle_timeout_ends_a_forgotten_server_and_a_bad_value_is_refused() {
         Some(2),
         "a command line that cannot be carried out"
     );
+}
+
+#[test]
+fn the_server_does_not_start_while_the_config_has_the_web_view_off() {
+    let world = World::standard();
+
+    let out = Command::new(env!("CARGO_BIN_EXE_skillmirror"))
+        .env_clear()
+        .envs(world.env())
+        .arg("--vault")
+        .arg(world.vault())
+        .arg("--root")
+        .arg(world.root())
+        .arg("web")
+        .output()
+        .unwrap();
+
+    assert_eq!(out.status.code(), Some(2));
+    let err = String::from_utf8_lossy(&out.stderr);
+    assert!(err.contains("switched off in the config"), "{err}");
+    assert!(err.contains("skillmirror config web on"), "{err}");
+    assert!(
+        !err.contains("no web view"),
+        "this build has it, only the switch is off: {err}"
+    );
+    assert!(out.stdout.is_empty(), "no link was printed");
 }

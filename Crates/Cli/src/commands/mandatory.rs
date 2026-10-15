@@ -39,6 +39,7 @@ fn edit(cli: &Cli, args: &MandatoryEditArgs, add: bool) -> Result<(), CliError> 
             &ConfigUpdate {
                 root: None,
                 mandatory: Some(&after),
+                ..ConfigUpdate::default()
             },
         )?;
     }

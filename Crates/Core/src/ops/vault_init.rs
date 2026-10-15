@@ -63,6 +63,7 @@ pub fn init_vault(dir: &Path, root: Option<&Path>) -> Result<NewVault, VaultInit
     let update = ConfigUpdate {
         root,
         mandatory: Some(&[]),
+        ..ConfigUpdate::default()
     };
     let staged = save_config(dir, &update)
         .map_err(VaultInitError::from)

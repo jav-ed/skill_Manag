@@ -11,8 +11,8 @@ pub(crate) use crate::args_agents::{
     AgentsAddArgs, AgentsCommand, AgentsFlags, AgentsSeedArgs, AgentsStatusArgs, AgentsSyncArgs,
 };
 pub(crate) use crate::args_more::{
-    AdoptArgs, ConfigCommand, ConfigRootArgs, InfoArgs, MandatoryCommand, MandatoryEditArgs,
-    NewArgs, ScopeArgs, VaultCommand, VaultInitArgs, WebArgs,
+    AdoptArgs, ConfigCommand, ConfigRootArgs, ConfigWebArgs, InfoArgs, MandatoryCommand,
+    MandatoryEditArgs, NewArgs, ScopeArgs, Switch, VaultCommand, VaultInitArgs, WebArgs,
 };
 
 #[derive(Debug, Parser)]

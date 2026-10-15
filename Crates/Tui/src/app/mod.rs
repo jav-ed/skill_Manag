@@ -288,6 +288,7 @@ impl App {
         let update = ConfigUpdate {
             root: Some(&request.root),
             mandatory: Some(&request.mandatory),
+            ..ConfigUpdate::default()
         };
         save_config(&request.vault, &update).map_err(|e| crate::session::describe(&e))?;
         if let Err(e) = write_pointer(&self.dirs, &request.vault) {

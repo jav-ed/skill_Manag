@@ -22,6 +22,7 @@ fn set_mandatory(vault: &Path, items: &[&str]) -> Result<(), ConfigError> {
         &ConfigUpdate {
             root: None,
             mandatory: Some(&names(items)),
+            ..ConfigUpdate::default()
         },
     )
 }

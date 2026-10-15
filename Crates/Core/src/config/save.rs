@@ -1,4 +1,4 @@
-//! Writing `root` and `mandatory` into `<vault>/config.yaml` by editing the text, so comments, the
+//! Writing `root`, `mandatory` and `web` into `<vault>/config.yaml` by editing the text, so comments, the
 //! order of the keys and every other key stay as the user wrote them.
 
 use std::io::Write;
@@ -16,6 +16,7 @@ const NEW_FILE_MODE: u32 = 0o644;
 pub struct ConfigUpdate<'a> {
     pub root: Option<&'a Path>,
     pub mandatory: Option<&'a [String]>,
+    pub web: Option<bool>,
 }
 
 /// Rewrites the named keys in `<vault>/config.yaml`. An existing file that does not parse is an
@@ -40,6 +41,9 @@ pub fn save_config(vault: &Path, update: &ConfigUpdate<'_>) -> Result<(), Config
     if let Some(mandatory) = update.mandatory {
         edited = set_key(&edited, "mandatory", &mandatory_block(mandatory));
     }
+    if let Some(web) = update.web {
+        edited = set_key(&edited, "web", &format!("web: {web}"));
+    }
     let check = |message: &str| ConfigError::InvalidVaultConfig {
         path: path.clone(),
         message: message.to_string(),
@@ -55,6 +59,9 @@ pub fn save_config(vault: &Path, update: &ConfigUpdate<'_>) -> Result<(), Config
         return Err(check(
             "the rewritten file does not hold the new mandatory list",
         ));
+    }
+    if update.web.is_some_and(|w| parsed.web != w) {
+        return Err(check("the rewritten file does not hold the new web switch"));
     }
     write_atomically(&real, &edited, mode)
 }

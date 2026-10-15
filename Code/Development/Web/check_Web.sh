@@ -4,7 +4,8 @@
 # undo, a name that is markup, and the refusals. Nothing outside a temporary folder is touched.
 #
 # The binary needs the web view built in (it is off by default): `just install-web`, or
-# `cargo build -p skillmirror --features web` for the default path below.
+# `cargo build -p skillmirror --features web` for the default path below. The config it writes
+# says `web: true`, the switch `skillmirror config web on` sets.
 #
 # usage: check_Web.sh [path/to/skillmirror] [screenshot-dir]
 set -euo pipefail
@@ -25,7 +26,7 @@ printf -- '---\nname: coding\ndescription: Write code that other people can read
 printf -- '---\nname: astro\ndescription: Astro sites\n---\nv2\nline2\n' > "$work/vault/web/astro/SKILL.md"
 echo "ref v2" > "$work/vault/web/astro/ref.md"
 printf -- '---\nname: tmux\ndescription: Terminals\n---\nv2\n' > "$work/vault/tmux/SKILL.md"
-printf 'root: %s/projects\nmandatory: [tmux]\n' "$work" > "$work/vault/config.yaml"
+printf 'root: %s/projects\nmandatory: [tmux]\nweb: true\n' "$work" > "$work/vault/config.yaml"
 for p in one two three; do mkdir -p "$work/projects/$p/.agents/skills"; done
 mkdir -p "$work/projects/<img src=x onerror=alert(1)>/.agents/skills/mine"
 echo hi > "$work/projects/<img src=x onerror=alert(1)>/.agents/skills/mine/SKILL.md"

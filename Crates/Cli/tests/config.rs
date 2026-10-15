@@ -194,3 +194,92 @@ fn an_unknown_skill_and_an_unlisted_name_are_hard_errors_and_a_dry_run_writes_no
 
     assert_eq!(world.read("vault/config.yaml"), before);
 }
+
+#[test]
+fn show_says_whether_the_web_view_is_on_and_it_starts_off() {
+    let world = World::standard();
+
+    skillmirror(&world)
+        .args(["config", "show"])
+        .assert()
+        .success()
+        .stdout(contains("web           off"));
+    let doc = json_of(skillmirror(&world).args(["config", "show", "--json"]));
+    assert_eq!(doc["web"], false);
+}
+
+#[test]
+fn config_web_turns_the_switch_on_and_off_and_keeps_the_rest_of_the_file() {
+    let world = World::standard();
+    let before = world.read("vault/config.yaml");
+
+    skillmirror(&world)
+        .args(["config", "web", "on"])
+        .assert()
+        .success()
+        .stdout(contains("Set web: true"));
+    let on = world.read("vault/config.yaml");
+    assert_eq!(on, format!("{before}web: true\n"));
+    skillmirror(&world)
+        .args(["config", "show"])
+        .assert()
+        .success()
+        .stdout(contains("web           on"));
+
+    skillmirror(&world)
+        .args(["config", "web", "off"])
+        .assert()
+        .success()
+        .stdout(contains("Set web: false"));
+    assert_eq!(
+        world.read("vault/config.yaml"),
+        format!("{before}web: false\n")
+    );
+}
+
+#[test]
+fn config_web_says_so_when_nothing_changes_and_a_dry_run_writes_nothing() {
+    let world = World::standard();
+    let before = world.read("vault/config.yaml");
+
+    skillmirror(&world)
+        .args(["config", "web", "off"])
+        .assert()
+        .success()
+        .stdout(contains("web is already off"));
+    skillmirror(&world)
+        .args(["config", "web", "on", "--dry-run"])
+        .assert()
+        .success()
+        .stdout(contains("Would set web: true"));
+
+    assert_eq!(world.read("vault/config.yaml"), before);
+}
+
+#[test]
+fn config_web_wants_on_or_off_and_a_vault() {
+    let world = World::standard();
+
+    skillmirror(&world)
+        .args(["config", "web", "maybe"])
+        .assert()
+        .code(2);
+    bare(&world)
+        .args(["config", "web", "on"])
+        .assert()
+        .failure()
+        .stderr(contains("vault"));
+}
+
+#[cfg(not(feature = "web"))]
+#[test]
+fn turning_it_on_in_a_build_without_the_web_view_warns_that_the_build_lacks_it() {
+    let world = World::standard();
+
+    skillmirror(&world)
+        .args(["config", "web", "on"])
+        .assert()
+        .success()
+        .stderr(contains("no web view yet"))
+        .stderr(contains("just install-web"));
+}

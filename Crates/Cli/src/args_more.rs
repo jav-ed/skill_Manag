@@ -4,7 +4,7 @@
 
 use std::path::PathBuf;
 
-use clap::{Args, Subcommand};
+use clap::{Args, Subcommand, ValueEnum};
 
 /// Limits a command to some skills, to a vault folder or profile, or to one project.
 #[derive(Debug, Args)]
@@ -107,6 +107,24 @@ pub(crate) enum ConfigCommand {
     Path,
     /// Set `root:` in <vault>/config.yaml to a folder that holds your projects
     Root(ConfigRootArgs),
+    /// Turn the web view on or off with `web:` in <vault>/config.yaml (it is off until you turn it on)
+    Web(ConfigWebArgs),
+}
+
+/// On or off, as `config web` takes it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub(crate) enum Switch {
+    On,
+    Off,
+}
+
+#[derive(Debug, Args)]
+pub(crate) struct ConfigWebArgs {
+    /// `on` lets `skillmirror web` start, `off` makes it refuse
+    pub(crate) state: Switch,
+    /// Show the change and make none
+    #[arg(long)]
+    pub(crate) dry_run: bool,
 }
 
 #[derive(Debug, Args)]

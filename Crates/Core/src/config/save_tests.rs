@@ -24,6 +24,7 @@ fn a_missing_file_is_created_with_both_keys() {
         &ConfigUpdate {
             root: Some(std::path::Path::new("/work")),
             mandatory: Some(&mandatory),
+            ..ConfigUpdate::default()
         },
     )
     .unwrap();
@@ -53,6 +54,7 @@ fn comments_other_keys_and_their_order_survive_a_rewrite() {
         &ConfigUpdate {
             root: Some(std::path::Path::new("/new")),
             mandatory: Some(&names(&["astro"])),
+            ..ConfigUpdate::default()
         },
     )
     .unwrap();
@@ -73,6 +75,7 @@ fn only_the_given_keys_change_and_a_missing_key_is_appended() {
         &ConfigUpdate {
             root: None,
             mandatory: Some(&[]),
+            ..ConfigUpdate::default()
         },
     )
     .unwrap();
@@ -90,6 +93,7 @@ fn names_that_yaml_would_misread_are_quoted() {
         &ConfigUpdate {
             root: None,
             mandatory: Some(&tricky),
+            ..ConfigUpdate::default()
         },
     )
     .unwrap();
@@ -106,6 +110,7 @@ fn a_malformed_file_is_an_error_and_stays_as_it_was() {
         &ConfigUpdate {
             root: Some(std::path::Path::new("/w")),
             mandatory: None,
+            ..ConfigUpdate::default()
         },
     )
     .unwrap_err();
@@ -125,6 +130,7 @@ fn a_relative_root_is_refused() {
         &ConfigUpdate {
             root: Some(std::path::Path::new("relative/dir")),
             mandatory: None,
+            ..ConfigUpdate::default()
         },
     )
     .unwrap_err();
@@ -144,6 +150,7 @@ fn the_permissions_of_an_existing_file_are_kept() {
         &ConfigUpdate {
             root: Some(std::path::Path::new("/b")),
             mandatory: None,
+            ..ConfigUpdate::default()
         },
     )
     .unwrap();
@@ -151,4 +158,37 @@ fn the_permissions_of_an_existing_file_are_kept() {
         std::fs::metadata(&file).unwrap().permissions().mode() & 0o777,
         0o600
     );
+}
+
+#[test]
+fn the_web_switch_is_appended_then_replaced_and_the_rest_of_the_file_stays() {
+    let tree = TempTree::new();
+    let vault = vault(&tree);
+    std::fs::write(
+        vault.join("config.yaml"),
+        "# my vault\nroot: \"/w\"\nmandatory: [coding]\n",
+    )
+    .unwrap();
+    let set = |web| {
+        save_config(
+            &vault,
+            &ConfigUpdate {
+                web: Some(web),
+                ..ConfigUpdate::default()
+            },
+        )
+        .unwrap();
+        std::fs::read_to_string(vault.join("config.yaml")).unwrap()
+    };
+
+    assert_eq!(
+        set(true),
+        "# my vault\nroot: \"/w\"\nmandatory: [coding]\nweb: true\n"
+    );
+    assert!(VaultConfig::load(&vault).unwrap().web);
+    assert_eq!(
+        set(false),
+        "# my vault\nroot: \"/w\"\nmandatory: [coding]\nweb: false\n"
+    );
+    assert!(!VaultConfig::load(&vault).unwrap().web);
 }

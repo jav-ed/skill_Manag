@@ -1,4 +1,4 @@
-//! `<vault>/config.yaml`: scan root, mandatory skills and scan exclusions.
+//! `<vault>/config.yaml`: scan root, mandatory skills, scan exclusions and the web view switch.
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -26,6 +26,8 @@ pub struct VaultConfig {
     pub profiles: BTreeMap<String, Profile>,
     /// Other agent folders to link to `.agents/skills`, by name; see [`KNOWN_TARGETS`].
     pub targets: Vec<String>,
+    /// Whether `skillmirror web` may start the local web view. Off unless the file says `web: true`.
+    pub web: bool,
 }
 
 /// A named selection: groups (vault folder paths), skills (names) and other profiles, minus `exclude`.

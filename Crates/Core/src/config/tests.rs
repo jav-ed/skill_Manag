@@ -249,3 +249,20 @@ fn targets_name_known_agent_folders_and_nothing_else() {
         "the message lists the known names: {err}"
     );
 }
+
+#[test]
+fn the_web_view_is_off_unless_the_config_turns_it_on() {
+    let path = Path::new("config.yaml");
+    assert!(!VaultConfig::default().web);
+    assert!(!VaultConfig::parse("mandatory: []\n", path).unwrap().web);
+    assert!(!VaultConfig::parse("web: false\n", path).unwrap().web);
+    assert!(VaultConfig::parse("web: true\n", path).unwrap().web);
+
+    for bad in ["web: sometimes\n", "web: [true]\n"] {
+        let err = VaultConfig::parse(bad, path).unwrap_err();
+        assert!(
+            matches!(err, ConfigError::InvalidVaultConfig { .. }),
+            "{bad}: {err}"
+        );
+    }
+}

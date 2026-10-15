@@ -42,6 +42,7 @@ pub(crate) struct ConfigJson {
     config_file: Option<String>,
     mandatory: Vec<String>,
     targets: Vec<String>,
+    web: bool,
     exclude_dirs: Vec<String>,
     exclude_paths: Vec<String>,
     profiles: Vec<ProfileRow>,
@@ -61,6 +62,7 @@ impl ConfigJson {
             }),
             mandatory: config.mandatory.clone(),
             targets: config.targets.clone(),
+            web: config.web,
             exclude_dirs: config.exclude_dirs.clone(),
             exclude_paths: config
                 .exclude_paths
@@ -143,6 +145,12 @@ pub(crate) fn render_config(settings: &Settings) -> String {
         list_or_none(&config.mandatory)
     );
     putln!(out, "{}{}", label("targets"), list_or_none(&config.targets));
+    putln!(
+        out,
+        "{}{}",
+        label("web"),
+        if config.web { "on" } else { "off" }
+    );
     putln!(
         out,
         "{}{}",

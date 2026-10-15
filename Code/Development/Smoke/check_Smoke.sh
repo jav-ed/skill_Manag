@@ -130,17 +130,19 @@ step "doctor reports the unusable text" 3 "$SM" doctor --vault "$V" --root "$R";
 rm -f "$V/project-files/AGENTS.md"
 
 # ---- the web server over HTTP ---------------------------------------------------------------------
-# The web view is built in only with `--features web` (`just install-web`); it is off by default. With no
-# vault set (a fresh, empty HOME), a build with it stops at "no vault configured" and one without it says
-# it has no web view, so this tells them apart without starting a server. A binary without it ends the
-# run here, loudly.
-mkdir -p "$W/probe"
-if HOME="$W/probe" XDG_CONFIG_HOME="$W/probe/config" timeout 10 "$SM" web 2>&1 </dev/null | grep -q "no web view"; then
+# Two things must hold before `web` starts: the web view is built in (`--features web`, `just install-web`; it
+# is not by default) and the vault config says `web: true` (`skillmirror config web on`; off by default). A
+# refused start (exit 2, nothing is listening) names what is missing, so the first call tells the builds
+# apart without starting a server. A binary without the web view ends the run here, loudly.
+if timeout 10 "$SM" web --vault "$V" --root "$R" 2>&1 </dev/null | grep -q "no web view"; then
   echo "SKIP  the web server over HTTP: this binary has no web view (just install-web builds it in)"
   echo
   if [ "$fails" = 0 ]; then echo "SMOKE OK (without the web view)"; else echo "SMOKE FAILED: $fails check(s)"; fi
   exit "$fails"
 fi
+step "web refuses to start while the config has it off" 2 timeout 10 "$SM" web --vault "$V" --root "$R"; has "switched off in the config"; has "config web on"
+step "config web on writes the switch" 0 "$SM" config web on --vault "$V" --root "$R"; has "Set web: true"
+contains "$V/config.yaml" "^web: true" "the config holds web: true" "the config lacks web: true"
 LOG="$W/web.log"
 "$SM" web --allow-write --vault "$V" --root "$R" --idle-timeout 5 >"$LOG" 2>&1 &
 WP=$!
