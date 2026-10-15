@@ -251,3 +251,37 @@ fn a_card_that_does_not_fit_says_how_much_was_left_out() {
     assert!(screen.contains("more lines"), "{screen}");
     assert!(screen.contains("Projects"), "{screen}");
 }
+
+#[test]
+fn a_deep_group_is_cut_from_the_front_so_the_note_stays_on_screen() {
+    let world = world();
+    world
+        .vault_file(
+            "Default_Skills/web/seo/schema/audits/weekly/checks/seo-audit/SKILL.md",
+            "x",
+        )
+        .commit_vault();
+    let mut ui = Harness::sized(world, 120, 30);
+    ui.open("Skills").wait_select();
+
+    let screen = ui.screen();
+    let row = screen
+        .lines()
+        .find(|line| line.contains("seo-audit"))
+        .unwrap_or_else(|| panic!("the skill is listed:\n{screen}"));
+
+    assert!(row.contains("…/weekly/checks"), "cut from the front: {row}");
+    assert!(
+        !row.contains("Default_Skills"),
+        "the top folder is what gives way: {row}"
+    );
+    assert!(row.contains("not installed"), "the note is whole: {row}");
+
+    ui.press('j').press('j');
+    let card = ui.screen();
+    assert!(
+        card.contains("group Default_Skills/web/seo/schema/audits/")
+            && card.contains("weekly/checks"),
+        "the card has the whole path, wrapped after a slash:\n{card}"
+    );
+}

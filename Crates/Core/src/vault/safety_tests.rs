@@ -28,15 +28,6 @@ fn a_deep_folder_without_any_skill_does_not_break_the_vault() {
 }
 
 #[test]
-fn a_deep_folder_that_does_hold_a_skill_is_still_too_deep() {
-    let tree = TempTree::new();
-    tree.write("coding/SKILL.md", "x");
-    tree.write("a/b/c/d/e/deep/SKILL.md", "x");
-    let err = discover(tree.path()).unwrap_err();
-    assert!(matches!(err, VaultError::TooDeep { .. }), "{err}");
-}
-
-#[test]
 fn a_submodule_that_is_the_skill_folder_itself_is_named_as_such() {
     let tree = TempTree::new();
     tree.write("vault/coding/SKILL.md", "x");

@@ -1,6 +1,7 @@
 //! Drawing. Every clickable region is recorded in the hit map while it is drawn.
 
 mod boxed;
+mod clip;
 mod dialog;
 mod diff;
 mod footer;

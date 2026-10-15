@@ -20,8 +20,6 @@ pub enum VaultError {
     GroupSkillClash { group: PathBuf, skill: PathBuf },
     #[error("the folder name of {path} is not valid UTF-8")]
     NonUtf8Name { path: PathBuf },
-    #[error("{path} is nested more than {max} group levels deep")]
-    TooDeep { path: PathBuf, max: usize },
     #[error("vault {path} is not a git repository")]
     NotAGitRepo { path: PathBuf },
     #[error("git is not installed or not on PATH")]
@@ -55,9 +53,6 @@ impl Hint for VaultError {
             Self::NonUtf8Name { .. } => {
                 Some("rename the folder; skill and group names must be valid UTF-8".to_string())
             }
-            Self::TooDeep { max, .. } => Some(format!(
-                "move the skill up, at most {max} group folders may sit above a skill"
-            )),
             Self::Unmerged { .. } => Some("resolve the merge in the vault first".to_string()),
             _ => None,
         }

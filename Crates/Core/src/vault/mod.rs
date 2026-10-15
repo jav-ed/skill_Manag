@@ -5,7 +5,7 @@ mod error;
 mod header;
 mod tracked;
 
-pub use discover::{Ignored, IgnoredReason, MAX_GROUP_DEPTH, Skill, Vault, discover};
+pub use discover::{Ignored, IgnoredReason, Skill, Vault, discover};
 pub use error::VaultError;
 pub use header::{Header, read_header};
 pub use tracked::{

@@ -17,6 +17,8 @@ use crate::theme;
 const NAME_MIN: usize = 18;
 const NAME_MAX: usize = 36;
 const DETAIL_MAX: usize = 40;
+/// The columns before the name: the cursor, the box and a space.
+const ROW_START: usize = 6;
 
 /// The colour that marks selection on this screen, as in the Go tool.
 fn mode_style(mode: Mode) -> Style {
@@ -119,7 +121,7 @@ pub(super) fn draw(frame: &mut Frame, hits: &mut HitMap, work: &mut Work, area: 
     }
     frame.render_widget(Paragraph::new(Line::from(heading)), head);
     draw_filter(frame, work, filter);
-    let (name_w, detail_w) = widths(&work.items);
+    let (name_w, detail_w) = widths(&work.items, rows.width);
     let heading = if work.mode == Mode::Agents {
         format!("      {:<name_w$}  {:<detail_w$}", "project", "state")
     } else {
@@ -171,10 +173,19 @@ fn draw_filter(frame: &mut Frame, work: &Work, area: Rect) {
     frame.set_cursor_position((area.x + 9 + to_u16(cursor), area.y));
 }
 
-fn widths(items: &[Item]) -> (usize, usize) {
+fn widths(items: &[Item], rows_width: u16) -> (usize, usize) {
     let name = items.iter().map(|i| i.name.width()).max().unwrap_or(0);
+    let name = name.clamp(NAME_MIN, NAME_MAX);
     let detail = items.iter().map(|i| i.detail.width()).max().unwrap_or(0);
-    (name.clamp(NAME_MIN, NAME_MAX), detail.clamp(8, DETAIL_MAX))
+    let note = items
+        .iter()
+        .filter_map(|i| i.note.as_ref())
+        .map(|n| n.text.width() + 2)
+        .max()
+        .unwrap_or(0);
+    // A long group path gives way before a note is pushed off the row.
+    let room = usize::from(rows_width).saturating_sub(ROW_START + name + 2 + note + 1);
+    (name, detail.clamp(8, DETAIL_MAX.min(room.max(8))))
 }
 
 fn draw_rows(
@@ -233,7 +244,7 @@ fn draw_rows(
         let pad = name_w.saturating_sub(item.name.width()) + 2;
         spans.push(Span::raw(" ".repeat(pad)));
         spans.push(Span::styled(
-            format!("{:<detail_w$}", item.detail),
+            format!("{:<detail_w$}", super::clip::front(&item.detail, detail_w)),
             theme::muted(),
         ));
         if let Some(note) = &item.note {

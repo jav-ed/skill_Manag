@@ -6,7 +6,7 @@ use std::path::PathBuf;
 
 use super::created::{Created, stage};
 use crate::Hint;
-use crate::vault::{MAX_GROUP_DEPTH, Vault};
+use crate::vault::Vault;
 
 #[derive(Debug, thiserror::Error)]
 pub enum AuthorError {
@@ -20,8 +20,6 @@ pub enum AuthorError {
     NameIsGroup { name: String },
     #[error("the group {group:?} would have the same name as the skill {skill}")]
     GroupIsSkill { group: String, skill: PathBuf },
-    #[error("a skill may sit at most {max} group folders deep")]
-    TooDeep { max: usize },
     #[error("{path} is not a real folder (a file or a link is in the way)")]
     NotARealFolder { path: PathBuf },
     #[error("{path} exists already; nothing was written")]
@@ -60,7 +58,6 @@ impl Hint for AuthorError {
             Self::GitAdd { .. } => Some(
                 "check that the vault is a git repository and does not ignore the new folder".to_string(),
             ),
-            Self::TooDeep { .. } => Some("use a shorter group path".to_string()),
             _ => None,
         }
     }
@@ -97,7 +94,7 @@ pub fn check_new_name(name: &str) -> Result<(), AuthorError> {
     }
 }
 
-/// The folders of a group path, checked against the vault: plain names, not deeper than allowed, none of
+/// The folders of a group path, checked against the vault: plain names, none of
 /// them the name of a skill, and none of the existing ones a file or a link.
 pub(super) fn group_parts(vault: &Vault, group: &str) -> Result<Vec<String>, AuthorError> {
     let invalid = || AuthorError::InvalidGroup {
@@ -113,11 +110,6 @@ pub(super) fn group_parts(vault: &Vault, group: &str) -> Result<Vec<String>, Aut
         .any(|p| p.is_empty() || p.starts_with('.') || p.contains(['\\', '\0']))
     {
         return Err(invalid());
-    }
-    if parts.len() > MAX_GROUP_DEPTH {
-        return Err(AuthorError::TooDeep {
-            max: MAX_GROUP_DEPTH,
-        });
     }
     if let Some(skill) = parts.iter().find_map(|p| vault.skills.get(p)) {
         return Err(AuthorError::GroupIsSkill {

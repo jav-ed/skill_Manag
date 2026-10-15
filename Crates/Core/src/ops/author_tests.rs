@@ -146,11 +146,22 @@ fn names_and_groups_that_would_escape_or_confuse_are_refused() {
         new_skill(&world.vault, "fine", "coding", None),
         Err(AuthorError::GroupIsSkill { .. })
     ));
-    assert!(matches!(
-        new_skill(&world.vault, "fine", "a/b/c/d/e", None),
-        Err(AuthorError::TooDeep { .. })
-    ));
     assert_eq!(staged(&world), "", "none of this touched the vault");
+}
+
+#[test]
+fn a_new_skill_can_go_into_a_group_of_any_depth() {
+    let world = world();
+
+    let made = new_skill(&world.vault, "deep", "a/b/c/d/e/f/g", None).unwrap();
+
+    assert_eq!(made.dir, world.vault.path.join("a/b/c/d/e/f/g/deep"));
+    assert_eq!(staged(&world), "A  a/b/c/d/e/f/g/deep/SKILL.md\n");
+    let now = world.refresh();
+    assert_eq!(
+        now.vault.skills["deep"].group,
+        ["a", "b", "c", "d", "e", "f", "g"]
+    );
 }
 
 #[test]

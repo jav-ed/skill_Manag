@@ -1,4 +1,5 @@
-//! Finding the skills in a vault. A skill is a folder that contains `SKILL.md`; the folders above it are its groups.
+//! Finding the skills in a vault. A skill is a folder that contains `SKILL.md`; any other folder that holds
+//! skills is a group, however deep: only the length of a path (the operating system's limit) ends the nesting.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::os::unix::ffi::OsStrExt;
@@ -8,9 +9,6 @@ use super::VaultError;
 
 /// File that marks a folder as a skill.
 pub(super) const SKILL_FILE: &str = "SKILL.md";
-
-/// Group levels allowed above a skill. Deeper nesting is a hard error.
-pub const MAX_GROUP_DEPTH: usize = 4;
 
 /// One skill of the vault.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -76,27 +74,6 @@ pub fn discover(vault: &Path) -> Result<Vault, VaultError> {
     Ok(found)
 }
 
-/// How many levels below the group cap are searched for a `SKILL.md` before a folder counts as empty of skills.
-const PROBE_DEPTH: usize = 8;
-
-/// Whether a `SKILL.md` exists in `dir` or up to `depth` levels below it. Dot-directories and symlinks are skipped.
-fn holds_skill_file(dir: &Path, depth: usize) -> Result<bool, VaultError> {
-    if dir.join(SKILL_FILE).is_file() {
-        return Ok(true);
-    }
-    if depth == 0 {
-        return Ok(false);
-    }
-    for entry in fs_err::read_dir(dir)? {
-        let entry = entry?;
-        let hidden = entry.file_name().as_bytes().first() == Some(&b'.');
-        if !hidden && entry.file_type()?.is_dir() && holds_skill_file(&entry.path(), depth - 1)? {
-            return Ok(true);
-        }
-    }
-    Ok(false)
-}
-
 /// Returns true when `dir` or anything below it holds a skill.
 fn visit(dir: &Path, group: &mut Vec<String>, found: &mut Vault) -> Result<bool, VaultError> {
     let mut entries: Vec<_> = fs_err::read_dir(dir)?.collect::<Result<_, _>>()?;
@@ -125,20 +102,6 @@ fn visit(dir: &Path, group: &mut Vec<String>, found: &mut Vault) -> Result<bool,
         if path.join(SKILL_FILE).is_file() {
             add_skill(found, name, group, path)?;
             any = true;
-            continue;
-        }
-        if group.len() >= MAX_GROUP_DEPTH {
-            // Too deep only matters when a skill is down there; a deep folder without one is just a folder.
-            if holds_skill_file(&path, PROBE_DEPTH)? {
-                return Err(VaultError::TooDeep {
-                    path,
-                    max: MAX_GROUP_DEPTH,
-                });
-            }
-            found.ignored.push(Ignored {
-                path,
-                reason: IgnoredReason::NoSkillInside,
-            });
             continue;
         }
         group.push(name);

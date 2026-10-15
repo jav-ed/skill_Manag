@@ -72,14 +72,27 @@ fn a_group_named_like_a_skill_is_a_hard_error() {
 }
 
 #[test]
-fn nesting_beyond_the_cap_is_a_hard_error() {
-    let ok = vault_with(&[("a/b/c/d/skill/SKILL.md", "x")]);
-    assert!(discover(ok.path()).is_ok());
-    let deep = vault_with(&[("a/b/c/d/e/skill/SKILL.md", "x")]);
-    assert!(matches!(
-        discover(deep.path()),
-        Err(VaultError::TooDeep { .. })
-    ));
+fn groups_nest_as_deep_as_the_folders_go() {
+    let deep = (1..=60)
+        .map(|n| format!("g{n}"))
+        .collect::<Vec<_>>()
+        .join("/");
+    let deep_skill = format!("{deep}/tool/SKILL.md");
+    let tree = vault_with(&[
+        ("coding/SKILL.md", "x"),
+        (&deep_skill, "x"),
+        ("a/b/c/d/e/skill/SKILL.md", "x"),
+        // A group holds skills and groups side by side.
+        ("a/near/SKILL.md", "x"),
+    ]);
+    let vault = discover(tree.path()).unwrap();
+    assert_eq!(names(&vault), ["coding", "near", "skill", "tool"]);
+    assert_eq!(vault.skills["tool"].group.len(), 60);
+    assert_eq!(vault.skills["skill"].group, ["a", "b", "c", "d", "e"]);
+    assert_eq!(vault.skills["near"].group, ["a"]);
+    for group in ["a", "a/b/c", "a/b/c/d/e", "g1", "g1/g2/g3"] {
+        assert!(vault.groups.contains(&PathBuf::from(group)), "{group}");
+    }
 }
 
 #[test]
