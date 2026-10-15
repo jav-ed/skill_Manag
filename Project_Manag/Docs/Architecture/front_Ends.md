@@ -28,7 +28,7 @@ A pure state machine: `App::handle(Event)` takes a key, a mouse event or a job r
 
 `render_report(&ReportData, generated_at)` turns the data of `ops::report_data` into one HTML string with `maud`: `report/mod.rs` (page, header, counts), `matrix.rs`, `tree.rs`, `skill.rs` (cards and diffs), `problems.rs`, plus `report.css` and `report.js` inserted as they are. Every value is escaped by `maud`, the page forbids any request through its Content-Security-Policy, and a marker comment after the doctype lets a later run replace the file safely. The CLI side is `Crates/Cli/src/commands/report.rs`. 
 
-### The local server (cargo feature `server`, `skillmirror web`)
+### The local server (cargo feature `server`, `skillmirror web`; the Cli feature `web` that turns it on is off by default)
 
 `server/` holds the one place where an async runtime exists (`axum` 0.8 with only the `http1`, `json` and `tokio` features, `tokio` with a two-thread runtime); `skillmirror-core`, the CLI and the TUI never see it (`just check-deps`). The Cli enables it through its default feature `web`; `--no-default-features` builds without it and the command then says so. `serve(ServeConfig, ready)` blocks until Ctrl-C or the idle time. The interface it serves is a separate project, [`Ui/`](../../../Ui/README.md); the two meet in the JSON API ([web_Api.md](web_Api.md)) and in the built files.
 

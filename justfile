@@ -14,14 +14,16 @@ fmt:
 fmt-check:
     cargo fmt --all -- --check
 
-# Lint the whole workspace, all targets; every warning is an error.
+# Lint the whole workspace, all targets, with the web view built in; every warning is an error.
 clippy:
-    cargo clippy --workspace --all-targets --locked -- -D warnings
+    cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
 
-# Run all tests with nextest, then the doc tests (nextest does not run those).
+# Run all tests with nextest, the web view built in, then the doc tests (nextest does not run those).
+# One run of the tests of a build without the web view: `cargo test -p skillmirror --test web_off`.
 test:
-    cargo nextest run --workspace --locked
-    cargo test --doc --workspace --locked
+    cargo nextest run --workspace --all-features --locked
+    cargo nextest run -p skillmirror --test web_off --locked
+    cargo test --doc --workspace --all-features --locked
 
 # Fail when a Rust file has more than 300 code lines (tokei, see loc_gate.sh).
 loc-gate:
@@ -40,10 +42,11 @@ loc-gate:
     fi
     bash Code/Development/Scripts/loc_gate.sh "${files[@]}"
 
-# The optional parts stay optional: the report crate builds without its server, the command line without the `web` feature.
+# The optional parts stay optional: the report crate builds without its server, the command line with and without the `web` feature.
 check-features:
     cargo check --locked -p skillmirror-web
-    cargo check --locked -p skillmirror --no-default-features
+    cargo check --locked -p skillmirror
+    cargo check --locked -p skillmirror --features web
 
 # Fail when skillmirror-core (normal dependencies, all features) pulls in tokio: core stays synchronous.
 check-deps:
@@ -86,16 +89,20 @@ ui:
 ui-check:
     bash Code/Development/Web/build_Ui.sh --check
 
-# Install the skillmirror binary from this checkout into ~/.cargo/bin.
+# Install the skillmirror binary from this checkout into ~/.cargo/bin, without the web view.
 install:
     cargo install --path Crates/Cli --locked
+
+# The same with the web view (`skillmirror web`) built in.
+install-web:
+    cargo install --path Crates/Cli --locked --features web
 
 # The local gate before a commit: format, lint, tests, file size and the core-without-tokio rule.
 check: fmt-check clippy test loc-gate check-deps check-features
 
 # Compile against the declared minimum Rust version (run `rustup toolchain install 1.89` once).
 msrv:
-    rustup run 1.89 cargo check --locked --workspace
+    rustup run 1.89 cargo check --locked --workspace --all-features
 
 # Replay the 131 Go-oracle scenarios against a skillmirror binary and classify the differences (needs the oracle, see Code/Development/Parity/README.md; about 1 minute).
 parity binary="target/debug/skillmirror":

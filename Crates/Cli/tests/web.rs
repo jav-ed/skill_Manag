@@ -1,5 +1,7 @@
 //! `skillmirror web` as a real process: it prints a link once, listens on the loopback address only,
 //! and answers a browser's first visit.
+// The web view is built in with `--features web`; without it there is no server to start.
+#![cfg(feature = "web")]
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 mod common;
 

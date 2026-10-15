@@ -7,8 +7,8 @@ use crate::report::CliError;
 #[cfg(not(feature = "web"))]
 pub(super) fn run(_cli: &Cli, _args: &WebArgs) -> Result<Exit, CliError> {
     Err(CliError::usage(
-        "this build of skillmirror has no web server",
-        "build with the default features: `cargo install --path Crates/Cli --locked`",
+        "this build of skillmirror has no web view: it is off unless it is built in",
+        "build it in with `cargo install --path Crates/Cli --locked --features web` (or `just install-web`)",
     ))
 }
 

@@ -3,6 +3,9 @@
 # browser (Chromium through Playwright): the first-visit link, the cookie, filter, plan, apply, history,
 # undo, a name that is markup, and the refusals. Nothing outside a temporary folder is touched.
 #
+# The binary needs the web view built in (it is off by default): `just install-web`, or
+# `cargo build -p skillmirror --features web` for the default path below.
+#
 # usage: check_Web.sh [path/to/skillmirror] [screenshot-dir]
 set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

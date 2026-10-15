@@ -47,6 +47,7 @@ Needs Rust 1.89 or newer and `git`. Linux only.
 git clone git@github.com:jav-ed/skill_Manag.git
 cd skill_Manag
 just install            # or: cargo install --path Crates/Cli --locked
+just install-web        # the same with the web view built in (see below); or add --features web
 ```
 
 The binary lands in `~/.cargo/bin/skillmirror`. Check it with `skillmirror doctor`. The compile takes about a minute and a quarter and, with all cores busy, peaks near 0.9 GB of memory (about 0.5 GB and four minutes with `CARGO_BUILD_JOBS=1`); the build folder is removed afterwards (see [Development](#development) for the cost of working on the code).
@@ -139,9 +140,11 @@ Every page that works out a plan shows it before anything is written. If the sca
 
 ## The web view
 
+The web view is **off by default**: a plain `just install` leaves out its server (`axum`, `tokio`), and `skillmirror web` then says so and how to build it in. Turn it on with `just install-web`, or `cargo install --path Crates/Cli --locked --features web`; turn it off again by installing without the feature.
+
 `skillmirror web` prints a link and serves on `127.0.0.1` (a free port, or `--port`) until Ctrl-C or until nobody has asked for anything for two hours (`--idle-timeout`). The pages: an overview of every project, Sync and Push (pick skills and a project, see the plan with its diffs, apply), History (undo a run), Doctor, Settings, and the full report. Without `--allow-write` it only looks: no page can change a file. With it, a change is a plan first, then a go-ahead for exactly that plan; folders edited in between are left alone, replaced folders are saved for History, and one change runs at a time.
 
-It is built to be safe on a computer where other web pages run in the same browser: the link works once and is traded for a cookie that scripts cannot read, requests that do not come from the page itself are refused, and nothing the pages show can become markup. The details are in `Project_Manag/Docs/Architecture/front_Ends.md`. The interface is a small web app (Astro and Solid, Lucide icons, Motion) in its own project, [`Ui/`](Ui/README.md); its built files are committed and held in the binary, so installing needs no node. A build without the server is `cargo install --path Crates/Cli --locked --no-default-features`.
+It is built to be safe on a computer where other web pages run in the same browser: the link works once and is traded for a cookie that scripts cannot read, requests that do not come from the page itself are refused, and nothing the pages show can become markup. The details are in `Project_Manag/Docs/Architecture/front_Ends.md`. The interface is a small web app (Astro and Solid, Lucide icons, Motion) in its own project, [`Ui/`](Ui/README.md); its built files are committed and held in the binary, so installing needs no node.
 
 ## Configuration
 

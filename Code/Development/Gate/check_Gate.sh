@@ -12,7 +12,7 @@ cd "$here/../../.."
 second="${GATE_SECOND_TOOLCHAIN:-1.99.0}"
 step() { echo "== $*"; }
 quiet_clippy() { # toolchain-flag...
-  "$@" clippy --workspace --all-targets --locked -- -D warnings 2>&1 | tail -1
+  "$@" clippy --workspace --all-targets --all-features --locked -- -D warnings 2>&1 | tail -1
   test "${PIPESTATUS[0]}" -eq 0
 }
 
@@ -28,11 +28,15 @@ step "loc-gate";   just loc-gate
 step "features";   just check-features
 step "check-deps"; just check-deps
 step "deny";       just deny 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | tail -1; test "${PIPESTATUS[0]}" -eq 0
-step "tests"
-out="$(cargo test --workspace --locked --no-fail-fast 2>&1)" || {
+# The web view is off by default, so the tests run with it built in; the one test of a build without it
+# (`web_off`) runs apart, with the default features.
+step "tests (web view built in)"
+out="$(cargo test --workspace --all-features --locked --no-fail-fast 2>&1)" || {
   echo "$out" | grep -E '^test .*FAILED|panicked'
   echo "TESTS FAILED"
   exit 1
 }
 echo "$out" | grep -E '^test result' | awk '{p+=$4; f+=$6} END {print "passed:", p, "failed:", f}'
+step "tests (no web view)"
+cargo test -p skillmirror --test web_off --locked 2>&1 | grep -E '^test result' || { echo "TESTS FAILED"; exit 1; }
 echo "GATE OK"

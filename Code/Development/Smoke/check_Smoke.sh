@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # End-to-end smoke test of a built skillmirror binary: authoring, install, drift, sync, undo and redo,
-# adopt, scoped add, and the local web server over HTTP (token, cookie, refusals, plan, apply, job).
+# adopt, scoped add, and, when the binary has the web view built in (off by default), the local web server
+# over HTTP (token, cookie, refusals, plan, apply, job).
 # It runs in a throwaway HOME, vault and scan root; nothing outside one temporary folder is touched.
 #
 # usage: check_Smoke.sh [path/to/skillmirror]     default: target/debug/skillmirror
@@ -129,6 +130,17 @@ step "doctor reports the unusable text" 3 "$SM" doctor --vault "$V" --root "$R";
 rm -f "$V/project-files/AGENTS.md"
 
 # ---- the web server over HTTP ---------------------------------------------------------------------
+# The web view is built in only with `--features web` (`just install-web`); it is off by default. With no
+# vault set (a fresh, empty HOME), a build with it stops at "no vault configured" and one without it says
+# it has no web view, so this tells them apart without starting a server. A binary without it ends the
+# run here, loudly.
+mkdir -p "$W/probe"
+if HOME="$W/probe" XDG_CONFIG_HOME="$W/probe/config" timeout 10 "$SM" web 2>&1 </dev/null | grep -q "no web view"; then
+  echo "SKIP  the web server over HTTP: this binary has no web view (just install-web builds it in)"
+  echo
+  if [ "$fails" = 0 ]; then echo "SMOKE OK (without the web view)"; else echo "SMOKE FAILED: $fails check(s)"; fi
+  exit "$fails"
+fi
 LOG="$W/web.log"
 "$SM" web --allow-write --vault "$V" --root "$R" --idle-timeout 5 >"$LOG" 2>&1 &
 WP=$!
