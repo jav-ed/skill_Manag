@@ -72,13 +72,13 @@ fn project_label(work: &Work) -> String {
 }
 
 pub(super) fn draw(frame: &mut Frame, hits: &mut HitMap, work: &mut Work, area: Rect) {
-    let (area, card) = if work.mode == Mode::Skills {
+    let (area, card) = if work.mode.has_pane() {
         skill_card::split(area)
     } else {
         (area, None)
     };
     if let Some((card_area, place)) = card {
-        skill_card::draw(frame, work, card_area, place);
+        skill_card::draw(frame, hits, work, card_area, place);
     }
     let [head, filter, columns, rows, status] = Layout::vertical([
         Constraint::Length(1),

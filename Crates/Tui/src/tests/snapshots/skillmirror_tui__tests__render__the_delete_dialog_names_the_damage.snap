@@ -14,15 +14,15 @@ expression: ui.screen()
          │                                                            │
          │ The selected skills are removed from all matching          │
          │ projects.                                                  │
-         │ A copy is kept first: History (or skillmirror undo) puts   │
-         │ it back.                                                   │
-         │                                                            │
-         │              [ y  Delete ]       [ n  Cancel ]             │
-         ╰────────────────────────────────────────────────────────────╯
+ rows 1–3│ A copy is kept first: History (or skillmirror undo) puts   │
+─────────│ it back.                                                   │─────────
+ astro   │                                                            │
+ Would be│              [ y  Delete ]       [ n  Cancel ]             │
+ one     ╰────────────────────────────────────────────────────────────╯
 
 
 
 
 
- rows 1–3 of 3
+
  y/enter confirm • n/esc cancel • ctrl+c quit

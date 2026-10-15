@@ -52,6 +52,9 @@ pub(crate) struct AgentsView {
 #[derive(Debug)]
 pub(crate) struct Session {
     pub(crate) workspace: Workspace,
+    /// The scan root as the walker sees it (resolved through links): project paths lie below it, so the
+    /// panes cut it off to write each project short but unambiguous.
+    pub(crate) root: PathBuf,
     /// Installed folders that the vault also has (what `sync` would refresh).
     pub(crate) sync: Vec<TargetState>,
     /// Mandatory skills in every project with a skills directory, or why they cannot be planned.
@@ -67,10 +70,21 @@ pub(crate) use skillmirror_core::describe;
 
 /// Opens the vault, scans the root and plans sync and push, all read-only.
 pub(crate) fn load(settings: Settings) -> std::result::Result<Session, String> {
-    build(settings).map_err(|e| describe(&e))
+    let root = scan_root(&settings)?;
+    build(settings, root).map_err(|e| describe(&e))
 }
 
-fn build(settings: Settings) -> Result<Session> {
+/// The configured root, resolved the way the scan resolves it.
+fn scan_root(settings: &Settings) -> std::result::Result<PathBuf, String> {
+    let configured = &settings
+        .root()
+        .map_err(|e| describe(&skillmirror_core::Error::from(e)))?
+        .value;
+    std::fs::canonicalize(configured)
+        .map_err(|e| format!("cannot resolve the scan root {}: {e}", configured.display()))
+}
+
+fn build(settings: Settings, root: PathBuf) -> Result<Session> {
     let workspace = Workspace::open(settings)?;
     let report = workspace.scan(&ignore_events)?;
     let sync = states(ops::plan_sync(&workspace, &report));
@@ -90,6 +104,7 @@ fn build(settings: Settings) -> Result<Session> {
     let agents = agents_view(&workspace, &report);
     Ok(Session {
         workspace,
+        root,
         agents,
         sync,
         push,

@@ -8,8 +8,9 @@ use ratatui::widgets::{Block, Borders, Clear, Paragraph};
 use crate::app::Screen;
 use crate::binding::{
     AGENTS_FILE, ALL, BACK, BACK_HELP, Binding, CANCEL, CONFIRM_HELP, DELETE, DOWN, FILTER, GIT,
-    HELP, ISSUES, MENU_HELP, MENU_QUIT, OPEN, QUIT, RESULTS_HELP, RUN_ADD, RUN_AGENTS, RUN_DELETE,
-    RUN_INIT, RUN_PUSH, RUN_SYNC, SCROLL, SELECT_COMMON, SYNC, TOGGLE, UP, VIEW, YES,
+    HELP, ISSUES, MENU_HELP, MENU_QUIT, OPEN, PANE_DOWN, PANE_UP, PANE_VIEW, QUIT, RESULTS_HELP,
+    RUN_ADD, RUN_AGENTS, RUN_DELETE, RUN_INIT, RUN_PUSH, RUN_SYNC, SCROLL, SELECT_COMMON, SYNC,
+    TOGGLE, UP, VIEW, YES,
 };
 use crate::hit::{HitMap, Target};
 use crate::items::Mode;
@@ -27,8 +28,8 @@ fn hints(bindings: &[&Binding]) -> Vec<Hint> {
 /// The action keys that differ by screen.
 fn mode_keys(mode: Mode) -> Vec<&'static Binding> {
     match mode {
-        Mode::Sync => vec![&RUN_SYNC],
-        Mode::Push => vec![&RUN_PUSH],
+        Mode::Sync => vec![&PANE_VIEW, &RUN_SYNC],
+        Mode::Push => vec![&PANE_VIEW, &RUN_PUSH],
         Mode::Delete => vec![&RUN_DELETE],
         Mode::List => vec![&SYNC, &DELETE],
         Mode::Skills => Vec::new(),
@@ -167,6 +168,9 @@ fn work_full(work: &Work) -> Vec<Hint> {
                 keys.retain(|b| !std::ptr::eq(*b, &TOGGLE) && !std::ptr::eq(*b, &ALL));
             }
             keys.extend(mode_keys(work.mode));
+            if work.mode.has_pane() {
+                keys.extend([&PANE_DOWN, &PANE_UP]);
+            }
             if !work.issues.is_empty() {
                 keys.push(&ISSUES);
             }

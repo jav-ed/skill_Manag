@@ -10,6 +10,7 @@ mod init;
 mod init_agents;
 mod issues;
 mod mouse;
+mod panes;
 mod place_support;
 mod render;
 mod round2_jobs;

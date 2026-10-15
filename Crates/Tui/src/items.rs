@@ -1,10 +1,11 @@
 //! The rows of a selection screen, built from a session.
 
 use std::collections::{BTreeMap, BTreeSet};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use skillmirror_core::scan::Target;
 
+use crate::items_projects::{Views, change_pane, delete_pane};
 use crate::num::plural;
 use crate::results::short_path;
 use crate::session::{Session, State, TargetState};
@@ -24,6 +25,18 @@ pub(crate) enum Mode {
     Add,
     /// Pick vault skills for a new project.
     Init,
+}
+
+impl Mode {
+    /// Whether the page has a pane beside (or under) the list that shows the row under the cursor.
+    pub(crate) fn has_pane(self) -> bool {
+        matches!(self, Self::Skills | Self::Sync | Self::Push | Self::Delete)
+    }
+
+    /// Whether the pane has the three views that `tab` goes through.
+    pub(crate) fn has_views(self) -> bool {
+        matches!(self, Self::Sync | Self::Push)
+    }
 }
 
 /// How a note next to a row is coloured.
@@ -55,17 +68,19 @@ pub(crate) struct Item {
     pub(crate) note: Option<Note>,
     pub(crate) targets: Vec<Target>,
     pub(crate) preselected: bool,
-    /// The detail pane of the skills page; empty on the other pages.
+    /// The detail pane of the skills and delete pages; empty on the other pages.
     pub(crate) card: Vec<Note>,
+    /// The pane of the sync and push pages in each of its views; `None` on the other pages.
+    pub(crate) views: Option<Box<Views>>,
 }
 
 pub(crate) fn build(mode: Mode, session: &Session) -> Result<Vec<Item>, String> {
     match mode {
-        Mode::Sync => Ok(planned(&session.sync)),
+        Mode::Sync => Ok(planned(&session.sync, &session.root)),
         Mode::Push => session
             .push
             .as_ref()
-            .map(|s| planned(s))
+            .map(|s| planned(s, &session.root))
             .map_err(Clone::clone),
         Mode::Delete => Ok(installed_groups(session)),
         Mode::List => Ok(installed_rows(session)),
@@ -123,13 +138,14 @@ pub(crate) fn for_install(mode: Mode, session: &Session, project: &Project) -> V
                 }],
                 preselected: mode == Mode::Init && is_mandatory,
                 card: Vec::new(),
+                views: None,
             }
         })
         .collect()
 }
 
 /// Sync and push rows: grouped by skill, with what applying would do. Rows with changes start selected.
-fn planned(states: &[TargetState]) -> Vec<Item> {
+fn planned(states: &[TargetState], root: &Path) -> Vec<Item> {
     let mut groups: BTreeMap<&str, Vec<&TargetState>> = BTreeMap::new();
     for state in states {
         groups.entry(&state.target.skill).or_default().push(state);
@@ -152,6 +168,7 @@ fn planned(states: &[TargetState]) -> Vec<Item> {
                 targets: members.iter().map(|m| m.target.clone()).collect(),
                 preselected: changing > 0,
                 card: Vec::new(),
+                views: Some(Box::new(change_pane(name, &members, root))),
             }
         })
         .collect()
@@ -196,7 +213,8 @@ fn installed_groups(session: &Session) -> Vec<Item> {
                 }),
             targets: members.iter().map(|m| m.target.clone()).collect(),
             preselected: false,
-            card: Vec::new(),
+            card: delete_pane(name, &members, &session.root),
+            views: None,
         })
         .collect()
 }
@@ -216,6 +234,7 @@ fn installed_rows(session: &Session) -> Vec<Item> {
             targets: vec![row.target.clone()],
             preselected: false,
             card: Vec::new(),
+            views: None,
         })
         .collect()
 }

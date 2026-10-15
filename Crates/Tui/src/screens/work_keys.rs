@@ -5,12 +5,15 @@ use ratatui::layout::Position;
 use super::work::{Action, Phase, Work};
 use crate::binding::{
     AGENTS_FILE, ALL, BACK, CANCEL, CONFIRM, DELETE, DOWN, FILTER, GIT, ISSUES, PAGE_DOWN, PAGE_UP,
-    SYNC, TOGGLE, UP, VIEW, YES,
+    PANE_DOWN, PANE_UP, PANE_VIEW, SYNC, TOGGLE, UP, VIEW, YES,
 };
 use crate::hit::{HitMap, Target};
 use crate::input::{self, Button, Code, Key, KeyKind, Mouse, MouseKind};
 use crate::items::Mode;
 use crate::results::Kind;
+
+/// Rows one press of the pane keys scrolls by.
+const SCROLL_STEP: usize = 8;
 
 impl Work {
     pub(crate) fn on_key(&mut self, key: Key) -> Action {
@@ -55,6 +58,12 @@ impl Work {
             self.toggle_all();
         } else if FILTER.matches(key) {
             self.filtering = true;
+        } else if self.mode.has_pane() && PANE_DOWN.matches(key) {
+            self.pane_scroll = self.pane_scroll.saturating_add(SCROLL_STEP);
+        } else if self.mode.has_pane() && PANE_UP.matches(key) {
+            self.pane_scroll = self.pane_scroll.saturating_sub(SCROLL_STEP);
+        } else if self.mode.has_views() && PANE_VIEW.matches(key) {
+            self.pane = self.pane.next();
         } else if ISSUES.matches(key) && !self.issues.is_empty() {
             self.issues_open = true;
         } else if key.code == Code::Esc && !self.filter.value().is_empty() {
@@ -253,6 +262,12 @@ impl Work {
                     let from_top = usize::from(mouse.row.saturating_sub(track.y));
                     self.view.jump(from_top, usize::from(track.height));
                 }
+            }
+            (MouseKind::ScrollUp, Some(Target::Pane)) => {
+                self.pane_scroll = self.pane_scroll.saturating_sub(3);
+            }
+            (MouseKind::ScrollDown, Some(Target::Pane)) => {
+                self.pane_scroll = self.pane_scroll.saturating_add(3);
             }
             (MouseKind::ScrollUp, _) if over_list => self.view.scroll_by(-3),
             (MouseKind::ScrollDown, _) if over_list => self.view.scroll_by(3),

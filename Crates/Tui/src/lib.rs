@@ -9,6 +9,7 @@ mod filter;
 mod hit;
 mod items;
 mod items_agents;
+mod items_projects;
 mod items_skills;
 mod jobs;
 mod jobs_install;

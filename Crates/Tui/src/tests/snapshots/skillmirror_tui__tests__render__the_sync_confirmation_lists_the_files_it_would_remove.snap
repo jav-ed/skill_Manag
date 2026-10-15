@@ -14,15 +14,15 @@ expression: ui.screen()
          │                                                            │
          │ Updates 3 skill folders: 1 file added, 3 files changed, 2  │
          │ files removed.                                             │
-         │   removes astro/my_notes.md in projects/one                │
-         │   removes coding/old/draft.md in projects/two              │
-         │                                                            │
-         │               [ y  Sync ]        [ n  Cancel ]             │
-         ╰────────────────────────────────────────────────────────────╯
+ rows 1–2│   removes astro/my_notes.md in projects/one                │
+─────────│   removes coding/old/draft.md in projects/two              │─────────
+ astro   │                                                            │
+ 1 projec│               [ y  Sync ]        [ n  Cancel ]             │
+ [Affecte╰────────────────────────────────────────────────────────────╯
+ one  outdated (2 files)
 
 
 
 
 
- rows 1–2 of 2
  y/enter confirm • n/esc cancel • v view changes • ctrl+c quit

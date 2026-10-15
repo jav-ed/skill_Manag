@@ -14,6 +14,8 @@ pub(crate) enum Target {
     /// The whole list body, so the wheel works over gaps.
     ListArea,
     ScrollTrack,
+    /// The pane beside or under a list: the wheel scrolls it.
+    Pane,
     PickerRow(usize),
     PickerUp,
     PickerSelect,

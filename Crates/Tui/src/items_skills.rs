@@ -15,10 +15,10 @@ use crate::session::{Session, State, TargetState};
 const FILES_SHOWN: usize = 6;
 
 /// What a skill is in one project, in words.
-struct InProject<'a> {
-    project: &'a Path,
-    text: String,
-    tone: Tone,
+pub(crate) struct InProject<'a> {
+    pub(crate) project: &'a Path,
+    pub(crate) text: String,
+    pub(crate) tone: Tone,
 }
 
 /// One row per vault skill, top-level skills first, then by group.
@@ -44,6 +44,7 @@ pub(crate) fn vault_rows(session: &Session) -> Vec<Item> {
                 targets: Vec::new(),
                 preselected: false,
                 card: card(session, &info, projects),
+                views: None,
             }
         })
         .collect()
@@ -73,7 +74,7 @@ fn states_by_skill(session: &Session) -> BTreeMap<&str, Vec<InProject<'_>>> {
     out
 }
 
-fn in_project(state: &TargetState) -> InProject<'_> {
+pub(crate) fn in_project(state: &TargetState) -> InProject<'_> {
     let (text, tone) = match &state.state {
         State::Same => ("up to date".to_string(), Tone::Quiet),
         State::Update(n) => (format!("outdated ({})", plural(*n, "file")), Tone::Change),

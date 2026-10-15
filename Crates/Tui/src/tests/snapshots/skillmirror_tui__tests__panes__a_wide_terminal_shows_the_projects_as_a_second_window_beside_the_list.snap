@@ -1,0 +1,34 @@
+---
+source: Crates/Tui/src/tests/panes.rs
+expression: ui.screen()
+---
+ ← skillmirror  ·  javedab.com  ·  sync
+
+ Select skills to sync   2 / 2 selected                                 │ coding
+ / to filter                                                            │ 4 projects, 2 to update
+      skill               projects                                      │ Affected 2  Others 2  [All 4]
+  [✓] astro               1 project   1 to update                       │ Would change (2)
+> [✓] coding              4 projects  2 to update                       │ one  outdated (1 file)
+                                                                        │ two  outdated (1 file)
+                                                                        │ Up to date (2)
+                                                                        │ four
+                                                                        │ nested/five
+                                                                        │
+                                                                        │
+                                                                        │
+                                                                        │
+                                                                        │
+                                                                        │
+                                                                        │
+                                                                        │
+                                                                        │
+                                                                        │
+                                                                        │
+                                                                        │
+                                                                        │
+                                                                        │
+                                                                        │
+                                                                        │
+                                                                        │
+ rows 1–2 of 2                                                          │
+ space toggle • a all • / filter • tab pane • enter sync • ? help • q/alt+← back

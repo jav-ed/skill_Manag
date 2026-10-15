@@ -73,6 +73,21 @@ pub(crate) const DELETE: Binding = Binding {
     label: "d",
     help: "delete",
 };
+pub(crate) const PANE_VIEW: Binding = Binding {
+    keys: &[(Code::Tab, N)],
+    label: "tab",
+    help: "pane",
+};
+pub(crate) const PANE_DOWN: Binding = Binding {
+    keys: &[(Code::Char('d'), Mods::CTRL)],
+    label: "ctrl+d",
+    help: "pane down",
+};
+pub(crate) const PANE_UP: Binding = Binding {
+    keys: &[(Code::Char('u'), Mods::CTRL)],
+    label: "ctrl+u",
+    help: "pane up",
+};
 pub(crate) const VIEW: Binding = Binding {
     keys: &[(Code::Char('v'), N)],
     label: "v",

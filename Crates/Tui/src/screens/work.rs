@@ -12,6 +12,7 @@ use super::list_view::ListView;
 use crate::diffview::DiffLine;
 use crate::filter::Fuzzy;
 use crate::items::{self, Item, Mode, Project};
+use crate::items_projects::PaneView;
 use crate::preview::Preview;
 use crate::results::{Kind, Results};
 use crate::session::{Issue, Session};
@@ -117,6 +118,11 @@ pub(crate) struct Work {
     pub(crate) issues_open: bool,
     /// The project that add and init write to.
     pub(crate) project: Option<Project>,
+    /// The view of the pane on the sync and push pages; it stays while the cursor moves.
+    pub(crate) pane: PaneView,
+    /// How far the pane is scrolled, and for which row and view: another one starts at the top.
+    pub(crate) pane_scroll: usize,
+    pub(crate) pane_key: (Option<usize>, PaneView),
     pub(super) fuzzy: Fuzzy,
 }
 
@@ -135,6 +141,9 @@ impl Work {
             issues: Vec::new(),
             issues_open: false,
             project: None,
+            pane: PaneView::default(),
+            pane_scroll: 0,
+            pane_key: (None, PaneView::default()),
             fuzzy: Fuzzy::default(),
         }
     }

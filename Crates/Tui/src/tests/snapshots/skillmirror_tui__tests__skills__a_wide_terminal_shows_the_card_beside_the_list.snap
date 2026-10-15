@@ -7,7 +7,7 @@ expression: ui.screen()
  Vault — 1 matching "astro"                                             │ astro
  filter: astro  (esc to clear)                                          │ group web
       skill               group                                         │ header: SKILL.md does not start with a ---
->     astro               web       1 to change                         │ header
+>     astro               web       1 to change                         │   header
                                                                         │ files (2): SKILL.md, ref.md
                                                                         │
                                                                         │ Projects

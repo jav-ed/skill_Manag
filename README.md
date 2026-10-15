@@ -125,10 +125,10 @@ The built-in text names the skills `doc-start`, `coding` and `file-tree-optimiza
 
 | Entry | What it does |
 |---|---|
-| Sync, Push | Pick skills, see what would be written (`v` shows the changes as a diff), confirm, run |
+| Sync, Push | Pick skills, see what would be written (`v` shows the changes as a diff), confirm, run. A pane beside the list (under it on a terminal narrower than 100 columns) follows the cursor and names the projects of the skill; `tab` switches it between the projects that would change, the others, and all of them, `ctrl+d` and `ctrl+u` scroll it |
 | List | Every installed skill; `/` filters, space selects, `s` syncs and `d` deletes the selection in place |
 | Skills | The vault's skills with a detail card for the one under the cursor: description, files, profiles, and what it is in each project. Read-only; `/` filters |
-| Delete | Nothing is pre-selected; you pick, then confirm |
+| Delete | Nothing is pre-selected; you pick, then confirm. The pane names every project the skill would be removed from |
 | Agents | Every project with the state of its `AGENTS.md`; the ones whose block is out of date are ticked. Pick, read the changes with `v`, confirm; only the block is written |
 | Add | Pick the project folder, then vault skills to install into it |
 | Init | Pick a parent folder, name the new project, tick skills (the mandatory ones are ticked), `g` for a git repository, `m` to leave the `AGENTS.md` out |

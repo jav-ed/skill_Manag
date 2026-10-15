@@ -22,6 +22,7 @@ fn item(name: &str, projects: &[&str], preselected: bool) -> Item {
             .collect(),
         preselected,
         card: Vec::new(),
+        views: None,
     }
 }
 
