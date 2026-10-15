@@ -1,14 +1,11 @@
 //! Keys and mouse of the selection screens.
 
-use ratatui::layout::Position;
-
 use super::work::{Action, Phase, Work};
 use crate::binding::{
     AGENTS_FILE, ALL, BACK, CANCEL, CONFIRM, DELETE, DOWN, FILTER, GIT, ISSUES, PAGE_DOWN, PAGE_UP,
-    PANE_DOWN, PANE_UP, PANE_VIEW, SYNC, TOGGLE, UP, VIEW, YES,
+    PANE_DOWN, PANE_FILTER, PANE_PATHS, PANE_UP, PANE_VIEW, SYNC, TOGGLE, UP, VIEW, YES,
 };
-use crate::hit::{HitMap, Target};
-use crate::input::{self, Button, Code, Key, KeyKind, Mouse, MouseKind};
+use crate::input::{self, Code, Key, KeyKind};
 use crate::items::Mode;
 use crate::results::Kind;
 
@@ -31,6 +28,7 @@ impl Work {
                 Action::Back
             }
             Phase::Select if self.filtering => self.filter_key(key),
+            Phase::Select if self.pane.filtering => self.pane_filter_key(key),
             Phase::Select => self.select_key(key),
             Phase::Confirm(_) => self.confirm_key(key),
             // Nothing else leaves a plan being made or a job that writes: a double tap must not.
@@ -59,16 +57,22 @@ impl Work {
         } else if FILTER.matches(key) {
             self.filtering = true;
         } else if self.mode.has_pane() && PANE_DOWN.matches(key) {
-            self.pane_scroll = self.pane_scroll.saturating_add(SCROLL_STEP);
+            self.pane.scroll = self.pane.scroll.saturating_add(SCROLL_STEP);
         } else if self.mode.has_pane() && PANE_UP.matches(key) {
-            self.pane_scroll = self.pane_scroll.saturating_sub(SCROLL_STEP);
+            self.pane.scroll = self.pane.scroll.saturating_sub(SCROLL_STEP);
+        } else if self.mode.has_project_pane() && PANE_PATHS.matches(key) {
+            self.pane.paths = self.pane.paths.toggled();
+        } else if self.mode.has_project_pane() && PANE_FILTER.matches(key) {
+            self.pane.filtering = true;
         } else if self.mode.has_views() && PANE_VIEW.matches(key) {
-            self.pane = self.pane.next();
+            self.pane.view = self.pane.view.next();
         } else if ISSUES.matches(key) && !self.issues.is_empty() {
             self.issues_open = true;
         } else if key.code == Code::Esc && !self.filter.value().is_empty() {
             self.filter.reset();
             self.refilter();
+        } else if key.code == Code::Esc && !self.pane.filter.value().is_empty() {
+            self.pane.filter.reset();
         } else if CONFIRM.matches(key) {
             return self.confirm_selection();
         } else if self.mode == Mode::Init && GIT.matches(key) {
@@ -112,7 +116,7 @@ impl Work {
         Action::None
     }
 
-    fn toggle_current(&mut self) {
+    pub(super) fn toggle_current(&mut self) {
         if let Some(item) = self.view.current() {
             self.toggle(item);
         }
@@ -137,6 +141,23 @@ impl Work {
         Action::None
     }
 
+    /// Typing in the filter of the pane: enter keeps it, esc clears it, like the filter of the list.
+    fn pane_filter_key(&mut self, key: Key) -> Action {
+        match key.code {
+            Code::Esc => {
+                self.pane.filter.reset();
+                self.pane.filtering = false;
+            }
+            Code::Enter => self.pane.filtering = false,
+            _ => {
+                if let Some(request) = input::to_request(key) {
+                    self.pane.filter.handle(request);
+                }
+            }
+        }
+        Action::None
+    }
+
     fn confirm_key(&mut self, key: Key) -> Action {
         if YES.matches(key) {
             return self.confirmed();
@@ -155,7 +176,7 @@ impl Work {
     }
 
     /// The user said yes: the pending run, with its plan, leaves the page.
-    fn confirmed(&mut self) -> Action {
+    pub(super) fn confirmed(&mut self) -> Action {
         match std::mem::replace(&mut self.phase, Phase::Select) {
             Phase::Confirm(pending) => Action::Run(pending),
             other => {
@@ -207,87 +228,6 @@ impl Work {
             return Action::Back;
         }
         Action::None
-    }
-
-    pub(crate) fn on_mouse(&mut self, mouse: Mouse, hits: &HitMap) -> Action {
-        let target = hits.at(Position::new(mouse.column, mouse.row));
-        if self.issues_open {
-            if matches!(mouse.kind, MouseKind::Down(Button::Left)) {
-                self.issues_open = false;
-            }
-            return Action::None;
-        }
-        match self.phase {
-            Phase::Select => self.select_mouse(mouse, target, hits),
-            Phase::Confirm(_) => self.confirm_mouse(mouse, target),
-            Phase::Diff(_) => {
-                self.diff_mouse(mouse);
-                Action::None
-            }
-            Phase::Done(_) => {
-                match mouse.kind {
-                    MouseKind::ScrollUp => self.scroll = self.scroll.saturating_sub(3),
-                    MouseKind::ScrollDown => self.scroll = self.scroll.saturating_add(3),
-                    _ => {}
-                }
-                Action::None
-            }
-            _ => Action::None,
-        }
-    }
-
-    fn diff_mouse(&mut self, mouse: Mouse) {
-        if let Phase::Diff(page) = &mut self.phase {
-            match mouse.kind {
-                MouseKind::ScrollUp => page.scroll = page.scroll.saturating_sub(3),
-                MouseKind::ScrollDown => page.scroll = page.scroll.saturating_add(3),
-                _ => {}
-            }
-        }
-    }
-
-    fn select_mouse(&mut self, mouse: Mouse, target: Option<Target>, hits: &HitMap) -> Action {
-        let over_list = matches!(
-            target,
-            Some(Target::Row(_) | Target::ListArea | Target::ScrollTrack)
-        );
-        match (mouse.kind, target) {
-            (MouseKind::Moved, Some(Target::Row(row))) => self.view.cursor = row,
-            (MouseKind::Down(Button::Left), Some(Target::Row(row))) => {
-                self.view.cursor = row;
-                self.toggle_current();
-            }
-            (MouseKind::Down(Button::Left), Some(Target::ScrollTrack)) => {
-                if let Some(track) = hits.rect_of(Target::ScrollTrack) {
-                    let from_top = usize::from(mouse.row.saturating_sub(track.y));
-                    self.view.jump(from_top, usize::from(track.height));
-                }
-            }
-            (MouseKind::ScrollUp, Some(Target::Pane)) => {
-                self.pane_scroll = self.pane_scroll.saturating_sub(3);
-            }
-            (MouseKind::ScrollDown, Some(Target::Pane)) => {
-                self.pane_scroll = self.pane_scroll.saturating_add(3);
-            }
-            (MouseKind::ScrollUp, _) if over_list => self.view.scroll_by(-3),
-            (MouseKind::ScrollDown, _) if over_list => self.view.scroll_by(3),
-            _ => {}
-        }
-        Action::None
-    }
-
-    fn confirm_mouse(&mut self, mouse: Mouse, target: Option<Target>) -> Action {
-        if !matches!(mouse.kind, MouseKind::Down(Button::Left)) {
-            return Action::None;
-        }
-        match target {
-            Some(Target::Button(0)) => self.confirmed(),
-            Some(Target::Button(_) | Target::Dismiss) => {
-                self.phase = Phase::Select;
-                Action::None
-            }
-            _ => Action::None,
-        }
     }
 }
 

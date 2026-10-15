@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 
 use skillmirror_core::scan::Target;
 
-use crate::items_projects::{Views, change_pane, delete_pane};
+use crate::items_projects::{ProjectPane, change_pane, delete_pane};
 use crate::num::plural;
 use crate::results::short_path;
 use crate::session::{Session, State, TargetState};
@@ -31,6 +31,11 @@ impl Mode {
     /// Whether the page has a pane beside (or under) the list that shows the row under the cursor.
     pub(crate) fn has_pane(self) -> bool {
         matches!(self, Self::Skills | Self::Sync | Self::Push | Self::Delete)
+    }
+
+    /// Whether the pane lists the projects of a skill, with a path style and a filter of its own.
+    pub(crate) fn has_project_pane(self) -> bool {
+        matches!(self, Self::Sync | Self::Push | Self::Delete)
     }
 
     /// Whether the pane has the three views that `tab` goes through.
@@ -70,8 +75,8 @@ pub(crate) struct Item {
     pub(crate) preselected: bool,
     /// The detail pane of the skills and delete pages; empty on the other pages.
     pub(crate) card: Vec<Note>,
-    /// The pane of the sync and push pages in each of its views; `None` on the other pages.
-    pub(crate) views: Option<Box<Views>>,
+    /// The pane of the sync, push and delete pages; `None` on the other pages.
+    pub(crate) pane: Option<Box<ProjectPane>>,
 }
 
 pub(crate) fn build(mode: Mode, session: &Session) -> Result<Vec<Item>, String> {
@@ -138,7 +143,7 @@ pub(crate) fn for_install(mode: Mode, session: &Session, project: &Project) -> V
                 }],
                 preselected: mode == Mode::Init && is_mandatory,
                 card: Vec::new(),
-                views: None,
+                pane: None,
             }
         })
         .collect()
@@ -168,7 +173,7 @@ fn planned(states: &[TargetState], root: &Path) -> Vec<Item> {
                 targets: members.iter().map(|m| m.target.clone()).collect(),
                 preselected: changing > 0,
                 card: Vec::new(),
-                views: Some(Box::new(change_pane(name, &members, root))),
+                pane: Some(Box::new(change_pane(name, &members, root))),
             }
         })
         .collect()
@@ -213,8 +218,8 @@ fn installed_groups(session: &Session) -> Vec<Item> {
                 }),
             targets: members.iter().map(|m| m.target.clone()).collect(),
             preselected: false,
-            card: delete_pane(name, &members, &session.root),
-            views: None,
+            card: Vec::new(),
+            pane: Some(Box::new(delete_pane(name, &members, &session.root))),
         })
         .collect()
 }
@@ -234,7 +239,7 @@ fn installed_rows(session: &Session) -> Vec<Item> {
             targets: vec![row.target.clone()],
             preselected: false,
             card: Vec::new(),
-            views: None,
+            pane: None,
         })
         .collect()
 }

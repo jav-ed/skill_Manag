@@ -44,7 +44,7 @@ pub(crate) fn vault_rows(session: &Session) -> Vec<Item> {
                 targets: Vec::new(),
                 preselected: false,
                 card: card(session, &info, projects),
-                views: None,
+                pane: None,
             }
         })
         .collect()

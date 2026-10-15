@@ -47,6 +47,8 @@ pub(crate) struct App {
     pub(crate) hover: Option<Target>,
     pub(crate) tick: usize,
     pub(crate) help: bool,
+    /// How far down the help is read.
+    pub(crate) help_scroll: usize,
     quit: bool,
     /// Ctrl-C was pressed once while a job was writing; a second press quits.
     pub(crate) quit_warned: bool,
@@ -83,6 +85,7 @@ impl App {
             hover: None,
             tick: 0,
             help: false,
+            help_scroll: 0,
             quit: false,
             quit_warned: false,
             failure: None,

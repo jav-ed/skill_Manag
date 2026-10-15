@@ -88,8 +88,11 @@ fn the_full_help_lists_the_keys_of_the_current_screen() {
     ui.press('?');
     let page = ui.screen();
     assert!(page.contains("keys"), "{page}");
-    assert!(page.contains("space") && page.contains("toggle"), "{page}");
-    assert!(page.contains("delete"), "{page}");
+    assert!(
+        page.contains("space") && page.contains("tick or untick"),
+        "{page}"
+    );
+    assert!(page.contains("delete the ticked rows"), "{page}");
 }
 
 #[test]

@@ -16,6 +16,12 @@ pub(crate) enum Target {
     ScrollTrack,
     /// The pane beside or under a list: the wheel scrolls it.
     Pane,
+    /// One of the three views in the header of the pane of a sync or push page.
+    PaneTab(usize),
+    /// The long or short paths control in the header of that pane.
+    PanePaths,
+    /// The filter of the projects in that pane.
+    PaneFilter,
     PickerRow(usize),
     PickerUp,
     PickerSelect,

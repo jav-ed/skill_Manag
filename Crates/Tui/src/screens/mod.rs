@@ -3,12 +3,14 @@
 mod history;
 mod list_view;
 mod menu;
+mod pane;
 mod picker;
 mod place;
 mod setup;
 mod setup_keys;
 mod work;
 mod work_keys;
+mod work_mouse;
 
 pub(crate) use history::{Action as HistoryAction, History, Phase as HistoryPhase};
 pub(crate) use list_view::ListView;

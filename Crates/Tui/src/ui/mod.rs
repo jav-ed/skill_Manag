@@ -5,13 +5,18 @@ mod dialog;
 mod diff;
 mod footer;
 mod header;
+mod help;
+mod help_screens;
+mod help_work;
 mod history;
 mod issues;
 mod link;
 mod menu;
 mod page;
+mod pane_text;
 mod picker;
 mod place;
+mod project_pane;
 mod results;
 mod scroll;
 mod select;
@@ -40,6 +45,7 @@ pub(crate) fn draw(frame: &mut Frame, app: &mut App) {
         hover,
         tick,
         help,
+        help_scroll,
         quit_warned,
         ..
     } = app;
@@ -54,7 +60,7 @@ pub(crate) fn draw(frame: &mut Frame, app: &mut App) {
     let notice = quit_warned.then_some("A job is writing. Press ctrl+c again to quit anyway.");
     footer::draw(frame, screen, notice, foot);
     if *help {
-        footer::overlay(frame, hits, screen);
+        help::overlay(frame, hits, screen, help_scroll);
     }
 }
 

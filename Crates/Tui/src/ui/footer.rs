@@ -1,21 +1,18 @@
-//! The help line at the bottom and the full help overlay.
+//! The help line at the bottom: the few keys that matter right now. The full help is `help.rs`.
 
 use ratatui::Frame;
 use ratatui::layout::Rect;
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Borders, Clear, Paragraph};
+use ratatui::widgets::Paragraph;
 
 use crate::app::Screen;
 use crate::binding::{
     AGENTS_FILE, ALL, BACK, BACK_HELP, Binding, CANCEL, CONFIRM_HELP, DELETE, DOWN, FILTER, GIT,
-    HELP, ISSUES, MENU_HELP, MENU_QUIT, OPEN, PANE_DOWN, PANE_UP, PANE_VIEW, QUIT, RESULTS_HELP,
-    RUN_ADD, RUN_AGENTS, RUN_DELETE, RUN_INIT, RUN_PUSH, RUN_SYNC, SCROLL, SELECT_COMMON, SYNC,
-    TOGGLE, UP, VIEW, YES,
+    HELP, ISSUES, MENU_QUIT, OPEN, PANE_VIEW, QUIT, RESULTS_HELP, RUN_ADD, RUN_AGENTS, RUN_DELETE,
+    RUN_INIT, RUN_PUSH, RUN_SYNC, SCROLL, SYNC, TOGGLE, UP, VIEW, YES,
 };
-use crate::hit::{HitMap, Target};
 use crate::items::Mode;
-use crate::num::to_u16;
-use crate::screens::{History, HistoryPhase, Pending, Phase, Place, Setup, Stage, Step, Work};
+use crate::screens::{History, HistoryPhase, Pending, Phase, Place, Setup, Stage, Step};
 use crate::theme;
 
 /// A key as written, and what it does.
@@ -137,58 +134,6 @@ fn setup_hints(setup: &Setup) -> Vec<Hint> {
     }
 }
 
-/// Every key of the current screen.
-fn full(screen: &Screen) -> Vec<Hint> {
-    match screen {
-        Screen::Menu(_) => hints(MENU_HELP),
-        Screen::Setup(setup) => {
-            let mut keys = setup_hints(setup);
-            keys.push(("ctrl+c", "quit"));
-            keys
-        }
-        Screen::History(history) => {
-            let mut keys = history_hints(history);
-            keys.push(("ctrl+c", "quit"));
-            keys
-        }
-        Screen::Place(place) => {
-            let mut keys = place_hints(place);
-            keys.push(("ctrl+c", "quit"));
-            keys
-        }
-        Screen::Work(work) => work_full(work),
-    }
-}
-
-fn work_full(work: &Work) -> Vec<Hint> {
-    match &work.phase {
-        Phase::Select => {
-            let mut keys = SELECT_COMMON.to_vec();
-            if work.mode == Mode::Skills {
-                keys.retain(|b| !std::ptr::eq(*b, &TOGGLE) && !std::ptr::eq(*b, &ALL));
-            }
-            keys.extend(mode_keys(work.mode));
-            if work.mode.has_pane() {
-                keys.extend([&PANE_DOWN, &PANE_UP]);
-            }
-            if !work.issues.is_empty() {
-                keys.push(&ISSUES);
-            }
-            keys.extend([&HELP, &BACK, &QUIT]);
-            hints(&keys)
-        }
-        Phase::Confirm(pending) => confirm_hints(pending),
-        Phase::Diff(_) => vec![
-            ("↑/↓", "scroll"),
-            ("pgup/pgdn", "page"),
-            ("esc", "back to the question"),
-            ("ctrl+c", "quit"),
-        ],
-        Phase::Done(_) => hints(RESULTS_HELP),
-        _ => hints(BACK_HELP),
-    }
-}
-
 pub(super) fn draw(frame: &mut Frame, screen: &Screen, notice: Option<&str>, area: Rect) {
     if let Some(notice) = notice {
         let line = Line::from(vec![
@@ -199,7 +144,7 @@ pub(super) fn draw(frame: &mut Frame, screen: &Screen, notice: Option<&str>, are
         return;
     }
     if let Screen::Work(work) = screen
-        && work.filtering
+        && (work.filtering || work.pane.filtering)
         && matches!(work.phase, Phase::Select)
     {
         let line = Line::from(vec![
@@ -221,33 +166,4 @@ pub(super) fn draw(frame: &mut Frame, screen: &Screen, notice: Option<&str>, are
         spans.push(Span::styled(format!(" {help}"), theme::muted()));
     }
     frame.render_widget(Paragraph::new(Line::from(spans)), area);
-}
-
-pub(super) fn overlay(frame: &mut Frame, hits: &mut HitMap, screen: &Screen) {
-    let full_area = frame.area();
-    hits.push(full_area, Target::Dismiss);
-    let keys = full(screen);
-    let height = to_u16(keys.len() + 2).min(full_area.height);
-    let width = 44.min(full_area.width);
-    let rect = Rect::new(
-        full_area.x + (full_area.width - width) / 2,
-        full_area.y + (full_area.height - height) / 2,
-        width,
-        height,
-    );
-    hits.push(rect, Target::Overlay);
-    frame.render_widget(Clear, rect);
-    let lines: Vec<Line> = keys
-        .into_iter()
-        .map(|(label, help)| {
-            Line::from(vec![
-                Span::styled(format!("{label:<10}"), theme::accent()),
-                Span::raw(help),
-            ])
-        })
-        .collect();
-    frame.render_widget(
-        Paragraph::new(lines).block(Block::default().borders(Borders::ALL).title(" keys ")),
-        rect,
-    );
 }

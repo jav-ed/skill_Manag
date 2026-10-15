@@ -7,7 +7,7 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
 use unicode_width::UnicodeWidthStr;
 
-use super::{scroll, skill_card};
+use super::{project_pane, scroll, skill_card};
 use crate::hit::{HitMap, Target};
 use crate::items::{Item, Mode, Tone};
 use crate::num::{plural, to_u16};
@@ -78,7 +78,11 @@ pub(super) fn draw(frame: &mut Frame, hits: &mut HitMap, work: &mut Work, area: 
         (area, None)
     };
     if let Some((card_area, place)) = card {
-        skill_card::draw(frame, hits, work, card_area, place);
+        if work.mode == Mode::Skills {
+            skill_card::draw(frame, hits, work, card_area, place);
+        } else {
+            project_pane::draw(frame, hits, work, card_area, place);
+        }
     }
     let [head, filter, columns, rows, status] = Layout::vertical([
         Constraint::Length(1),

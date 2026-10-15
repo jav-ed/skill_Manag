@@ -48,6 +48,6 @@ fn row(entry: &AgentProject) -> Item {
         // What the text changed is what the page is for; making new files is the user's choice.
         preselected: entry.state == FileState::Outdated,
         card: Vec::new(),
-        views: None,
+        pane: None,
     }
 }

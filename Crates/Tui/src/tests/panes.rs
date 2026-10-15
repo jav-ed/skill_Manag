@@ -91,7 +91,7 @@ fn a_long_path_breaks_at_its_folders_and_never_inside_a_name() {
     let mut ui = Harness::sized(world, 120, 30);
     ui.open("Sync").wait_select();
     ui.draw();
-    ui.press('j');
+    ui.press('j').press('p');
 
     let screen = ui.screen();
 
@@ -123,7 +123,7 @@ fn the_pane_scrolls_with_ctrl_d_and_u_and_starts_again_at_the_top_for_another_ro
     ui.ctrl('d');
     let scrolled = ui.screen();
     assert!(!scrolled.contains("many00"), "{scrolled}");
-    assert!(scrolled.contains("many05"), "{scrolled}");
+    assert!(scrolled.contains("many09"), "{scrolled}");
 
     ui.ctrl('u');
     assert!(ui.screen().contains("many00"));
@@ -136,4 +136,63 @@ fn the_pane_scrolls_with_ctrl_d_and_u_and_starts_again_at_the_top_for_another_ro
         ui.screen().contains("many00"),
         "another row starts at the top"
     );
+}
+
+#[test]
+fn paths_are_short_until_the_key_or_a_click_on_the_control_makes_them_long() {
+    let world = world();
+    world.project_file(
+        "deep/er/est/proj/.agents/skills/coding/SKILL.md",
+        "coding v1",
+    );
+    let mut ui = Harness::sized(world, 120, 30);
+    ui.open("Sync").wait_select();
+    ui.draw();
+    ui.press('j');
+
+    let short = ui.screen();
+    assert!(short.contains("[short]  long"), "{short}");
+    assert!(short.contains("est/proj"), "{short}");
+    assert!(!short.contains("deep/er"), "{short}");
+
+    ui.press('p');
+    let long = ui.screen();
+    assert!(long.contains("short  [long]"), "{long}");
+    assert!(long.contains("deep/er/est/proj"), "{long}");
+
+    ui.click(crate::hit::Target::PanePaths);
+    assert!(ui.screen().contains("[short]  long"));
+}
+
+#[test]
+fn the_filter_of_the_pane_keeps_projects_with_every_word_and_the_list_filter_stays_apart() {
+    let mut ui = Harness::sized(world_with_current_copies(), 120, 30);
+    ui.open("Sync").wait_select();
+    ui.draw();
+    ui.press('j').code(Code::Tab).press('f').type_text("nest");
+
+    let typing = ui.screen();
+    assert!(typing.contains("filter: nest"), "{typing}");
+    assert!(
+        typing.contains("[Others 1]"),
+        "the counts follow the filter:\n{typing}"
+    );
+    assert!(typing.contains("nested/five"), "{typing}");
+    assert!(!typing.contains("four"), "{typing}");
+
+    ui.code(Code::Enter);
+    let kept = ui.screen();
+    assert!(kept.contains("(f edit, esc clear)"), "{kept}");
+    assert!(
+        kept.contains("coding"),
+        "the skill list is not filtered by the pane filter:\n{kept}"
+    );
+
+    ui.code(Code::Esc);
+    let cleared = ui.screen();
+    assert!(!cleared.contains("filter: nest"), "{cleared}");
+    assert!(cleared.contains("[Others 2]"), "{cleared}");
+
+    ui.press('f').type_text("nothing-like-it").code(Code::Enter);
+    assert!(ui.screen().contains("No project matches the filter."));
 }

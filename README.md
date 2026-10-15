@@ -121,11 +121,11 @@ The built-in text names the skills `doc-start`, `coding` and `file-tree-optimiza
 
 ## The interface
 
-`skillmirror` with no arguments opens a full-screen interface with full mouse and keyboard navigation. `?` shows the keys of the current screen, `q` or `alt+left` goes back, `ctrl+c` quits.
+`skillmirror` with no arguments opens a full-screen interface with full mouse and keyboard navigation. `?` opens a help for the current screen: its keys in topics (move, choose, find, the pane, run, general), each with what it is good for. `q` or `alt+left` goes back, `ctrl+c` quits.
 
 | Entry | What it does |
 |---|---|
-| Sync, Push | Pick skills, see what would be written (`v` shows the changes as a diff), confirm, run. A pane beside the list (under it on a terminal narrower than 100 columns) follows the cursor and names the projects of the skill; `tab` switches it between the projects that would change, the others, and all of them, `ctrl+d` and `ctrl+u` scroll it |
+| Sync, Push | Pick skills, see what would be written (`v` shows the changes as a diff), confirm, run. A pane beside the list (under it on a terminal narrower than 100 columns) follows the cursor and names the projects of the skill: `tab` switches it between the projects that would change, the others, and all of them; `p` (or a click on `↔`) writes them short (`parent/project`) or long (the path below your scan root); `f` filters them; `ctrl+d` and `ctrl+u` scroll it |
 | List | Every installed skill; `/` filters, space selects, `s` syncs and `d` deletes the selection in place |
 | Skills | The vault's skills with a detail card for the one under the cursor: description, files, profiles, and what it is in each project. Read-only; `/` filters |
 | Delete | Nothing is pre-selected; you pick, then confirm. The pane names every project the skill would be removed from |

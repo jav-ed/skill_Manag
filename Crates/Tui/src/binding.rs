@@ -78,6 +78,16 @@ pub(crate) const PANE_VIEW: Binding = Binding {
     label: "tab",
     help: "pane",
 };
+pub(crate) const PANE_PATHS: Binding = Binding {
+    keys: &[(Code::Char('p'), N)],
+    label: "p",
+    help: "paths",
+};
+pub(crate) const PANE_FILTER: Binding = Binding {
+    keys: &[(Code::Char('f'), N)],
+    label: "f",
+    help: "filter projects",
+};
 pub(crate) const PANE_DOWN: Binding = Binding {
     keys: &[(Code::Char('d'), Mods::CTRL)],
     label: "ctrl+d",
@@ -189,9 +199,6 @@ pub(crate) const QUIT: Binding = Binding {
     help: "quit",
 };
 
-pub(crate) const MENU_HELP: &[&Binding] = &[&UP, &DOWN, &OPEN, &HELP, &MENU_QUIT, &QUIT];
-pub(crate) const SELECT_COMMON: &[&Binding] =
-    &[&UP, &DOWN, &PAGE_UP, &PAGE_DOWN, &TOGGLE, &ALL, &FILTER];
 pub(crate) const RESULTS_HELP: &[&Binding] = &[&SCROLL, &DETAILS, &BACK, &QUIT];
 pub(crate) const CONFIRM_HELP: &[&Binding] = &[&YES, &CANCEL, &QUIT];
 pub(crate) const BACK_HELP: &[&Binding] = &[&BACK, &QUIT];

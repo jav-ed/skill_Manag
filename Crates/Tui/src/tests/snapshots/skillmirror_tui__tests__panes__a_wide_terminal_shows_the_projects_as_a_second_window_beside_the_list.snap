@@ -7,13 +7,13 @@ expression: ui.screen()
  Select skills to sync   2 / 2 selected                                 │ coding
  / to filter                                                            │ 4 projects, 2 to update
       skill               projects                                      │ Affected 2  Others 2  [All 4]
-  [✓] astro               1 project   1 to update                       │ Would change (2)
-> [✓] coding              4 projects  2 to update                       │ one  outdated (1 file)
+  [✓] astro               1 project   1 to update                       │ ↔ [short]  long   f filter
+> [✓] coding              4 projects  2 to update                       │ Would change (2)
+                                                                        │ one  outdated (1 file)
                                                                         │ two  outdated (1 file)
                                                                         │ Up to date (2)
                                                                         │ four
                                                                         │ nested/five
-                                                                        │
                                                                         │
                                                                         │
                                                                         │

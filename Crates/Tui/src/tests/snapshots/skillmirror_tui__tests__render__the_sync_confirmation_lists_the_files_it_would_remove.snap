@@ -19,8 +19,8 @@ expression: ui.screen()
  astro   │                                                            │
  1 projec│               [ y  Sync ]        [ n  Cancel ]             │
  [Affecte╰────────────────────────────────────────────────────────────╯
+ ↔ [short]  long   f filter
  one  outdated (2 files)
-
 
 
 

@@ -3,7 +3,7 @@
 use ratatui::layout::Position;
 
 use super::{App, Effect, SITE_URL, Screen};
-use crate::binding::{HELP, QUIT};
+use crate::binding::{DOWN, HELP, PAGE_DOWN, PAGE_UP, QUIT, UP};
 use crate::event::Event;
 use crate::hit::Target;
 use crate::input::{Button, Input, Key, KeyKind, Mouse, MouseKind};
@@ -33,11 +33,27 @@ impl App {
         if QUIT.matches(key) {
             self.ctrl_c();
         } else if self.help {
-            self.help = false;
+            self.help_key(key);
         } else if HELP.matches(key) && !self.typing() {
             self.help = true;
+            self.help_scroll = 0;
         } else {
             self.route_key(key);
+        }
+    }
+
+    /// The help reads with the arrows and closes with any other key.
+    fn help_key(&mut self, key: Key) {
+        if UP.matches(key) {
+            self.help_scroll = self.help_scroll.saturating_sub(1);
+        } else if DOWN.matches(key) {
+            self.help_scroll = self.help_scroll.saturating_add(1);
+        } else if PAGE_UP.matches(key) {
+            self.help_scroll = self.help_scroll.saturating_sub(10);
+        } else if PAGE_DOWN.matches(key) {
+            self.help_scroll = self.help_scroll.saturating_add(10);
+        } else {
+            self.help = false;
         }
     }
 
@@ -54,7 +70,9 @@ impl App {
     /// Whether keys currently go into a text field.
     fn typing(&self) -> bool {
         match &self.screen {
-            Screen::Work(w) => w.filtering && matches!(w.phase, Phase::Select),
+            Screen::Work(w) => {
+                (w.filtering || w.pane.filtering) && matches!(w.phase, Phase::Select)
+            }
             Screen::Place(p) => p.typing(),
             Screen::Menu(_) | Screen::History(_) | Screen::Setup(_) => false,
         }
@@ -166,10 +184,13 @@ impl App {
             self.hover = target;
         }
         if self.help {
-            if matches!(mouse.kind, MouseKind::Down(Button::Left))
-                && matches!(target, Some(Target::Dismiss))
-            {
-                self.help = false;
+            match mouse.kind {
+                MouseKind::Down(Button::Left) if matches!(target, Some(Target::Dismiss)) => {
+                    self.help = false;
+                }
+                MouseKind::ScrollUp => self.help_scroll = self.help_scroll.saturating_sub(3),
+                MouseKind::ScrollDown => self.help_scroll = self.help_scroll.saturating_add(3),
+                _ => {}
             }
             return;
         }

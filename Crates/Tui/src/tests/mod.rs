@@ -5,6 +5,7 @@ mod add;
 mod agents;
 mod changes;
 mod flow;
+mod help;
 mod history;
 mod init;
 mod init_agents;
