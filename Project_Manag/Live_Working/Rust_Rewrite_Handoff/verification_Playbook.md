@@ -66,7 +66,7 @@ Build each case in a temp world and assert that the destination is byte-identica
 4. A new file appears in the destination between plan and apply.
 5. A skill name that is `..`, `.`, empty, contains `/`, starts with `.`, or is not valid UTF-8.
 6. The vault is not a git repo; a skill file is untracked; a tracked path is a symlink; the index has unmerged entries; the vault is empty.
-7. The skill has zero tracked files; deep nesting (more than 4 group levels); duplicate skill names across groups.
+7. The skill has zero tracked files; deep nesting (no limit since 2026-10-15); duplicate skill names across groups.
 8. Two runs at once on the same tree (race test loops: 100 rounds, count failures).
 9. `kill -9` during apply: afterwards only `.stage-*` or `.trash-*` leftovers exist, `skills/` has no half skill, and the next run reports the leftovers as warnings.
 10. Full disk (a small tmpfs: `mount -t tmpfs -o size=64k` needs root, or `ulimit -f` with a big file) and an unwritable state directory (for the backup store).

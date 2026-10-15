@@ -24,10 +24,12 @@ It walks every project under the root, finds every `.agents/skills/<name>/` fold
 
 ```
 vault/
-  coding/        <- your master copy
+  coding/        <- a skill: a folder with a SKILL.md, your master copy
   doc-start/
-  web/
-    astro/       <- a group: a folder of skills, only in the vault
+  Web_Skills/    <- a group: a folder without SKILL.md that holds skills, only in the vault
+    astro/
+    seo/         <- groups nest as deep as you like
+      schema/
 
 projects/
   project-A/
@@ -80,7 +82,7 @@ Every command accepts `--vault <DIR>` and `--root <DIR>`. Commands that write as
 | `new NAME [--group PATH] [--description TEXT] [--dry-run]` | Creates a skill in the vault from a template (`SKILL.md` with a header), staged in git, not committed |
 | `adopt NAME --from PROJECT [--group PATH] [--dry-run]` | Copies a skill folder that a project already has into the vault, staged, not committed; the project's folder is then in sync |
 | `vault init DIR [--root DIR] [--use] [--dry-run]` | Makes a new vault (a git repository with a `config.yaml`) and, when you have no default vault yet, makes it the default |
-| `config show [--json]`, `config path`, `config root DIR` | Shows the vault, the scan root (with where each came from) and the settings; prints the path of `config.yaml`; sets `root:` there |
+| `config show [--json]`, `config path`, `config root DIR`, `config web on\|off` | Shows the vault, the scan root (with where each came from) and the settings; prints the path of `config.yaml`; sets `root:` there; turns the web view on or off (`web:` there) |
 | `mandatory list`, `mandatory add SKILL...`, `mandatory remove SKILL...` | Shows or edits the skills that `push` installs everywhere, in `config.yaml` (comments and other keys stay) |
 | `bridge [--dry-run]` | Links other agent folders such as `.claude/skills` to `.agents/skills` (see `targets` below) |
 | `doctor` | Checks the machine, the configuration, the vault, every `SKILL.md` header and the AGENTS.md text; writes nothing |
@@ -140,7 +142,12 @@ Every page that works out a plan shows it before anything is written. If the sca
 
 ## The web view
 
-The web view is **off by default**: a plain `just install` leaves out its server (`axum`, `tokio`), and `skillmirror web` then says so and how to build it in. Turn it on with `just install-web`, or `cargo install --path Crates/Cli --locked --features web`; turn it off again by installing without the feature.
+The web view is **off by default**, and two switches keep it off:
+
+- **The build.** A plain `just install` leaves out its server (`axum`, `tokio`). Build it in with `just install-web`, or `cargo install --path Crates/Cli --locked --features web`.
+- **The config.** `web: false` in `<vault>/config.yaml` (what you get without the key) makes `skillmirror web` refuse to start. `skillmirror config web on` sets `web: true`, `skillmirror config web off` sets it back.
+
+`skillmirror web` starts only when both are on. When one is missing, it stops with a usage error (exit 2) that names what to do, and nothing is listening.
 
 `skillmirror web` prints a link and serves on `127.0.0.1` (a free port, or `--port`) until Ctrl-C or until nobody has asked for anything for two hours (`--idle-timeout`). The pages: an overview of every project, Sync and Push (pick skills and a project, see the plan with its diffs, apply), History (undo a run), Doctor, Settings, and the full report. Without `--allow-write` it only looks: no page can change a file. With it, a change is a plan first, then a go-ahead for exactly that plan; folders edited in between are left alone, replaced folders are saved for History, and one change runs at a time.
 
@@ -163,6 +170,7 @@ exclude_paths:                      # skipped with everything below them
   - /path/to/project/testdata
 exclude_dirs: [testdata]            # skipped wherever the name occurs; optional
 targets: [claude]                   # other agent folders to link; optional
+web: false                          # may `skillmirror web` start; optional, off unless true
 profiles:                           # named selections for add and init; optional
   websites:
     description: Everything for a website
@@ -179,7 +187,11 @@ Built-in skips apply on top: `.git`, `node_modules`, `vendor`, `dist`, `build`, 
 
 ### Groups and profiles
 
-A **group** is a folder in the vault that holds skills. Groups only exist in the vault: the installed layout stays flat (`.agents/skills/<name>/`), so moving a skill between groups changes no project. `skillmirror skills` shows the tree; `add --group web/seo` installs everything below a folder. A **profile** names a selection of groups and skills, can extend other profiles and can exclude names.
+A folder of the vault is a **skill** when it has a `SKILL.md`; the search for skills stops there. Any other folder that holds skills is a **group**, so the vault can be sorted into `Default_Skills/`, `Web_Skills/` and so on, and the groups nest without a limit (only the length of a path ends it). Folders without a skill below them are ignored, and `doctor` lists them. Skill names stay unique across the whole vault, and a group may not be named like a skill.
+
+Groups only exist in the vault: the installed layout stays flat (`.agents/skills/<name>/`), so moving a skill between groups changes no project. `skillmirror skills` shows the tree; `add --group Web_Skills/seo` installs everything below a folder, at any level. A **profile** names a selection of groups and skills, can extend other profiles and can exclude names.
+
+To sort a vault that is already full, move the folders and then run `git add -A` in the vault (no commit needed; the files git has staged are what is copied). Until you do, `sync` refuses the moved skill with a hint, and no project loses anything. `groups:` of a profile and `--group` take folder paths, so a path you moved has to be changed there too. Skills named in `mandatory:` and the copies in the projects are not affected, since they go by the skill's name.
 
 ### What travels with a skill
 
