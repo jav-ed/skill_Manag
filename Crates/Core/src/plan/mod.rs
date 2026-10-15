@@ -11,4 +11,6 @@ pub use model::{ChangeKind, FileChange, PlanKind, SkillPlan, SourceFile};
 pub use set::{Plan, PlanCounts, PlanEntry};
 
 #[cfg(test)]
+mod settle_tests;
+#[cfg(test)]
 mod tests;

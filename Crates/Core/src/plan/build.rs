@@ -5,7 +5,7 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 
 use super::PlanError;
-use super::inspect::{Entry, same_bytes, walk};
+use super::inspect::{Entry, same_bytes, walk_settled};
 use super::model::{ChangeKind, FileChange, PlanKind, SkillPlan, SourceFile};
 use crate::scan::Target;
 use crate::vault::{ProblemKind, Skill, SkillFiles};
@@ -141,7 +141,7 @@ fn read_sources(skill: &Skill, files: &SkillFiles) -> Result<Vec<SourceFile>, Pl
 }
 
 fn compare(plan: &mut SkillPlan) -> Result<(), PlanError> {
-    let existing = walk(&plan.target.path)?;
+    let existing = walk_settled(&plan.target.path)?;
     for source in &plan.sources {
         let kind = match existing.get(&source.rel) {
             None | Some(Entry::Dir | Entry::Other) => Some(ChangeKind::Added),

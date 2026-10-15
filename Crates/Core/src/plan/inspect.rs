@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use std::io::Read;
 use std::os::unix::fs::{MetadataExt, PermissionsExt};
 use std::path::{Path, PathBuf};
-use std::time::SystemTime;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 /// One entry below a destination skill folder.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -57,6 +57,53 @@ pub(crate) fn walk(dir: &Path) -> std::io::Result<Snapshot> {
     let mut found = BTreeMap::new();
     visit(dir, Path::new(""), &mut found)?;
     Ok(found)
+}
+
+/// How old the newest change in a folder has to be before its snapshot can be trusted. The kernel stamps
+/// files from a coarse clock that only moves once per tick (3 to 10 ms), so a second change in the same
+/// tick as the first one leaves the change time as it was. Two ticks of the slowest common clock (100 Hz).
+const SETTLE: Duration = Duration::from_millis(20);
+/// Looks at a folder this many times before it is called busy; each look waits for a quiet moment.
+const SETTLE_TRIES: usize = 50;
+
+/// [`walk`] of a folder in which nothing changed during the last [`SETTLE`]. The guard that stops a write
+/// over an edit made after the plan compares change times, which only tells two states apart when a change
+/// made after the snapshot gets a later time than any in it; that holds once the snapshot is older than a
+/// clock tick. A time in the future (a clock that is ahead, on a network folder) cannot be waited out and is
+/// taken as it is.
+pub(crate) fn walk_settled(dir: &Path) -> std::io::Result<Snapshot> {
+    for _ in 0..SETTLE_TRIES {
+        let snapshot = walk(dir)?;
+        match wait_needed(&snapshot) {
+            None => return Ok(snapshot),
+            Some(wait) => std::thread::sleep(wait),
+        }
+    }
+    Err(std::io::Error::other(format!(
+        "{} was written to {SETTLE_TRIES} times in a row, so there is no quiet moment to plan against; plan again when nothing writes there",
+        dir.display()
+    )))
+}
+
+/// How long until the newest change in `snapshot` is older than [`SETTLE`]; `None` when it already is.
+fn wait_needed(snapshot: &Snapshot) -> Option<Duration> {
+    let now = SystemTime::now();
+    snapshot
+        .values()
+        .filter_map(|entry| match entry {
+            Entry::File {
+                changed: (secs, nanos),
+                ..
+            } => Some((u64::try_from(*secs).ok()?, u32::try_from(*nanos).ok()?)),
+            Entry::Dir | Entry::Other => None,
+        })
+        .filter_map(|(secs, nanos)| {
+            now.duration_since(UNIX_EPOCH + Duration::new(secs, nanos))
+                .ok()
+        })
+        // An age that is already SETTLE or more has nothing left to wait for.
+        .filter_map(|age| SETTLE.checked_sub(age))
+        .max()
 }
 
 fn visit(base: &Path, rel: &Path, found: &mut Snapshot) -> std::io::Result<()> {
