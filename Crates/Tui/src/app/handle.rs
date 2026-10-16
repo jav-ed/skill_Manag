@@ -8,7 +8,8 @@ use crate::event::Event;
 use crate::hit::Target;
 use crate::input::{Button, Input, Key, KeyKind, Mouse, MouseKind};
 use crate::screens::{
-    Action, Dest, ENTRIES, HistoryAction, HistoryPhase, MenuAction, Phase, PlaceAction, SetupAction,
+    Action, Dest, ENTRIES, HistoryAction, HistoryPhase, LocalPhase, MenuAction, Phase, PlaceAction,
+    SetupAction,
 };
 
 impl App {
@@ -74,7 +75,7 @@ impl App {
                 (w.filtering || w.pane.filtering) && matches!(w.phase, Phase::Select)
             }
             Screen::Place(p) => p.typing(),
-            Screen::Menu(_) | Screen::History(_) | Screen::Setup(_) => false,
+            Screen::Menu(_) | Screen::History(_) | Screen::Local(_) | Screen::Setup(_) => false,
         }
     }
 
@@ -92,6 +93,10 @@ impl App {
             Screen::History(history) => {
                 let action = history.on_key(key);
                 self.history_act(action);
+            }
+            Screen::Local(local) => {
+                let action = local.on_key(key);
+                self.local_act(action);
             }
             Screen::Place(place) => {
                 let action = place.on_key(key);
@@ -124,6 +129,7 @@ impl App {
         match ENTRIES.get(index).map(|e| e.dest) {
             Some(Dest::Work(mode)) => self.open(mode),
             Some(Dest::History) => self.open_history(),
+            Some(Dest::Local) => self.open_local(),
             Some(Dest::Place(purpose)) => self.open_place(purpose),
             Some(Dest::Setup) => self.open_setup(),
             None => {}
@@ -214,6 +220,10 @@ impl App {
                 let action = history.on_mouse(mouse, &self.hits);
                 self.history_act(action);
             }
+            Screen::Local(local) => {
+                let action = local.on_mouse(mouse, &self.hits);
+                self.local_act(action);
+            }
             Screen::Place(place) => {
                 let action = place.on_mouse(mouse, target);
                 self.place_act(action);
@@ -247,6 +257,9 @@ impl App {
                         if matches!(history.phase, HistoryPhase::Confirm(_)) =>
                     {
                         history.phase = HistoryPhase::List;
+                    }
+                    Screen::Local(local) if matches!(local.phase, LocalPhase::Confirm(_)) => {
+                        local.phase = LocalPhase::List;
                     }
                     _ => self.back_to_menu(),
                 }

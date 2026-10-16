@@ -2,6 +2,7 @@
 
 mod history;
 mod list_view;
+pub(crate) mod local;
 mod menu;
 mod pane;
 mod picker;
@@ -11,6 +12,7 @@ mod work;
 
 pub(crate) use history::{Action as HistoryAction, History, Phase as HistoryPhase};
 pub(crate) use list_view::ListView;
+pub(crate) use local::{Action as LocalAction, Local, Phase as LocalPhase};
 pub(crate) use menu::{Dest, ENTRIES, Menu, MenuAction};
 pub(crate) use picker::Picker;
 pub(crate) use place::{Place, PlaceAction, Purpose, Stage};

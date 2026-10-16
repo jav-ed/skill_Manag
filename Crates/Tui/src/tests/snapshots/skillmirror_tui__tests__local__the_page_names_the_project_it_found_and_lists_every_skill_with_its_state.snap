@@ -1,0 +1,24 @@
+---
+source: Crates/Tui/src/tests/local.rs
+expression: "screen.replace(&ui.world.path().display().to_string(), \"<world>\")"
+---
+ ← skillmirror  ·  javedab.com  ·  override
+
+ Override   the project in this folder
+  <world>/projects/one
+      skill                   state    what differs
+> [ ] astro                   edited   SKILL.md modified, ref.md removed · vault: web
+  [ ] coding                  edited   SKILL.md modified
+      local-only              new      not in the vault
+
+
+
+
+
+
+
+
+
+  [ ] s then update the other projects that have the replaced skills
+ 2 skills can be replaced
+ space toggle • a all • s update the others too • enter replace in the vault • ? help • q/alt+← back

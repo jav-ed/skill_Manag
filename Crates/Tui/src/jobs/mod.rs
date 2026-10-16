@@ -3,6 +3,7 @@
 //! report that still matters from one that arrives after the screen moved on.
 
 pub(crate) mod install;
+pub(crate) mod local;
 
 use std::collections::BTreeSet;
 use std::path::PathBuf;

@@ -9,7 +9,7 @@ use crate::jobs;
 use crate::jobs::install::{self, Placed};
 use crate::preview::Preview;
 use crate::results::Kind;
-use crate::screens::{History, HistoryPhase, Pending, Phase, Purpose, Work};
+use crate::screens::{History, HistoryPhase, LocalPhase, Pending, Phase, Purpose, Work};
 
 impl App {
     /// A report counts only while the screen still waits for that job. Anything else is the late word of
@@ -34,6 +34,11 @@ impl App {
                     }
                 }
             }
+            Job::Located(result) if self.comparing == Some(id) => self.on_located(*result),
+            Job::PromotePlanned(result) if self.running == Some(id) => {
+                self.on_promote_planned(*result);
+            }
+            Job::Promoted(done) if self.running == Some(id) => self.on_promoted(*done),
             Job::Planned(pending) if self.running == Some(id) => self.on_planned(*pending),
             Job::Diffed(page) if self.running == Some(id) => {
                 self.running = None;
@@ -81,6 +86,7 @@ impl App {
                 {
                     history.phase = HistoryPhase::Running { done, total };
                 }
+                self.local_progress(done, total);
             }
             Job::Finished(results) if self.running == Some(id) => {
                 self.job_ended();
@@ -95,6 +101,8 @@ impl App {
                     work.phase = Phase::Failed(message);
                 } else if let Some(history) = self.history_mut() {
                     history.phase = HistoryPhase::Failed(message);
+                } else if let Some(local) = self.local_mut() {
+                    local.phase = LocalPhase::Failed(message);
                 }
             }
             _ => {}
@@ -102,7 +110,7 @@ impl App {
     }
 
     /// The disk changed or the job failed, so the scan is stale and the next page needs a new one.
-    fn job_ended(&mut self) {
+    pub(super) fn job_ended(&mut self) {
         self.running = None;
         self.quit_warned = false;
         self.session = None;
@@ -226,14 +234,22 @@ impl App {
     pub(super) fn work_mut(&mut self) -> Option<&mut Work> {
         match &mut self.screen {
             Screen::Work(work) => Some(work),
-            Screen::Menu(_) | Screen::Setup(_) | Screen::History(_) | Screen::Place(_) => None,
+            Screen::Menu(_)
+            | Screen::Setup(_)
+            | Screen::History(_)
+            | Screen::Local(_)
+            | Screen::Place(_) => None,
         }
     }
 
     fn history_mut(&mut self) -> Option<&mut History> {
         match &mut self.screen {
             Screen::History(history) => Some(history),
-            Screen::Menu(_) | Screen::Setup(_) | Screen::Work(_) | Screen::Place(_) => None,
+            Screen::Menu(_)
+            | Screen::Setup(_)
+            | Screen::Work(_)
+            | Screen::Local(_)
+            | Screen::Place(_) => None,
         }
     }
 

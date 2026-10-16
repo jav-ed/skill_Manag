@@ -9,10 +9,13 @@ use crate::app::Screen;
 use crate::binding::{
     AGENTS_FILE, ALL, BACK, BACK_HELP, Binding, CANCEL, CONFIRM_HELP, DELETE, DOWN, FILTER, GIT,
     HELP, ISSUES, MENU_QUIT, OPEN, PANE_VIEW, QUIT, RESULTS_HELP, RUN_ADD, RUN_AGENTS, RUN_DELETE,
-    RUN_INIT, RUN_PUSH, RUN_SYNC, SCAFFOLD, SCROLL, SYNC, TOGGLE, UP, VIEW, YES,
+    RUN_INIT, RUN_PROMOTE, RUN_PUSH, RUN_SYNC, SCAFFOLD, SCROLL, SPREAD, SYNC, TOGGLE, UP, VIEW,
+    YES,
 };
 use crate::items::Mode;
-use crate::screens::{History, HistoryPhase, Pending, Phase, Place, Setup, Stage, Step};
+use crate::screens::{
+    History, HistoryPhase, Local, LocalPhase, Pending, Phase, Place, Setup, Stage, Step,
+};
 use crate::theme;
 
 /// A key as written, and what it does.
@@ -42,6 +45,7 @@ fn short(screen: &Screen) -> Vec<Hint> {
         Screen::Menu(_) => hints(&[&UP, &DOWN, &OPEN, &HELP, &MENU_QUIT]),
         Screen::Setup(setup) => setup_hints(setup),
         Screen::History(history) => history_hints(history),
+        Screen::Local(local) => local_hints(local),
         Screen::Place(place) => place_hints(place),
         Screen::Work(work) => match &work.phase {
             Phase::Select => {
@@ -108,6 +112,23 @@ fn history_hints(history: &History) -> Vec<Hint> {
         | HistoryPhase::Failed(_)
         | HistoryPhase::Planning
         | HistoryPhase::Running { .. } => hints(BACK_HELP),
+    }
+}
+
+fn local_hints(local: &Local) -> Vec<Hint> {
+    match local.phase {
+        LocalPhase::List => hints(&[&TOGGLE, &ALL, &SPREAD, &RUN_PROMOTE, &HELP, &BACK]),
+        LocalPhase::Pick => vec![
+            ("↑/↓", "move"),
+            ("enter", "look at this project"),
+            ("esc", "back"),
+        ],
+        LocalPhase::Confirm(_) => hints(CONFIRM_HELP),
+        LocalPhase::Done(_) => hints(&[&SCROLL, &BACK, &QUIT]),
+        LocalPhase::Loading
+        | LocalPhase::Failed(_)
+        | LocalPhase::Planning
+        | LocalPhase::Running { .. } => hints(BACK_HELP),
     }
 }
 

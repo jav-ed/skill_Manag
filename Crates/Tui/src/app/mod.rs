@@ -3,7 +3,9 @@
 
 mod handle;
 mod jobs_events;
+mod local;
 
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::mpsc::Sender;
 
@@ -13,7 +15,8 @@ use crate::event::{Event, JobId};
 use crate::hit::{HitMap, Target};
 use crate::items::Mode;
 use crate::screens::{
-    Dest, ENTRIES, History, HistoryPhase, Menu, Phase, Place, Purpose, Setup, SetupStart, Work,
+    Dest, ENTRIES, History, HistoryPhase, Local, LocalPhase, Menu, Phase, Place, Purpose, Setup,
+    SetupStart, Work,
 };
 use crate::session::Session;
 
@@ -23,6 +26,7 @@ pub(crate) enum Screen {
     Menu(Menu),
     Work(Box<Work>),
     History(Box<History>),
+    Local(Box<Local>),
     Place(Box<Place>),
     Setup(Box<Setup>),
 }
@@ -31,6 +35,8 @@ pub(crate) enum Screen {
 pub struct Launch {
     pub settings: Settings,
     pub dirs: Dirs,
+    /// The folder the program was started in; the Override page looks for a project around it.
+    pub cwd: PathBuf,
     /// Loads the settings again with the same flags and environment, after the wizard saved new ones.
     pub reload: Box<dyn Fn() -> Result<Settings, ConfigError>>,
 }
@@ -62,11 +68,14 @@ pub(crate) struct App {
     running: Option<JobId>,
     /// The read of the backup store that the history page waits for.
     listing: Option<JobId>,
+    /// The look at a project that the Override page waits for.
+    comparing: Option<JobId>,
     /// The look at a vault folder the setup wizard waits for.
     checking: Option<JobId>,
     next_job: JobId,
     settings: Settings,
     dirs: Dirs,
+    cwd: PathBuf,
     reload: Box<dyn Fn() -> Result<Settings, ConfigError>>,
     tx: Sender<Event>,
 }
@@ -76,6 +85,7 @@ impl App {
         let Launch {
             settings,
             dirs,
+            cwd,
             reload,
         } = launch;
         let unconfigured = settings.vault().is_err() || settings.root().is_err();
@@ -94,10 +104,12 @@ impl App {
             loading: None,
             running: None,
             listing: None,
+            comparing: None,
             checking: None,
             next_job: 0,
             settings,
             dirs,
+            cwd,
             reload,
             tx,
         };
@@ -126,6 +138,7 @@ impl App {
         match &self.screen {
             Screen::Work(w) => matches!(w.phase, Phase::Running { .. }),
             Screen::History(h) => matches!(h.phase, HistoryPhase::Running { .. }),
+            Screen::Local(l) => matches!(l.phase, LocalPhase::Running { .. }),
             Screen::Menu(_) | Screen::Place(_) | Screen::Setup(_) => false,
         }
     }
@@ -142,6 +155,10 @@ impl App {
                 Screen::History(h) => matches!(
                     h.phase,
                     HistoryPhase::Running { .. } | HistoryPhase::Loading | HistoryPhase::Planning
+                ),
+                Screen::Local(l) => matches!(
+                    l.phase,
+                    LocalPhase::Running { .. } | LocalPhase::Loading | LocalPhase::Planning
                 ),
                 Screen::Place(p) => p.checking,
                 Screen::Menu(_) | Screen::Setup(_) => false,
@@ -162,6 +179,7 @@ impl App {
             Screen::Menu(_) => None,
             Screen::Setup(_) => Some("setup"),
             Screen::History(_) => Some("history"),
+            Screen::Local(_) => Some("override"),
             Screen::Place(place) => Some(match place.purpose {
                 Purpose::Add => "add",
                 Purpose::Init => "init",
@@ -233,6 +251,10 @@ impl App {
             Screen::History(_) => ENTRIES
                 .iter()
                 .position(|e| e.dest == Dest::History)
+                .unwrap_or(0),
+            Screen::Local(_) => ENTRIES
+                .iter()
+                .position(|e| e.dest == Dest::Local)
                 .unwrap_or(0),
             Screen::Menu(menu) => menu.cursor,
         };

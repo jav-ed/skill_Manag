@@ -35,8 +35,8 @@ fn agents_writes_the_new_text_into_the_ticked_projects_and_keeps_the_rest_of_the
     .unwrap();
     let mut term = tui(&world);
     term.wait_for("skillmirror");
-    // Agents is the sixth entry of the menu.
-    term.send("jjjjj\r");
+    // Agents is the seventh entry of the menu.
+    term.send("jjjjjj\r");
     term.wait_for("Select projects to write the AGENTS.md block into");
     // The two outdated projects are ticked, the one without a file is not.
     term.wait_for("2 / 3 selected");
@@ -81,7 +81,7 @@ fn agents_says_why_when_the_text_cannot_be_used() {
     world.vault_file("project-files/AGENTS.md", "   \n");
     let mut term = tui(&world);
     term.wait_for("skillmirror");
-    term.send("jjjjj\r");
+    term.send("jjjjjj\r");
 
     term.wait_for("is empty");
     term.send("q");

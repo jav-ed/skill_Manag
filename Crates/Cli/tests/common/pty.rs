@@ -37,6 +37,18 @@ impl Terminal {
         cols: u16,
         env: &[(&str, &str)],
     ) -> Self {
+        Self::spawn_in(world, args, rows, cols, env, None)
+    }
+
+    /// Like [`Terminal::spawn_with`], started in the folder `cwd`.
+    pub(crate) fn spawn_in(
+        world: &World,
+        args: &[&str],
+        rows: u16,
+        cols: u16,
+        env: &[(&str, &str)],
+        cwd: Option<&std::path::Path>,
+    ) -> Self {
         let pair = native_pty_system()
             .openpty(PtySize {
                 rows,
@@ -55,6 +67,9 @@ impl Terminal {
             cmd.env(key, value);
         }
         cmd.args(args);
+        if let Some(cwd) = cwd {
+            cmd.cwd(cwd);
+        }
         let child = pair.slave.spawn_command(cmd).unwrap();
         drop(pair.slave);
         let mut reader = pair.master.try_clone_reader().unwrap();
@@ -152,9 +167,14 @@ impl Terminal {
 
 /// The interactive interface on the world's vault and root, 100 columns by 30 rows.
 pub(crate) fn tui(world: &World) -> Terminal {
+    tui_in(world, None)
+}
+
+/// The same, started in the folder `cwd`.
+pub(crate) fn tui_in(world: &World, cwd: Option<&std::path::Path>) -> Terminal {
     let vault = world.vault();
     let root = world.root();
-    Terminal::spawn(
+    Terminal::spawn_in(
         world,
         &[
             "--vault",
@@ -164,5 +184,7 @@ pub(crate) fn tui(world: &World) -> Terminal {
         ],
         30,
         100,
+        &[],
+        cwd,
     )
 }

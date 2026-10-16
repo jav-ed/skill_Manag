@@ -37,6 +37,7 @@ pub(super) fn launch(cli: &Cli) -> Result<Launch, CliError> {
     Ok(Launch {
         settings,
         dirs,
+        cwd: std::env::current_dir()?,
         reload: Box::new(move || Settings::load(&flags, &env, &reload_dirs)),
     })
 }

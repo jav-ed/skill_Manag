@@ -35,6 +35,7 @@ fn topics(screen: &Screen) -> Vec<Topic> {
         Screen::Menu(_) => screens::menu_topics(),
         Screen::Setup(setup) => screens::setup_topics(setup),
         Screen::History(history) => screens::history_topics(history),
+        Screen::Local(local) => screens::local_topics(local),
         Screen::Place(place) => screens::place_topics(place),
         Screen::Work(work) => work::work_topics(work),
     }

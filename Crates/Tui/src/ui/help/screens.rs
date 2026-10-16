@@ -1,7 +1,7 @@
-//! The help of the menu, the history, the folder picker and the setup wizard.
+//! The help of the menu, the history, the Override page, the folder picker and the setup wizard.
 
 use super::{Topic, general, topic};
-use crate::screens::{History, HistoryPhase, Place, Setup, Stage, Step};
+use crate::screens::{History, HistoryPhase, Local, LocalPhase, Place, Setup, Stage, Step};
 
 pub(in crate::ui) fn menu_topics() -> Vec<Topic> {
     vec![
@@ -40,6 +40,45 @@ pub(in crate::ui) fn history_topics(history: &History) -> Vec<Topic> {
         | HistoryPhase::Running { .. } => vec![("q", "back, when nothing is being written.")],
     };
     vec![topic("History", keys), general(&[])]
+}
+
+pub(in crate::ui) fn local_topics(local: &Local) -> Vec<Topic> {
+    let keys = match local.phase {
+        LocalPhase::List => vec![
+            ("↑/k  ↓/j", "move over the skills of the project."),
+            (
+                "space",
+                "tick or untick an edited skill. Only edited skills can be replaced: the others are the vault's own, older, or not in the vault.",
+            ),
+            ("a", "tick every edited skill, or clear them."),
+            (
+                "s",
+                "also update the other projects that have the skills, after the vault has the new copies.",
+            ),
+            (
+                "enter",
+                "replace the vault's copy of the ticked skills (or of the skill under the cursor when none is ticked), after a question. The old copy is kept, so History can undo it.",
+            ),
+            ("esc", "back to the menu."),
+        ],
+        LocalPhase::Pick => vec![
+            ("↑/k  ↓/j", "move over the projects."),
+            ("enter", "look at the project under the cursor."),
+            ("esc", "back to the menu."),
+        ],
+        LocalPhase::Confirm(_) => vec![
+            ("y  enter", "replace the vault's copies."),
+            ("n  esc", "cancel. Nothing is changed."),
+        ],
+        LocalPhase::Done(_) => vec![("↑/↓", "scroll."), ("q", "back to the menu.")],
+        LocalPhase::Loading
+        | LocalPhase::Failed(_)
+        | LocalPhase::Planning
+        | LocalPhase::Running { .. } => {
+            vec![("q", "back, when nothing is being written.")]
+        }
+    };
+    vec![topic("Override", keys), general(&[])]
 }
 
 pub(in crate::ui) fn place_topics(place: &Place) -> Vec<Topic> {

@@ -99,6 +99,8 @@ Every command accepts `--vault <DIR>` and `--root <DIR>`. Commands that write as
 | `web [--allow-write] [--port N] [--open] [--idle-timeout MINUTES]` | The same views live in your browser, served on 127.0.0.1 only behind a link that works once. With `--allow-write` the pages can also run sync, push and undo, each after showing its plan with the diffs |
 | `new NAME [--group PATH] [--description TEXT] [--dry-run]` | Creates a skill in the vault from a template (`SKILL.md` with a header), staged in git, not committed |
 | `adopt NAME --from PROJECT [--group PATH] [--dry-run]` | Copies a skill folder that a project already has into the vault, staged, not committed; the project's folder is then in sync |
+| `changes [--project DIR] [--all] [--json]` | Which skills of one project differ from the vault, read-only. The project is the one around the current folder (up to the top of its git repository), else the only one below it; `--project` names it. Each skill is `edited` here, `behind` (an older version the vault had, found in the vault's git history: sync brings it up), `new` (not in the vault: adopt), `unusable` or `same`. Exit 1 when some skill is edited |
+| `promote SKILL... \| --all [--project DIR] [--sync] [--dry-run] [-y]` | Replaces the vault's copy of skills you changed in a project with the project's, after showing what differs. The old copy goes to the backup store (`undo` brings it back), the new one is staged in git and not committed. Refused: a skill that is not edited, and a vault skill with unstaged changes. `--sync` then updates every other project that has the skills, from the vault, with the usual sync question |
 | `vault init DIR [--root DIR] [--use] [--dry-run]` | Makes a new vault (a git repository with a `config.yaml`) and, when you have no default vault yet, makes it the default |
 | `config show [--json]`, `config path`, `config root DIR`, `config web on\|off` | Shows the vault, the scan root (with where each came from) and the settings; prints the path of `config.yaml`; sets `root:` there; turns the web view on or off (`web:` there) |
 | `mandatory list`, `mandatory add SKILL...`, `mandatory remove SKILL...` | Shows or edits the skills that `push` installs everywhere, in `config.yaml` (comments and other keys stay) |
@@ -156,6 +158,7 @@ The built-in text names the skills `doc-start`, `coding` and `file-tree-optimiza
 
 | Entry | What it does |
 |---|---|
+| Override | Opens on the project around the folder you started in (or lists the ones below it to pick from) and shows its skills against the vault: edited, behind, new. Nothing is read before the entry is opened. Space ticks an edited skill, `a` all of them, `s` also updates the other projects that have them; Enter asks, then replaces the vault's copy. The old copy is kept for History |
 | Sync, Push | Pick skills, see what would be written (`v` shows the changes as a diff), confirm, run. A pane beside the list (under it on a terminal narrower than 100 columns) follows the cursor and names the projects of the skill: `tab` switches it between the projects that would change, the others, and all of them; `p` (or a click on `↔`) writes them short (`parent/project`) or long (the path below your scan root); `f` filters them; `ctrl+d` and `ctrl+u` scroll it |
 | List | Every installed skill; `/` filters, space selects, `s` syncs and `d` deletes the selection in place |
 | Skills | The vault's skills with a detail card for the one under the cursor: description, files, profiles, and what it is in each project. Read-only; `/` filters |
@@ -234,7 +237,7 @@ The vault must be a git repository. The files git tracks in a skill folder are w
 - A skill folder is replaced by building the new copy beside it and swapping the two folders in one step (`renameat2` exchange), so a crash never leaves a half written skill. Filesystems that cannot do this (NFS, CIFS, FUSE, FAT) are named by `doctor`.
 - Before a run replaces or removes a folder, the old copy goes to `~/.local/state/skillmirror/backups/<run>/`; the newest 30 runs are kept. `history` lists them and `undo` brings one back.
 - If a project folder changed between the plan and the write, that skill fails instead of being overwritten.
-- Links are never followed and never written through. Only the commands that grow the vault write into it (`new`, `adopt`, `vault init`, and the configuration file the Setup screen saves): they create files that did not exist, stage them with `git add`, and never overwrite, delete or commit anything.
+- Links are never followed and never written through. Only the commands that grow the vault write into it (`new`, `adopt`, `promote`, `vault init`, and the configuration file the Setup screen saves). `new` and `adopt` create files that did not exist; `promote` replaces one skill folder after keeping the old one in the backup store. All of them stage with `git add` and never commit.
 - Everything the scan could not read, and every leftover of an interrupted run, is reported, never hidden.
 
 ## Development

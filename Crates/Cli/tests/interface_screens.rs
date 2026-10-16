@@ -44,8 +44,8 @@ fn history_undoes_a_sync() {
     term.send("q");
     term.wait_for("Refresh the skills each project already has");
 
-    // History is the ninth entry of the menu.
-    term.send("jjjjjjjj\r");
+    // History is the tenth entry of the menu.
+    term.send("jjjjjjjjj\r");
     term.wait_for("1 run");
     term.wait_for("sync");
     term.send("\r");
@@ -75,8 +75,8 @@ fn add_installs_a_skill_into_a_project() {
     let world = World::standard();
     let mut term = tui(&world);
     term.wait_for("skillmirror");
-    // Add is the seventh entry of the menu.
-    term.send("jjjjjj\r");
+    // Add is the eighth entry of the menu.
+    term.send("jjjjjjj\r");
     term.wait_for("The project that gets the skills.");
     // The picker starts in the root: one, plain, three, two. Walk into `two` and choose it.
     term.send("jjjl");
@@ -107,8 +107,8 @@ fn init_makes_a_new_project() {
     let world = World::standard();
     let mut term = tui(&world);
     term.wait_for("skillmirror");
-    // Init is the eighth entry of the menu.
-    term.send("jjjjjjj\r");
+    // Init is the ninth entry of the menu.
+    term.send("jjjjjjjj\r");
     term.wait_for("The folder the new project goes in.");
     term.send("\r");
     term.wait_for("The name of the new project folder:");
@@ -179,8 +179,8 @@ fn skills_browses_the_vault_with_a_card_and_writes_nothing() {
     let world = World::standard();
     let mut term = tui(&world);
     term.wait_for("skillmirror");
-    // Skills is the third entry of the menu.
-    term.send("jj\r");
+    // Skills is the fourth entry of the menu.
+    term.send("jjj\r");
     term.wait_for("Vault — 3 skills");
     term.send("/astro\r");
     term.wait_for("Vault — 1 matching");

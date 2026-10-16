@@ -10,6 +10,7 @@ use crate::backend::InputSource;
 use crate::input::Input;
 use crate::jobs::install::Placed;
 use crate::results::Results;
+use crate::screens::local::{Done, Located, Pending as LocalPending};
 use crate::screens::{DiffPage, Pending, VaultCheck};
 use crate::session::Session;
 use crate::undo::{RunRow, UndoView};
@@ -36,6 +37,12 @@ pub(crate) enum Job {
     UndoPlanned(Box<Result<UndoView, String>>),
     /// An undo finished.
     Undone(Box<Result<UndoView, String>>),
+    /// The Override page found its project, or several to pick from.
+    Located(Box<Result<Located, String>>),
+    /// The skills of the Override page were checked against the vault.
+    PromotePlanned(Box<Result<LocalPending, String>>),
+    /// The vault's copies were replaced, and the other projects updated when that was asked.
+    Promoted(Box<Done>),
     /// A run advanced.
     Progress {
         done: usize,

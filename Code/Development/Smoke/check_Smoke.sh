@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # End-to-end smoke test of a built skillmirror binary: authoring, install, drift, sync, undo and redo,
-# adopt, scoped add, and, when the binary has the web view built in (off by default), the local web server
+# adopt, local changes and promote, scoped add, and, when the binary has the web view built in (off by default), the local web server
 # over HTTP (token, cookie, refusals, plan, apply, job).
 # It runs in a throwaway HOME, vault and scan root; nothing outside one temporary folder is touched.
 #
@@ -107,6 +107,25 @@ rm -rf "$R/p2b"   # a project without AGENTS.md would count in the agents checks
 step "add handmade to the second project" 0 "$SM" add handmade -y --project "$R/p2" --vault "$V" --root "$R"
 exists "$R/p2/.agents/skills/handmade/SKILL.md"
 step "status as JSON" 0 "$SM" status --json --vault "$V" --root "$R"; has '"projects"'
+
+# ---- local changes: a skill edited in a project is shown, put into the vault, and spread to the others
+# p1 and p2 both have handmade; the edit is made in p2 only. The undos at the end leave everything as it was.
+printf 'second line\n' >> "$R/p2/.agents/skills/handmade/SKILL.md"
+step "changes, started inside the project" 1 bash -c "cd '$R/p2' && '$SM' changes --vault '$V' --root '$R'"; has "this folder"; has "edited here"
+step "changes as JSON" 1 bash -c "cd '$R/p2' && '$SM' changes --json --vault '$V' --root '$R'"; has '"state": "edited"'
+step "changes, a project without edits" 0 bash -c "cd '$R/p1' && '$SM' changes --vault '$V' --root '$R'"; has "0 edited"
+step "promote, dry run" 0 bash -c "cd '$R/p2' && '$SM' promote handmade --dry-run --vault '$V' --root '$R'"; has "Would replace"
+lacks "$V/handmade/SKILL.md" "second line" "the dry run left the vault alone" "the dry run changed the vault"
+step "promote refuses without a go-ahead" 2 bash -c "cd '$R/p2' && '$SM' promote handmade --vault '$V' --root '$R' </dev/null"; has "--yes"
+step "promote and spread" 0 bash -c "cd '$R/p2' && '$SM' promote handmade --sync -y --vault '$V' --root '$R'"; has "Replaced"
+PROMOTE_RUN="$(printf '%s' "$LAST" | grep -o 'Backup: run [0-9-]*' | head -1 | cut -d' ' -f3)"   # the promote's, then the sync's
+contains "$V/handmade/SKILL.md" "second line" "the vault has the edited skill" "the vault lacks the edit"
+contains "$R/p1/.agents/skills/handmade/SKILL.md" "second line" "the other project got it" "the other project did not get it"
+step "undo the spread" 0 "$SM" undo -y --vault "$V" --root "$R"
+step "undo the promote" 0 "$SM" undo "$PROMOTE_RUN" -y --vault "$V" --root "$R"
+lacks "$V/handmade/SKILL.md" "second line" "the vault has its own copy back" "the vault still has the edit"
+(cd "$V" && git status --porcelain | grep -q . && echo dirty) | grep -q dirty && bad "  the vault is not clean after the undo" || ok "  the vault is clean after the undo"
+cp "$V/handmade/SKILL.md" "$R/p2/.agents/skills/handmade/SKILL.md"
 
 # ---- AGENTS.md: written by init, then checked, updated and undone; the project's own text beside the block
 P="$R/p1/AGENTS.md"

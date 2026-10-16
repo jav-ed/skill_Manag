@@ -17,7 +17,7 @@ Skills in the clone (`.agents/skills/`), use them: `doc-start` (how documentatio
 
 ## 2. What you got
 
-A Cargo workspace `Crates/{Core,Cli,Tui,Web,Testkit}` plus `Ui/` (the web interface, node, outside the workspace). Commands: `sync push add init delete list skills info new adopt vault config mandatory agents status diff doctor report web bridge undo history migrate completions tui`. 780 tests; fmt and clippy `-D warnings` clean on rustc 1.97 and 1.99; Go parity 90 match / 41 expected / 0 unexpected over 131 scenarios; a binary installed from a fresh clone passes `Code/Development/Smoke/check_Smoke.sh`; the web interface passes `Code/Development/Web/check_Web.sh` in Chromium. CI is green on `main`.
+A Cargo workspace `Crates/{Core,Cli,Tui,Web,Testkit}` plus `Ui/` (the web interface, node, outside the workspace). Commands: `sync push add init delete list skills info new adopt changes promote vault config mandatory agents status diff doctor report web bridge undo history migrate completions tui`. 780 tests; fmt and clippy `-D warnings` clean on rustc 1.97 and 1.99; Go parity 90 match / 41 expected / 0 unexpected over 131 scenarios; a binary installed from a fresh clone passes `Code/Development/Smoke/check_Smoke.sh`; the web interface passes `Code/Development/Web/check_Web.sh` in Chromium. CI is green on `main`.
 
 Read in this order, in `Project_Manag/Live_Working/Rust_Rewrite_Handoff/`: `handoff_Overview.md` (state and the list of what is NOT proved), `working_Agreement.md`, `current_State.md`, `next_Steps.md`. Open `verification_Playbook.md`, `open_Questions.md`, `cutover_Runbook.md` and `pitfalls_And_Lessons.md` when you need them. The reasons behind the design are in `Project_Manag/Docs/Decisions/rust_Rewrite.md`, the exact behaviour (one numbered row per rule, Q1 to Q64) in `Project_Manag/Docs/Descr/behavior_Contract.md`, the web contract in `Project_Manag/Docs/Architecture/web_Api.md`.
 
@@ -49,7 +49,7 @@ Read in this order, in `Project_Manag/Live_Working/Rust_Rewrite_Handoff/`: `hand
 
 1. Write "will inshallah + verb", never plain "will + verb", in prose and docs. No em-dashes in docs.
 2. Linux only. Hard errors, no fallbacks. Standard Rust naming. At most 300 code lines per file. Clippy is strict.
-3. Never write to the vault. Never run `sync`, `push`, `delete`, `add`, `init`, `undo`, `new`, `adopt` or `web --allow-write` against the user's real tree or vault without the user's yes; use throwaway worlds (`Crates/Testkit`, or `Code/Development/Smoke/check_Smoke.sh`'s layout).
+3. Never write to the vault. Never run `sync`, `push`, `delete`, `add`, `init`, `undo`, `new`, `adopt`, `promote` or `web --allow-write` against the user's real tree or vault without the user's yes; use throwaway worlds (`Crates/Testkit`, or `Code/Development/Smoke/check_Smoke.sh`'s layout).
 4. Push to branches; a pull request into `main` is the way in. Tags, force-push and deleting branches each need a fresh yes from the user. Stage explicit paths only, never `git add -A`.
 5. Nothing durable lives in `Scratch/` (ignored, never reaches a clone). Notes, investigations and handoffs go under `Project_Manag/`, tools under `Code/Development/`.
 6. This folder is temporary. When the backlog is done, promote what is still true into the permanent docs, delete `Live_Working/Rust_Rewrite_Handoff/`, and only then, with the user's yes, delete the branch `rust-rewrite-handoff`.

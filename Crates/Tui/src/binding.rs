@@ -68,6 +68,11 @@ pub(crate) const SYNC: Binding = Binding {
     label: "s",
     help: "sync",
 };
+pub(crate) const SPREAD: Binding = Binding {
+    keys: &[(Code::Char('s'), N)],
+    label: "s",
+    help: "update the others too",
+};
 pub(crate) const DELETE: Binding = Binding {
     keys: &[(Code::Char('d'), N)],
     label: "d",
@@ -162,6 +167,11 @@ pub(crate) const RUN_AGENTS: Binding = Binding {
     keys: &[(Code::Enter, N)],
     label: "enter",
     help: "write AGENTS.md",
+};
+pub(crate) const RUN_PROMOTE: Binding = Binding {
+    keys: &[(Code::Enter, N)],
+    label: "enter",
+    help: "replace in the vault",
 };
 pub(crate) const RUN_DELETE: Binding = Binding {
     keys: &[(Code::Enter, N)],

@@ -12,7 +12,11 @@ fn hovering_moves_the_menu_cursor_and_a_click_opens_the_entry() {
         panic!("menu")
     };
     assert_eq!(menu.cursor, 3);
-    ui.click(Target::MenuItem(1));
+    let list = crate::screens::ENTRIES
+        .iter()
+        .position(|e| e.label == "List")
+        .unwrap();
+    ui.click(Target::MenuItem(list));
     ui.wait_select();
     assert!(ui.screen().contains("Skills — 4 installed"));
 }

@@ -19,16 +19,24 @@ pub(crate) enum Dest {
     Work(Mode),
     /// Choose a folder, then the skills to install into it.
     Place(Purpose),
+    /// The Override page.
+    Local,
     History,
     Setup,
 }
 
-pub(crate) const ENTRIES: [Entry; 10] = [
+pub(crate) const ENTRIES: [Entry; 11] = [
     Entry {
         label: "Sync",
         blurb: "Refresh the skills each project already has; never adds one",
         detail: "Walks every project under your root and updates skills they already have installed, pulling the latest from your vault. The opt-in rule: if a project doesn't have a skill, it will inshallah never be added. Only what's already there gets refreshed.",
         dest: Dest::Work(Mode::Sync),
+    },
+    Entry {
+        label: "Override",
+        blurb: "Put the skills you changed in this project into the vault",
+        detail: "Finds the project around the folder you started in (or the one below it) and lists its skills against the vault: edited here, behind the vault, or not in the vault. Tick the edited ones and confirm to replace the vault's copy with the project's. The old copy is kept, so History can undo it, and the new one is staged in git, not committed. Press s to also update every other project that has the skill.",
+        dest: Dest::Local,
     },
     Entry {
         label: "List",

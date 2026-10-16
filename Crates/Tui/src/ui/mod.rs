@@ -39,6 +39,7 @@ pub(crate) fn draw(frame: &mut Frame, app: &mut App) {
         Screen::Menu(menu_state) => menu::draw(frame, hits, menu_state, body),
         Screen::Work(work) => draw_work(frame, hits, *hover, *tick, work, body),
         Screen::History(history) => history::draw(frame, hits, *hover, *tick, history, body),
+        Screen::Local(local) => pages::local::draw(frame, hits, *hover, *tick, local, body),
         Screen::Place(place_state) => place::draw(frame, hits, place_state, body),
         Screen::Setup(setup_state) => setup::draw(frame, hits, *hover, setup_state, body),
     }

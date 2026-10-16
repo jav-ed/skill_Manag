@@ -10,6 +10,7 @@ mod history;
 mod init;
 mod init_agents;
 mod issues;
+mod local;
 mod mouse;
 mod panes;
 mod place_support;
@@ -32,7 +33,7 @@ use unicode_width::UnicodeWidthStr;
 use crate::app::{App, Launch, Screen};
 use crate::event::Event;
 use crate::input::{Code, Input, Key, Mods, Mouse, MouseKind};
-use crate::screens::Phase;
+use crate::screens::{LocalPhase, Phase};
 
 pub(super) struct Harness {
     pub(super) world: World,
@@ -254,6 +255,7 @@ fn launch(world: &World, with_flags: bool) -> Launch {
     Launch {
         settings,
         dirs,
+        cwd: world.root().join("one"),
         reload: Box::new(move || Settings::load(&flags, &EnvOverrides::default(), &reload_dirs)),
     }
 }
@@ -265,6 +267,16 @@ pub(super) fn phase_name(app: &App) -> &'static str {
         Screen::Setup(_) => "setup",
         Screen::History(_) => "history",
         Screen::Place(_) => "place",
+        Screen::Local(l) => match l.phase {
+            LocalPhase::Loading => "local loading",
+            LocalPhase::Failed(_) => "local failed",
+            LocalPhase::Pick => "local pick",
+            LocalPhase::List => "local list",
+            LocalPhase::Planning => "local planning",
+            LocalPhase::Confirm(_) => "local confirm",
+            LocalPhase::Running { .. } => "local running",
+            LocalPhase::Done(_) => "local done",
+        },
         Screen::Work(w) => match w.phase {
             Phase::Loading => "loading",
             Phase::Failed(_) => "failed",
