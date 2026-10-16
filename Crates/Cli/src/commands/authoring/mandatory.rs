@@ -3,13 +3,13 @@
 use skillmirror_core::config::{ConfigUpdate, VaultConfig, save_config};
 use skillmirror_core::ops::{MandatoryChange, Workspace, change_mandatory};
 
-use super::context::load_settings;
 use crate::args::{Cli, MandatoryCommand, MandatoryEditArgs};
+use crate::commands::context::load_settings;
 use crate::exit::Exit;
 use crate::output::{self, MandatoryJson, render_mandatory};
 use crate::report::CliError;
 
-pub(super) fn run(cli: &Cli, command: &MandatoryCommand) -> Result<Exit, CliError> {
+pub(in crate::commands) fn run(cli: &Cli, command: &MandatoryCommand) -> Result<Exit, CliError> {
     match command {
         MandatoryCommand::List { json } => {
             let settings = load_settings(cli)?;

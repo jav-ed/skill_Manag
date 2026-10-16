@@ -4,13 +4,13 @@ use std::path::Path;
 
 use skillmirror_core::ops::{self, Bridge, BridgeState};
 
-use super::context::{Context, open};
 use crate::args::{BridgeArgs, Cli};
+use crate::commands::context::{Context, open};
 use crate::exit::Exit;
 use crate::output::{self, BridgeJson, BridgeRow, BridgeStatus};
 use crate::report::CliError;
 
-pub(super) fn run(cli: &Cli, args: &BridgeArgs) -> Result<Exit, CliError> {
+pub(in crate::commands) fn run(cli: &Cli, args: &BridgeArgs) -> Result<Exit, CliError> {
     let Context { workspace, report } = open(cli, args.json)?;
     let targets = &workspace.settings.config().targets;
     if targets.is_empty() {
@@ -65,7 +65,7 @@ fn confirm(missing: usize) -> Result<bool, CliError> {
 }
 
 /// Links the missing bridges of one project, as `add` and `init` do after they wrote skills there.
-pub(super) fn link_project(targets: &[String], project: &Path) -> Vec<BridgeRow> {
+pub(in crate::commands) fn link_project(targets: &[String], project: &Path) -> Vec<BridgeRow> {
     ops::plan_project_bridges(targets, project)
         .iter()
         .map(|b| row(b, false))

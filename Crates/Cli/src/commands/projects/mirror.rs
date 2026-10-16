@@ -5,14 +5,14 @@ use skillmirror_core::ops::{Scope, Workspace, plan_push_scoped, plan_sync_scoped
 use skillmirror_core::plan::Plan;
 use skillmirror_core::scan::ScanReport;
 
-use super::context::{Context, open, scope_of};
-use super::pipeline::{Hooks, Run, execute};
 use crate::args::{ApplyArgs, Cli};
+use crate::commands::context::{Context, open, scope_of};
+use crate::commands::pipeline::{Hooks, Run, execute};
 use crate::exit::Exit;
 use crate::report::CliError;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) enum Which {
+pub(in crate::commands) enum Which {
     Sync,
     Push,
 }
@@ -45,7 +45,11 @@ impl Which {
     }
 }
 
-pub(super) fn run(cli: &Cli, args: &ApplyArgs, which: Which) -> Result<Exit, CliError> {
+pub(in crate::commands) fn run(
+    cli: &Cli,
+    args: &ApplyArgs,
+    which: Which,
+) -> Result<Exit, CliError> {
     let Context { workspace, report } = open(cli, args.json)?;
     let run = Run {
         kind: which.kind(),

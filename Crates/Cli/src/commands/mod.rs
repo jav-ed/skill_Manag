@@ -1,26 +1,14 @@
 //! One module per command.
 
 mod agents;
-mod author;
+mod authoring;
 mod backup;
-mod bridge;
 mod config;
 mod context;
-mod delete;
-mod diff;
-mod doctor;
-mod info;
-mod install;
-mod list;
-mod mandatory;
+mod inspect;
 mod migrate;
-mod mirror;
 mod pipeline;
-mod report;
-mod skills;
-mod status;
-mod status_agents;
-mod vault;
+mod projects;
 mod web;
 
 use std::io::IsTerminal;
@@ -56,26 +44,26 @@ fn interface(cli: &Cli) -> Result<Exit, CliError> {
 fn dispatch(cli: &Cli, command: &Command) -> Result<Exit, CliError> {
     match command {
         Command::Tui => interface(cli),
-        Command::Sync(args) => mirror::run(cli, args, mirror::Which::Sync),
-        Command::Push(args) => mirror::run(cli, args, mirror::Which::Push),
-        Command::List(args) => list::run(cli, args),
-        Command::Delete(args) => delete::run(cli, args),
-        Command::Skills(args) => skills::run(cli, args),
-        Command::Info(args) => info::run(cli, args),
-        Command::New(args) => author::new(cli, args),
-        Command::Adopt(args) => author::adopt(cli, args),
-        Command::Vault(command) => vault::run(cli, command),
+        Command::Sync(args) => projects::mirror::run(cli, args, projects::mirror::Which::Sync),
+        Command::Push(args) => projects::mirror::run(cli, args, projects::mirror::Which::Push),
+        Command::List(args) => inspect::list::run(cli, args),
+        Command::Delete(args) => projects::delete::run(cli, args),
+        Command::Skills(args) => inspect::skills::run(cli, args),
+        Command::Info(args) => inspect::info::run(cli, args),
+        Command::New(args) => authoring::author::new(cli, args),
+        Command::Adopt(args) => authoring::author::adopt(cli, args),
+        Command::Vault(command) => authoring::vault::run(cli, command),
         Command::Config(command) => config::run(cli, command),
-        Command::Mandatory(command) => mandatory::run(cli, command),
-        Command::Report(args) => report::run(cli, args),
+        Command::Mandatory(command) => authoring::mandatory::run(cli, command),
+        Command::Report(args) => inspect::report::run(cli, args),
         Command::Web(args) => web::run(cli, args),
-        Command::Bridge(args) => bridge::run(cli, args),
-        Command::Status(args) => status::run(cli, args),
-        Command::Diff(args) => diff::run(cli, args),
-        Command::Doctor(args) => doctor::run(cli, args),
+        Command::Bridge(args) => projects::bridge::run(cli, args),
+        Command::Status(args) => inspect::status::run(cli, args),
+        Command::Diff(args) => inspect::diff::run(cli, args),
+        Command::Doctor(args) => inspect::doctor::run(cli, args),
         Command::Agents(command) => agents::run(cli, command),
-        Command::Add(args) => install::add(cli, args),
-        Command::Init(args) => install::init(cli, args),
+        Command::Add(args) => projects::install::add(cli, args),
+        Command::Init(args) => projects::install::init(cli, args),
         Command::Undo(args) => backup::run_undo(args),
         Command::History(args) => backup::run_history(args),
         Command::Migrate(args) => migrate::run(args),

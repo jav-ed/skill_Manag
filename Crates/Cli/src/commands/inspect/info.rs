@@ -2,13 +2,13 @@
 
 use skillmirror_core::ops;
 
-use super::context::{Context, open};
 use crate::args::{Cli, InfoArgs};
+use crate::commands::context::{Context, open};
 use crate::exit::Exit;
 use crate::output::{self, InfoJson, render_info};
 use crate::report::CliError;
 
-pub(super) fn run(cli: &Cli, args: &InfoArgs) -> Result<Exit, CliError> {
+pub(in crate::commands) fn run(cli: &Cli, args: &InfoArgs) -> Result<Exit, CliError> {
     let Context { workspace, report } = open(cli, args.json)?;
     let detail = ops::skill_detail(&workspace, &report, &args.skill)?;
     if args.json {

@@ -5,15 +5,15 @@ use skillmirror_core::events::ignore_events;
 use skillmirror_core::ops::{self, Deleted};
 use skillmirror_core::scan::Target;
 
-use super::backup;
-use super::context::{load_settings, scan_root, warn_unreadable};
 use crate::args::{Cli, DeleteArgs};
+use crate::commands::backup;
+use crate::commands::context::{load_settings, scan_root, warn_unreadable};
 use crate::exit::Exit;
 use crate::output::{self, DeleteJson};
 use crate::output::{DeleteRow, DeleteStatus};
 use crate::report::CliError;
 
-pub(super) fn run(cli: &Cli, args: &DeleteArgs) -> Result<Exit, CliError> {
+pub(in crate::commands) fn run(cli: &Cli, args: &DeleteArgs) -> Result<Exit, CliError> {
     let targets = find_targets(cli, args)?;
     if targets.is_empty() {
         let message = format!("{} not found in any project.", args.name);

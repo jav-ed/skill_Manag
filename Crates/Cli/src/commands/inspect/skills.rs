@@ -4,13 +4,13 @@ use std::path::PathBuf;
 
 use skillmirror_core::vault::discover;
 
-use super::context::load_settings;
 use crate::args::{Cli, SkillsArgs};
+use crate::commands::context::load_settings;
 use crate::exit::Exit;
 use crate::output::{self, SkillRow, VaultJson};
 use crate::report::CliError;
 
-pub(super) fn run(cli: &Cli, args: &SkillsArgs) -> Result<Exit, CliError> {
+pub(in crate::commands) fn run(cli: &Cli, args: &SkillsArgs) -> Result<Exit, CliError> {
     let settings = load_settings(cli)?;
     let vault = discover(&settings.vault()?.value).map_err(skillmirror_core::Error::from)?;
     let filter: Option<PathBuf> = args

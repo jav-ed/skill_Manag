@@ -5,16 +5,16 @@ use std::path::PathBuf;
 use serde::Serialize;
 use skillmirror_core::ops::{ProjectState, SkillDetail, SkillInfo, SkillState};
 
-use super::human::{pad, plural};
 use super::status::file_counts;
-use super::style::{ERROR, HEADER, MUTED, NAME, SUCCESS, WARNING};
+use crate::output::human::{pad, plural};
+use crate::output::style::{ERROR, HEADER, MUTED, NAME, SUCCESS, WARNING};
 
 /// Files above this count are not listed one by one in the text.
 const FILES_SHOWN: usize = 12;
 
 #[derive(Debug, Serialize)]
 struct ProjectEntry {
-    #[serde(serialize_with = "super::lossy::path")]
+    #[serde(serialize_with = "crate::output::lossy::path")]
     project: PathBuf,
     /// `up_to_date`, `outdated`, `mandatory_missing`, `not_in_vault` or `problem`.
     state: &'static str,

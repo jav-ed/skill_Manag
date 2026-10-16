@@ -3,13 +3,13 @@
 use skillmirror_core::config::{Dirs, EnvOverrides};
 use skillmirror_core::ops::{self, Severity};
 
-use super::context::flags;
 use crate::args::{Cli, DoctorArgs};
+use crate::commands::context::flags;
 use crate::exit::Exit;
 use crate::output::{self, DoctorJson};
 use crate::report::CliError;
 
-pub(super) fn run(cli: &Cli, args: &DoctorArgs) -> Result<Exit, CliError> {
+pub(in crate::commands) fn run(cli: &Cli, args: &DoctorArgs) -> Result<Exit, CliError> {
     let dirs = Dirs::from_env()?;
     // A legacy variable is something `doctor` has to talk about, so it reads the environment itself.
     let report = ops::doctor(&flags(cli), EnvOverrides::from_env(), &dirs);

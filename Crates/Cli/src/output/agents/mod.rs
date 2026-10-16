@@ -1,14 +1,18 @@
 //! Rows, the JSON documents and the text of the `agents` commands.
 
+pub(in crate::output) mod json;
+pub(in crate::output) mod seed;
+
 use std::path::PathBuf;
 
 use serde::Serialize;
 use skillmirror_core::agents::{Action, AgentsPlan, Applied, FileState, Written};
 
-use super::agents_json::{Counts, StatusCounts};
-use super::diff::styled_diff;
-use super::human::plural;
-use super::style::{ERROR, HEADER, MUTED, SUCCESS, WARNING};
+use json::{Counts, StatusCounts};
+
+use crate::output::human::plural;
+use crate::output::inspect::diff::styled_diff;
+use crate::output::style::{ERROR, HEADER, MUTED, SUCCESS, WARNING};
 
 /// Plan words (`create`) or done words (`created`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -20,7 +24,7 @@ pub(crate) enum Tense {
 /// One project's AGENTS.md, for the table and for `--json`.
 #[derive(Debug, Clone, Serialize)]
 pub(crate) struct AgentRow {
-    #[serde(serialize_with = "super::lossy::path")]
+    #[serde(serialize_with = "crate::output::lossy::path")]
     pub(crate) project: PathBuf,
     /// `missing`, `no_block`, `current`, `outdated`, `edited`, `broken` or `problem`.
     pub(crate) state: &'static str,
@@ -88,7 +92,7 @@ impl AgentRow {
         }
     }
 
-    pub(super) fn changes(&self) -> bool {
+    pub(in crate::output) fn changes(&self) -> bool {
         matches!(
             self.action,
             "create" | "insert" | "update" | "created" | "inserted" | "updated"

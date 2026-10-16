@@ -11,7 +11,7 @@ use crate::exit::Exit;
 use crate::output::{self, Pointer, VaultInitJson, render_vault_init};
 use crate::report::CliError;
 
-pub(super) fn run(_cli: &Cli, command: &VaultCommand) -> Result<Exit, CliError> {
+pub(in crate::commands) fn run(_cli: &Cli, command: &VaultCommand) -> Result<Exit, CliError> {
     match command {
         VaultCommand::Init(args) => init(args),
     }

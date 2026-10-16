@@ -10,14 +10,14 @@ use skillmirror_core::events::ignore_events;
 use skillmirror_core::ops::{self, SelectError, Selection, Workspace};
 
 use super::bridge::link_project;
-use super::context::load_settings;
-use super::pipeline::{AgentsHook, Hooks, Run, SetupHook, execute};
 use crate::args::{AddArgs, Cli, InitArgs, InstallFlags, SelectArgs};
+use crate::commands::context::load_settings;
+use crate::commands::pipeline::{AgentsHook, Hooks, Run, SetupHook, execute};
 use crate::exit::Exit;
 use crate::output::{self, AgentRow, BridgeRow, SetupRow};
 use crate::report::CliError;
 
-pub(super) fn add(cli: &Cli, args: &AddArgs) -> Result<Exit, CliError> {
+pub(in crate::commands) fn add(cli: &Cli, args: &AddArgs) -> Result<Exit, CliError> {
     let workspace = Workspace::open(load_settings(cli)?)?;
     let project = match &args.project {
         Some(dir) => std::path::absolute(dir)?,
@@ -39,7 +39,7 @@ pub(super) fn add(cli: &Cli, args: &AddArgs) -> Result<Exit, CliError> {
     execute(plan, &[], &run_of(RunKind::Add, &args.flags), &hooks).map(|done| done.exit)
 }
 
-pub(super) fn init(cli: &Cli, args: &InitArgs) -> Result<Exit, CliError> {
+pub(in crate::commands) fn init(cli: &Cli, args: &InitArgs) -> Result<Exit, CliError> {
     let workspace = Workspace::open(load_settings(cli)?)?;
     let dir = std::path::absolute(&args.dir)?;
     ops::check_new(&dir)?;

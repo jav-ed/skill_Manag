@@ -8,13 +8,13 @@ use skillmirror_core::backup::now_utc;
 use skillmirror_core::ops;
 use skillmirror_web::{MARKER, render_report};
 
-use super::context::{Context, open};
 use crate::args::{Cli, ReportArgs};
+use crate::commands::context::{Context, open};
 use crate::exit::Exit;
 use crate::output;
 use crate::report::CliError;
 
-pub(super) fn run(cli: &Cli, args: &ReportArgs) -> Result<Exit, CliError> {
+pub(in crate::commands) fn run(cli: &Cli, args: &ReportArgs) -> Result<Exit, CliError> {
     let Context { workspace, report } = open(cli, args.output == Path::new("-"))?;
     let data = ops::report_data(&workspace, &report)?;
     let html = render_report(&data, &now_utc());

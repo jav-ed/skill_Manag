@@ -3,8 +3,8 @@
 use serde::Serialize;
 use skillmirror_core::ops::{DoctorReport, Finding, Severity};
 
-use super::human::plural;
-use super::style::{ERROR, MUTED, NAME, SUCCESS, WARNING};
+use crate::output::human::plural;
+use crate::output::style::{ERROR, MUTED, NAME, SUCCESS, WARNING};
 
 fn severity_name(severity: Severity) -> &'static str {
     match severity {

@@ -4,13 +4,13 @@ use std::path::Path;
 
 use serde::Serialize;
 
-use super::style::{HEADER, MUTED};
+use crate::output::style::{HEADER, MUTED};
 
 #[derive(Debug, Serialize)]
 pub(crate) struct AgentsSeedJson<'a> {
     command: &'static str,
     dry_run: bool,
-    #[serde(serialize_with = "super::lossy::path")]
+    #[serde(serialize_with = "crate::output::lossy::path")]
     path: &'a Path,
 }
 

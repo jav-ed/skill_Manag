@@ -3,14 +3,14 @@
 use skillmirror_core::ops::installed;
 use skillmirror_core::vault::{Vault, discover};
 
-use super::context::{load_settings, scan_root, warn_unreadable};
 use crate::args::{Cli, ListArgs};
+use crate::commands::context::{load_settings, scan_root, warn_unreadable};
 use crate::exit::Exit;
 use crate::output::InstalledRow;
 use crate::output::{self, ListJson};
 use crate::report::CliError;
 
-pub(super) fn run(cli: &Cli, args: &ListArgs) -> Result<Exit, CliError> {
+pub(in crate::commands) fn run(cli: &Cli, args: &ListArgs) -> Result<Exit, CliError> {
     let settings = load_settings(cli)?;
     let report = scan_root(&settings, args.json)?;
     let vault = open_vault(&settings)?;

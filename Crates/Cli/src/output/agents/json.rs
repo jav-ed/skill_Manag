@@ -2,15 +2,15 @@
 
 use serde::Serialize;
 
-use super::agents::AgentRow;
+use super::AgentRow;
 
 #[derive(Debug, Default, Clone, Copy, Serialize)]
 pub(crate) struct Counts {
-    pub(super) projects: usize,
-    pub(super) changes: usize,
-    pub(super) unchanged: usize,
-    pub(super) skipped: usize,
-    pub(super) failed: usize,
+    pub(in crate::output) projects: usize,
+    pub(in crate::output) changes: usize,
+    pub(in crate::output) unchanged: usize,
+    pub(in crate::output) skipped: usize,
+    pub(in crate::output) failed: usize,
 }
 
 impl Counts {
@@ -35,14 +35,14 @@ pub(crate) struct AgentsStatusJson<'a> {
 
 #[derive(Debug, Default, Clone, Copy, Serialize)]
 pub(crate) struct StatusCounts {
-    pub(super) projects: usize,
-    pub(super) current: usize,
-    pub(super) outdated: usize,
-    pub(super) edited: usize,
-    pub(super) missing: usize,
-    pub(super) no_block: usize,
-    pub(super) broken: usize,
-    pub(super) problem: usize,
+    pub(in crate::output) projects: usize,
+    pub(in crate::output) current: usize,
+    pub(in crate::output) outdated: usize,
+    pub(in crate::output) edited: usize,
+    pub(in crate::output) missing: usize,
+    pub(in crate::output) no_block: usize,
+    pub(in crate::output) broken: usize,
+    pub(in crate::output) problem: usize,
 }
 
 impl StatusCounts {

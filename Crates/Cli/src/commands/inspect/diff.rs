@@ -2,13 +2,13 @@
 
 use skillmirror_core::ops::{self, DiffFilter};
 
-use super::context::{Context, open};
 use crate::args::{Cli, DiffArgs};
+use crate::commands::context::{Context, open};
 use crate::exit::Exit;
 use crate::output::{self, DiffJson};
 use crate::report::CliError;
 
-pub(super) fn run(cli: &Cli, args: &DiffArgs) -> Result<Exit, CliError> {
+pub(in crate::commands) fn run(cli: &Cli, args: &DiffArgs) -> Result<Exit, CliError> {
     let Context { workspace, report } = open(cli, args.json)?;
     if let Some(skill) = &args.skill {
         // A name the vault does not have is a mistake, not "no differences".

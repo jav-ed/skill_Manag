@@ -7,13 +7,17 @@ use std::path::PathBuf;
 use clap::{Args, Parser, Subcommand};
 use clap_complete::Shell;
 
-pub(crate) use crate::args_agents::{
+mod agents;
+mod authoring;
+mod settings;
+
+pub(crate) use agents::{
     AgentsAddArgs, AgentsCommand, AgentsFlags, AgentsSeedArgs, AgentsStatusArgs, AgentsSyncArgs,
 };
-pub(crate) use crate::args_more::{
-    AdoptArgs, ConfigCommand, ConfigRootArgs, ConfigWebArgs, InfoArgs, MandatoryCommand,
-    MandatoryEditArgs, NewArgs, ScopeArgs, Switch, VaultCommand, VaultInitArgs, WebArgs,
+pub(crate) use authoring::{
+    AdoptArgs, MandatoryCommand, MandatoryEditArgs, NewArgs, VaultCommand, VaultInitArgs,
 };
+pub(crate) use settings::{ConfigCommand, ConfigRootArgs, ConfigWebArgs, Switch, WebArgs};
 
 #[derive(Debug, Parser)]
 #[command(
@@ -328,4 +332,31 @@ pub(crate) struct InitArgs {
     pub(crate) no_agents_md: bool,
     #[command(flatten)]
     pub(crate) flags: InstallFlags,
+}
+
+/// Limits a command to some skills, to a vault folder or profile, or to one project.
+#[derive(Debug, Args)]
+pub(crate) struct ScopeArgs {
+    /// Only these skills (default: all of them)
+    #[arg(value_name = "SKILL")]
+    pub(crate) skills: Vec<String>,
+    /// Only the skills below this vault folder, such as `web` or `web/seo`
+    #[arg(long = "group", value_name = "PATH")]
+    pub(crate) groups: Vec<String>,
+    /// Only the skills of a profile defined under `profiles:` in <vault>/config.yaml
+    #[arg(long = "profile", value_name = "NAME")]
+    pub(crate) profiles: Vec<String>,
+    /// Only this project (default: every project under the root)
+    #[arg(long, value_name = "DIR")]
+    pub(crate) project: Option<PathBuf>,
+}
+
+#[derive(Debug, Args)]
+pub(crate) struct InfoArgs {
+    /// The skill folder name
+    #[arg(value_name = "SKILL")]
+    pub(crate) skill: String,
+    /// Print one JSON document instead of text
+    #[arg(long)]
+    pub(crate) json: bool,
 }

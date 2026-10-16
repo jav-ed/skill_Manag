@@ -5,8 +5,8 @@ use std::path::PathBuf;
 use serde::Serialize;
 use skillmirror_core::ops::{DiffKind, DiffReport, FileDiff, SkillDiff, Skipped};
 
-use super::human::plural;
-use super::style::{ADDED, HEADER, HUNK, MUTED, NAME, REMOVED};
+use crate::output::human::plural;
+use crate::output::style::{ADDED, HEADER, HUNK, MUTED, NAME, REMOVED};
 
 fn kind_name(kind: DiffKind) -> &'static str {
     match kind {
@@ -41,7 +41,7 @@ pub(crate) struct FileRow {
 
 #[derive(Debug, Serialize)]
 pub(crate) struct SkillRow {
-    #[serde(serialize_with = "super::lossy::path")]
+    #[serde(serialize_with = "crate::output::lossy::path")]
     project: PathBuf,
     skill: String,
     files: Vec<FileRow>,
@@ -49,7 +49,7 @@ pub(crate) struct SkillRow {
 
 #[derive(Debug, Serialize)]
 pub(crate) struct FailedRow {
-    #[serde(serialize_with = "super::lossy::path")]
+    #[serde(serialize_with = "crate::output::lossy::path")]
     project: PathBuf,
     skill: String,
     message: String,
@@ -190,7 +190,7 @@ fn file_text(file: &FileDiff) -> String {
 }
 
 /// The lines of a unified diff, coloured: headers bold, hunks cyan, added green, removed red.
-pub(super) fn styled_diff(text: &str) -> String {
+pub(in crate::output) fn styled_diff(text: &str) -> String {
     let mut out = String::new();
     for line in text.lines() {
         let style = if line.starts_with("+++") || line.starts_with("---") {

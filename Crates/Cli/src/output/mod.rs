@@ -4,48 +4,45 @@
 #[macro_use]
 mod macros;
 mod agents;
-mod agents_json;
-mod agents_seed;
 mod author;
 mod backup;
 mod bridge;
 mod config;
-mod diff;
-mod doctor;
 mod human;
-mod info;
+mod inspect;
 mod json;
 mod lossy;
 mod progress;
 mod setup;
-mod status;
 mod style;
 mod view;
 
 use std::io::{BufRead, IsTerminal, Write};
 
+pub(crate) use agents::json::{
+    AgentsRunJson, AgentsStatusJson, StatusCounts as AgentsStatusCounts,
+};
+pub(crate) use agents::seed::{AgentsSeedJson, render_agents_seed};
 pub(crate) use agents::{
     AgentRow, Tense as AgentsTense, render_agents_line, render_agents_plan, render_agents_status,
     render_diffs,
 };
-pub(crate) use agents_json::{AgentsRunJson, AgentsStatusJson, StatusCounts as AgentsStatusCounts};
-pub(crate) use agents_seed::{AgentsSeedJson, render_agents_seed};
 pub(crate) use author::{AuthoredJson, Pointer, VaultInitJson, render_authored, render_vault_init};
 pub(crate) use backup::{
     HistoryJson, HistoryRow, UndoJson, UndoRow, UndoStatus, render_history, render_undo,
 };
 pub(crate) use bridge::{BridgeJson, BridgeRow, BridgeStatus, render_bridge_notes, render_bridges};
 pub(crate) use config::{ConfigJson, MandatoryJson, render_config, render_mandatory};
-pub(crate) use diff::{DiffJson, render_diff};
-pub(crate) use doctor::{DoctorJson, render_doctor};
 pub(crate) use human::{
     render_delete, render_installed, render_rows, render_summary, render_vault,
 };
-pub(crate) use info::{InfoJson, render_info};
+pub(crate) use inspect::diff::{DiffJson, render_diff};
+pub(crate) use inspect::doctor::{DoctorJson, render_doctor};
+pub(crate) use inspect::info::{InfoJson, render_info};
+pub(crate) use inspect::status::{ProjectRow, StatusJson, StatusSummary, render_status};
 pub(crate) use json::{DeleteJson, ListJson, RunJson, VaultJson};
 pub(crate) use progress::ScanLine;
 pub(crate) use setup::{SetupRow, render_setup};
-pub(crate) use status::{ProjectRow, StatusJson, StatusSummary, render_status};
 pub(crate) use view::{DeleteRow, DeleteStatus, InstalledRow, Row, SkillRow, Summary, Tense};
 
 /// Prints text to stdout.

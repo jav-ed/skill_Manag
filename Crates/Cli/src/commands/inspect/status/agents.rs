@@ -8,7 +8,7 @@ use crate::output;
 
 /// Says how many blocks are out of date or were edited by hand, or nothing when all is well. A text that
 /// cannot be used is a warning here: `doctor` and the `agents` commands stop on it.
-pub(super) fn hint<'a>(vault: &Path, projects: impl Iterator<Item = &'a Path>) {
+pub(in crate::commands) fn hint<'a>(vault: &Path, projects: impl Iterator<Item = &'a Path>) {
     let source = match load_source(vault) {
         Ok(source) => source,
         Err(error) => {

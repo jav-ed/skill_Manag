@@ -2,13 +2,13 @@
 
 use skillmirror_core::ops::{self, Authored, Workspace};
 
-use super::context::load_settings;
 use crate::args::{AdoptArgs, Cli, NewArgs};
+use crate::commands::context::load_settings;
 use crate::exit::Exit;
 use crate::output::{self, AuthoredJson, render_authored};
 use crate::report::CliError;
 
-pub(super) fn new(cli: &Cli, args: &NewArgs) -> Result<Exit, CliError> {
+pub(in crate::commands) fn new(cli: &Cli, args: &NewArgs) -> Result<Exit, CliError> {
     let workspace = Workspace::open(load_settings(cli)?)?;
     let vault = &workspace.vault;
     let made = if args.dry_run {
@@ -26,7 +26,7 @@ pub(super) fn new(cli: &Cli, args: &NewArgs) -> Result<Exit, CliError> {
     )
 }
 
-pub(super) fn adopt(cli: &Cli, args: &AdoptArgs) -> Result<Exit, CliError> {
+pub(in crate::commands) fn adopt(cli: &Cli, args: &AdoptArgs) -> Result<Exit, CliError> {
     let workspace = Workspace::open(load_settings(cli)?)?;
     let project = std::path::absolute(&args.from)?;
     let plan = ops::plan_adopt(&workspace.vault, &project, &args.name, &args.group)?;

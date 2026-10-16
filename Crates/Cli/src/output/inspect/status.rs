@@ -5,8 +5,8 @@ use std::path::PathBuf;
 use serde::Serialize;
 use skillmirror_core::ops::{Outdated, ProjectStatus, StatusReport};
 
-use super::human::{pad, plural};
-use super::style::{ERROR, HEADER, MUTED, NAME, SUCCESS, WARNING};
+use crate::output::human::{pad, plural};
+use crate::output::style::{ERROR, HEADER, MUTED, NAME, SUCCESS, WARNING};
 
 #[derive(Debug, Clone, Serialize)]
 pub(crate) struct OutdatedRow {
@@ -25,7 +25,7 @@ pub(crate) struct ProblemRow {
 
 #[derive(Debug, Clone, Serialize)]
 pub(crate) struct ProjectRow {
-    #[serde(serialize_with = "super::lossy::path")]
+    #[serde(serialize_with = "crate::output::lossy::path")]
     project: PathBuf,
     /// `in_sync`, `drift` (sync or push would change something) or `problem` (only comparisons failed).
     status: &'static str,
@@ -233,7 +233,7 @@ fn problem_lines(out: &mut String, label: &str, problem: &skillmirror_core::ops:
     }
 }
 
-pub(super) fn file_counts(o: &Outdated) -> String {
+pub(in crate::output) fn file_counts(o: &Outdated) -> String {
     let mut parts = Vec::new();
     for (count, what) in [
         (o.added, "added"),
