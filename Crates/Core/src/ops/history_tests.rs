@@ -1,10 +1,10 @@
 //! The list of backup runs and the undo of one, as the front ends use them.
 
-use super::status_tests::world;
 use super::*;
 use crate::backup::RunKind;
 use crate::config::Dirs;
 use crate::events::ignore_events;
+use crate::ops::inspect::status_tests::world;
 
 fn dirs(tree: &crate::testutil::TempTree) -> Dirs {
     Dirs::under(&tree.path().join("home"))

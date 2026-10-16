@@ -1,99 +1,54 @@
 //! The operations front ends call: open a workspace, scan, then plan and apply sync, push, list and delete.
+//!
+//! The code is grouped by what it works on: `authoring` grows the vault, `projects` writes skills into
+//! projects, `inspect` only reads, `selection` says which skills and projects a command touches. Front
+//! ends use the names re-exported here, not the folders.
 
-mod adopt;
-mod author;
-mod bridge;
-mod created;
-mod delete;
-mod diff;
-mod doctor;
+mod authoring;
 mod history;
-mod info;
-mod list;
-mod mandatory;
-mod project;
-mod push;
-mod report;
+mod inspect;
+mod projects;
 mod run;
-mod scaffold;
-mod scope;
-mod select;
-mod status;
-mod sync;
-mod vault_init;
+mod selection;
 mod workspace;
 
-pub use adopt::{AdoptPlan, adopt, plan_adopt};
-pub use author::{AuthorError, Authored, check_new_name, new_skill, new_skill_paths};
-pub use bridge::{
+pub use authoring::adopt::{AdoptPlan, adopt, plan_adopt};
+pub use authoring::author::{AuthorError, Authored, check_new_name, new_skill, new_skill_paths};
+pub use authoring::mandatory::{Change as MandatoryChange, MandatoryError, change_mandatory};
+pub use authoring::vault_init::{NewVault, VaultInitError, check_new_vault, init_vault};
+pub use history::{RunRow, Step, UndoLine, UndoView, do_undo, list_runs, plan_undo};
+pub use inspect::diff::{
+    DiffFilter, DiffKind, DiffReport, FileDiff, SkillDiff, Skipped, diff, diff_of_plan,
+};
+pub use inspect::doctor::{Finding, Report as DoctorReport, Severity, doctor};
+pub use inspect::info::{
+    ProjectState, SkillDetail, SkillInfo, SkillState, profiles_of, skill_detail, skill_info,
+};
+pub use inspect::list::{Installed, InstalledSet, installed};
+pub use inspect::report::{Cell, ReportData, report_data};
+pub use inspect::status::{Outdated, Problem, ProjectStatus, StatusReport, status, status_scoped};
+pub use projects::bridge::{
     Bridge, BridgeError, BridgeState, create as create_bridge, plan as plan_bridges,
     plan_project as plan_project_bridges,
 };
-pub use delete::{
+pub use projects::delete::{
     DeleteError, DeleteReport, Deleted, delete, target_in_project, targets_named, validate_name,
 };
-pub use diff::{
-    DiffFilter, DiffKind, DiffReport, FileDiff, SkillDiff, Skipped, diff, diff_of_plan,
-};
-pub use doctor::{Finding, Report as DoctorReport, Severity, doctor};
-pub use history::{RunRow, Step, UndoLine, UndoView, do_undo, list_runs, plan_undo};
-pub use info::{
-    ProjectState, SkillDetail, SkillInfo, SkillState, profiles_of, skill_detail, skill_info,
-};
-pub use list::{Installed, InstalledSet, installed};
-pub use mandatory::{Change as MandatoryChange, MandatoryError, change_mandatory};
-pub use project::{
+pub use projects::project::{
     BRANCH, NewProject, ProjectError, Repo, check_existing, check_new, create_new, plan_install,
     repo_for,
 };
-pub use push::{plan as plan_push, plan_scoped as plan_push_scoped};
-pub use report::{Cell, ReportData, report_data};
+pub use projects::push::{plan as plan_push, plan_scoped as plan_push_scoped};
+pub use projects::scaffold::{require_scaffold, run_scaffold};
+pub use projects::sync::{plan as plan_sync, plan_scoped as plan_sync_scoped};
 pub use run::{RunOutcome, run_plan};
-pub use scaffold::{require_scaffold, run_scaffold};
-pub use scope::{Scope, ScopeError};
-pub use select::{SelectError, Selection, resolve, resolve_names};
-pub use status::{Outdated, Problem, ProjectStatus, StatusReport, status, status_scoped};
-pub use sync::{plan as plan_sync, plan_scoped as plan_sync_scoped};
-pub use vault_init::{NewVault, VaultInitError, check_new_vault, init_vault};
+pub use selection::scope::{Scope, ScopeError};
+pub use selection::select::{SelectError, Selection, resolve, resolve_names};
 pub use workspace::Workspace;
 
 #[cfg(test)]
-mod adopt_tests;
-#[cfg(test)]
-mod author_tests;
-#[cfg(test)]
-mod bridge_tests;
-#[cfg(test)]
-mod diff_tests;
-#[cfg(test)]
-mod doctor_agents_tests;
-#[cfg(test)]
-mod doctor_machine_tests;
-#[cfg(test)]
-mod doctor_tests;
-#[cfg(test)]
 mod history_tests;
 #[cfg(test)]
-mod info_tests;
-#[cfg(test)]
-mod mandatory_tests;
-#[cfg(test)]
-mod profile_tests;
-#[cfg(test)]
-mod project_tests;
-#[cfg(test)]
-mod report_tests;
-#[cfg(test)]
-mod safety_tests;
-#[cfg(test)]
-mod scaffold_tests;
-#[cfg(test)]
-mod scope_tests;
-#[cfg(test)]
-mod status_tests;
-#[cfg(test)]
 mod tests;
-#[cfg(test)]
-mod vault_init_tests;
 #[cfg(test)]
 mod workspace_tests;
