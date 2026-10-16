@@ -158,7 +158,7 @@ impl App {
             PlaceAction::Check(purpose, path) => {
                 let id = self.new_job();
                 self.checking = Some(id);
-                crate::jobs_install::spawn_place(self.tx.clone(), id, purpose, path);
+                crate::jobs::install::spawn_place(self.tx.clone(), id, purpose, path);
             }
         }
     }

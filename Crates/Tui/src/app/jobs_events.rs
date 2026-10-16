@@ -6,7 +6,7 @@ use super::{App, Screen};
 use crate::event::{Job, JobId};
 use crate::items::Mode;
 use crate::jobs;
-use crate::jobs_install::{self, Placed};
+use crate::jobs::install::{self, Placed};
 use crate::preview::Preview;
 use crate::results::Kind;
 use crate::screens::{History, HistoryPhase, Pending, Phase, Purpose, Work};
@@ -191,14 +191,14 @@ impl App {
                 }
             }
             (_, Some(plan), Some(install)) => {
-                let job = jobs_install::InstallJob {
+                let job = install::InstallJob {
                     kind,
                     plan,
                     install,
                     bridges,
                     agents,
                 };
-                jobs_install::spawn_install(tx, id, dirs, job);
+                install::spawn_install(tx, id, dirs, job);
             }
             (Kind::Sync | Kind::Push, Some(plan), None) => {
                 jobs::spawn_apply(tx, id, dirs, kind, plan);

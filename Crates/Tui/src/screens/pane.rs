@@ -2,7 +2,7 @@
 
 use tui_input::Input as TextInput;
 
-use crate::items_projects::{PaneView, PathStyle};
+use crate::items::projects::{PaneView, PathStyle};
 
 #[derive(Debug, Default)]
 pub(crate) struct PaneState {

@@ -1,32 +1,14 @@
 //! Drawing. Every clickable region is recorded in the hit map while it is drawn.
 
-mod boxed;
-mod clip;
-mod dialog;
-mod diff;
-mod footer;
-mod header;
 mod help;
-mod help_screens;
-mod help_work;
-mod history;
-mod init_notes;
-mod issues;
-mod link;
-mod menu;
-mod page;
-mod pane_text;
-mod picker;
-mod place;
-mod project_pane;
-mod results;
-mod scroll;
-mod select;
-mod setup;
-mod skill_card;
+mod pages;
+mod widgets;
 
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout};
+
+use pages::{diff, history, issues, menu, place, results, select, setup, states};
+use widgets::{dialog, footer, header};
 
 use crate::app::{App, Screen};
 use crate::screens::{Phase, Work};
@@ -75,16 +57,16 @@ fn draw_work(
     area: ratatui::layout::Rect,
 ) {
     match &work.phase {
-        Phase::Loading => page::loading(frame, tick, area),
-        Phase::Failed(message) => page::failed(frame, message, area),
+        Phase::Loading => states::loading(frame, tick, area),
+        Phase::Failed(message) => states::failed(frame, message, area),
         Phase::Select => {
             select::draw(frame, hits, work, area);
             if work.issues_open {
                 issues::draw(frame, hits, &work.issues, area);
             }
         }
-        Phase::Planning(kind) => page::planning(frame, *kind, tick, area),
-        Phase::Diffing => page::waiting(frame, tick, "Reading the changes…", area),
+        Phase::Planning(kind) => states::planning(frame, *kind, tick, area),
+        Phase::Diffing => states::waiting(frame, tick, "Reading the changes…", area),
         Phase::Diff(_) => {
             if let Phase::Diff(page) = &mut work.phase {
                 diff::draw(frame, page, area);
@@ -96,7 +78,7 @@ fn draw_work(
                 dialog::draw(frame, hits, hover, pending, area);
             }
         }
-        Phase::Running { kind, done, total } => page::running(frame, *kind, *done, *total, area),
+        Phase::Running { kind, done, total } => states::running(frame, *kind, *done, *total, area),
         Phase::Done(_) => {
             let details = work.details;
             let mut scroll = work.scroll;

@@ -8,7 +8,7 @@ use std::time::Duration;
 
 use crate::backend::InputSource;
 use crate::input::Input;
-use crate::jobs_install::Placed;
+use crate::jobs::install::Placed;
 use crate::results::Results;
 use crate::screens::{DiffPage, Pending, VaultCheck};
 use crate::session::Session;

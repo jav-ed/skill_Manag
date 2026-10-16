@@ -14,10 +14,10 @@ mod mouse;
 mod panes;
 mod place_support;
 mod render;
-mod round2_jobs;
-mod round2_wizard;
 mod skills;
 mod wizard;
+mod wizard_jobs;
+mod work_jobs;
 
 use std::sync::mpsc::{self, Receiver};
 use std::time::Duration;
