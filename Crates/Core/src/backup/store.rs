@@ -20,7 +20,7 @@ use crate::scan::Target;
 pub const KEEP_RUNS: usize = 30;
 
 pub(super) const ENTRY_FILE: &str = "entry.json";
-const TREE_DIR: &str = "tree";
+pub(super) const TREE_DIR: &str = "tree";
 /// Where an entry about a single file keeps the old file.
 pub(super) const FILE_SLOT: &str = "file";
 
@@ -36,6 +36,8 @@ pub enum RunKind {
     Undo,
     /// `agents add` and `agents sync`: the AGENTS.md files of projects.
     Agents,
+    /// `promote`: skill folders of the vault replaced by a project's copy.
+    Promote,
 }
 
 impl RunKind {
@@ -48,6 +50,7 @@ impl RunKind {
             Self::Init => "init",
             Self::Undo => "undo",
             Self::Agents => "agents",
+            Self::Promote => "promote",
         }
     }
 }
@@ -70,6 +73,9 @@ pub enum Subject {
     Skill,
     /// The project's AGENTS.md, saved as one file; the entry's `skill` holds its file name.
     Agents,
+    /// A skill folder of the vault, saved as a tree. The entry's `project` is the vault folder the skill
+    /// lies in (its group), so the skill is `project/skill`.
+    VaultSkill,
 }
 
 impl Subject {
@@ -364,7 +370,7 @@ fn read_entry(index: usize, dir: PathBuf) -> Result<LoadedEntry, BackupError> {
         reason: e.to_string(),
     })?;
     let has_tree = match entry.subject {
-        Subject::Skill => dir.join(TREE_DIR).is_dir(),
+        Subject::Skill | Subject::VaultSkill => dir.join(TREE_DIR).is_dir(),
         Subject::Agents => dir.join(FILE_SLOT).is_file(),
     };
     Ok(LoadedEntry {

@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 use super::store::{Backups, Change, Entry, LoadedEntry, Run, RunKind, Subject};
 use super::tree::copy_tree;
 use super::undo_file::restore_file;
+use super::undo_vault::restore_vault_skill;
 use super::{BackupError, Finished, UndoError};
 use crate::apply::{Keep, Replaces, discard, place};
 use crate::events::{Event, Observer, Status};
@@ -96,7 +97,9 @@ pub fn undo(
                 skill: entry.entry.skill.clone(),
                 path: match entry.entry.subject {
                     Subject::Skill => skill_path(&entry.entry.project, &entry.entry.skill),
-                    Subject::Agents => entry.entry.project.join(&entry.entry.skill),
+                    Subject::Agents | Subject::VaultSkill => {
+                        entry.entry.project.join(&entry.entry.skill)
+                    }
                 },
             },
             status: status_of(entry.entry.change, &result),
@@ -146,8 +149,10 @@ fn restore(
     index: usize,
     token: &str,
 ) -> Result<Undone, UndoError> {
-    if entry.entry.subject == Subject::Agents {
-        return restore_file(entry, new_run, index, token);
+    match entry.entry.subject {
+        Subject::Agents => return restore_file(entry, new_run, index, token),
+        Subject::VaultSkill => return restore_vault_skill(entry, new_run, index, token),
+        Subject::Skill => {}
     }
     let target = target_of(entry)?;
     let current = current_state(&target)?;

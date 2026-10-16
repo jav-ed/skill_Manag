@@ -26,6 +26,8 @@ pub enum BackupError {
     NotAFile { path: PathBuf },
     #[error("done, but {path} could not be removed afterwards: {reason}")]
     Leftover { path: PathBuf, reason: String },
+    #[error("restored {path}, but `git add` failed there: {reason}")]
+    Unstaged { path: PathBuf, reason: String },
 }
 
 /// Why one entry of an undo failed.
@@ -54,6 +56,10 @@ impl Hint for BackupError {
                 Some("only runs that changed or removed something leave a backup".to_string())
             }
             Self::Leftover { path, .. } => Some(format!("delete {} by hand", path.display())),
+            Self::Unstaged { path, .. } => Some(format!(
+                "run `git add -A` on {} in the vault yourself",
+                path.display()
+            )),
             _ => None,
         }
     }

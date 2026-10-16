@@ -16,6 +16,10 @@ pub use authoring::skill::adopt::{AdoptPlan, adopt, plan_adopt};
 pub use authoring::skill::author::{
     AuthorError, Authored, check_new_name, new_skill, new_skill_paths,
 };
+pub use authoring::skill::promote::{
+    PromoteError, PromoteOutcome, PromotePlan, PromoteReport, Promoted, SkillPromotion,
+    plan_promote, promote,
+};
 pub use authoring::vault::mandatory::{
     Change as MandatoryChange, MandatoryError, change_mandatory,
 };

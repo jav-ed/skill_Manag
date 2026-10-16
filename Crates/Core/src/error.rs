@@ -5,8 +5,8 @@ use crate::apply::ApplyError;
 use crate::backup::BackupError;
 use crate::config::ConfigError;
 use crate::ops::{
-    AuthorError, DeleteError, LocalError, MandatoryError, ProjectError, ScopeError, SelectError,
-    VaultInitError,
+    AuthorError, DeleteError, LocalError, MandatoryError, ProjectError, PromoteError, ScopeError,
+    SelectError, VaultInitError,
 };
 use crate::plan::PlanError;
 use crate::scan::ScanError;
@@ -50,6 +50,8 @@ pub enum Error {
     Agents(#[from] AgentsError),
     #[error(transparent)]
     Local(#[from] LocalError),
+    #[error(transparent)]
+    Promote(#[from] PromoteError),
 }
 
 impl Hint for Error {
@@ -70,6 +72,7 @@ impl Hint for Error {
             Self::Mandatory(e) => e.hint(),
             Self::Agents(e) => e.hint(),
             Self::Local(e) => e.hint(),
+            Self::Promote(e) => e.hint(),
         }
     }
 }

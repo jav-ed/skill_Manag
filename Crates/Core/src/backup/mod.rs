@@ -8,6 +8,8 @@ mod store;
 mod tree;
 mod undo;
 mod undo_file;
+mod undo_vault;
+mod vault_entry;
 
 pub use clock::{describe as describe_run, now_utc};
 pub use error::{BackupError, UndoError};

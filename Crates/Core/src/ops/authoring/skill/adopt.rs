@@ -72,7 +72,12 @@ pub fn plan_adopt(
     })
 }
 
-fn collect(base: &Path, rel: &Path, files: &mut Vec<PathBuf>) -> Result<(), AuthorError> {
+/// The regular files below `base` (relative paths); a link, a special file or a git repository is an error.
+pub(super) fn collect(
+    base: &Path,
+    rel: &Path,
+    files: &mut Vec<PathBuf>,
+) -> Result<(), AuthorError> {
     for entry in fs_err::read_dir(base.join(rel))? {
         let entry = entry?;
         let path = rel.join(entry.file_name());
