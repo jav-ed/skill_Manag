@@ -1,4 +1,4 @@
-use super::mandatory::Change;
+use crate::ops::authoring::vault::mandatory::Change;
 use crate::ops::*;
 use crate::testutil::Fixture;
 

@@ -4,8 +4,8 @@
 
 use std::path::{Path, PathBuf};
 
-use super::author::{AuthorError, Authored, check_free, group_parts};
-use super::created::{Created, stage};
+use crate::ops::authoring::skill::author::{AuthorError, Authored, check_free, group_parts};
+use crate::ops::authoring::skill::created::{Created, stage};
 use crate::scan::first_link_above;
 use crate::vault::Vault;
 

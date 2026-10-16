@@ -12,10 +12,14 @@ mod run;
 mod selection;
 mod workspace;
 
-pub use authoring::adopt::{AdoptPlan, adopt, plan_adopt};
-pub use authoring::author::{AuthorError, Authored, check_new_name, new_skill, new_skill_paths};
-pub use authoring::mandatory::{Change as MandatoryChange, MandatoryError, change_mandatory};
-pub use authoring::vault_init::{NewVault, VaultInitError, check_new_vault, init_vault};
+pub use authoring::skill::adopt::{AdoptPlan, adopt, plan_adopt};
+pub use authoring::skill::author::{
+    AuthorError, Authored, check_new_name, new_skill, new_skill_paths,
+};
+pub use authoring::vault::mandatory::{
+    Change as MandatoryChange, MandatoryError, change_mandatory,
+};
+pub use authoring::vault::vault_init::{NewVault, VaultInitError, check_new_vault, init_vault};
 pub use history::{RunRow, Step, UndoLine, UndoView, do_undo, list_runs, plan_undo};
 pub use inspect::diff::{
     DiffFilter, DiffKind, DiffReport, FileDiff, SkillDiff, Skipped, diff, diff_of_plan,

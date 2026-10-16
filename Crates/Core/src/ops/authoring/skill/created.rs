@@ -11,7 +11,7 @@ use crate::vault::Vault;
 
 /// Everything a command made, in order, so that a failure half way leaves the vault as it was.
 #[derive(Default)]
-pub(super) struct Created {
+pub(in crate::ops::authoring) struct Created {
     files: Vec<PathBuf>,
     dirs: Vec<PathBuf>,
 }
@@ -19,7 +19,7 @@ pub(super) struct Created {
 impl Created {
     /// Makes the folders down to and including `target`, remembering the ones that did not exist. The last
     /// folder must be new, so an existing skill is never written into.
-    pub(super) fn make_dirs(
+    pub(in crate::ops::authoring) fn make_dirs(
         &mut self,
         vault: &Path,
         parts: &[String],
@@ -46,7 +46,11 @@ impl Created {
     }
 
     /// Makes the folders between `base` (which exists) and `dir` that are not there yet.
-    pub(super) fn make_subdirs(&mut self, base: &Path, dir: &Path) -> Result<(), AuthorError> {
+    pub(in crate::ops::authoring) fn make_subdirs(
+        &mut self,
+        base: &Path,
+        dir: &Path,
+    ) -> Result<(), AuthorError> {
         let Ok(below) = dir.strip_prefix(base) else {
             return Ok(());
         };
@@ -63,7 +67,10 @@ impl Created {
     }
 
     /// Creates a file that must not exist yet.
-    pub(super) fn create_file(&mut self, path: &Path) -> Result<fs_err::File, AuthorError> {
+    pub(in crate::ops::authoring) fn create_file(
+        &mut self,
+        path: &Path,
+    ) -> Result<fs_err::File, AuthorError> {
         let file = fs_err::OpenOptions::new()
             .write(true)
             .create_new(true)
@@ -73,7 +80,7 @@ impl Created {
     }
 
     /// Takes back what was made; whatever is not empty or not ours stays.
-    pub(super) fn undo(self) {
+    pub(in crate::ops::authoring) fn undo(self) {
         for file in self.files.iter().rev() {
             drop(fs_err::remove_file(file));
         }
@@ -84,7 +91,7 @@ impl Created {
 }
 
 /// Stages the skill folder and tells which of `files` git did not take.
-pub(super) fn stage(
+pub(in crate::ops::authoring) fn stage(
     vault: &Vault,
     dir: &Path,
     files: &[PathBuf],

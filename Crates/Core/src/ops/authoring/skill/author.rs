@@ -4,8 +4,8 @@
 use std::io::Write;
 use std::path::PathBuf;
 
-use super::created::{Created, stage};
 use crate::Hint;
+use crate::ops::authoring::skill::created::{Created, stage};
 use crate::vault::Vault;
 
 #[derive(Debug, thiserror::Error)]
@@ -96,7 +96,10 @@ pub fn check_new_name(name: &str) -> Result<(), AuthorError> {
 
 /// The folders of a group path, checked against the vault: plain names, none of
 /// them the name of a skill, and none of the existing ones a file or a link.
-pub(super) fn group_parts(vault: &Vault, group: &str) -> Result<Vec<String>, AuthorError> {
+pub(in crate::ops::authoring) fn group_parts(
+    vault: &Vault,
+    group: &str,
+) -> Result<Vec<String>, AuthorError> {
     let invalid = || AuthorError::InvalidGroup {
         group: group.to_string(),
     };
@@ -131,7 +134,7 @@ pub(super) fn group_parts(vault: &Vault, group: &str) -> Result<Vec<String>, Aut
 }
 
 /// A name that no skill and no group of the vault has yet.
-pub(super) fn check_free(vault: &Vault, name: &str) -> Result<(), AuthorError> {
+pub(in crate::ops::authoring) fn check_free(vault: &Vault, name: &str) -> Result<(), AuthorError> {
     if let Some(existing) = vault.skills.get(name) {
         return Err(AuthorError::NameTaken {
             name: name.to_string(),
