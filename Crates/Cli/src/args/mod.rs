@@ -15,7 +15,8 @@ pub(crate) use agents::{
     AgentsAddArgs, AgentsCommand, AgentsFlags, AgentsSeedArgs, AgentsStatusArgs, AgentsSyncArgs,
 };
 pub(crate) use authoring::{
-    AdoptArgs, MandatoryCommand, MandatoryEditArgs, NewArgs, VaultCommand, VaultInitArgs,
+    AdoptArgs, ChangesArgs, MandatoryCommand, MandatoryEditArgs, NewArgs, PromoteArgs,
+    VaultCommand, VaultInitArgs,
 };
 pub(crate) use settings::{ConfigCommand, ConfigRootArgs, ConfigWebArgs, Switch, WebArgs};
 
@@ -72,6 +73,10 @@ pub(crate) enum Command {
     New(NewArgs),
     /// Copy a skill folder that a project has into the vault (staged in git, never committed)
     Adopt(AdoptArgs),
+    /// Show which skills of a project differ from the vault: edited there, behind, or not in the vault; writes nothing, exit 1 when some are edited
+    Changes(ChangesArgs),
+    /// Replace the vault's copy of skills you changed in a project with the project's (kept as a backup, staged in git, never committed)
+    Promote(PromoteArgs),
     /// Work on the vault itself
     #[command(subcommand)]
     Vault(VaultCommand),

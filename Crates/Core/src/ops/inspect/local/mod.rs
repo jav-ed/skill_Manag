@@ -12,7 +12,7 @@ mod tests;
 use std::path::{Path, PathBuf};
 
 pub use error::LocalError;
-pub use locate::{Found, Located, locate};
+pub use locate::{Found, Located, locate, project_at};
 
 use crate::ops::Workspace;
 use crate::plan::inspect::Entry;

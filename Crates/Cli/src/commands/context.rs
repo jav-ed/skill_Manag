@@ -2,12 +2,12 @@
 
 use skillmirror_core::config::{Dirs, EnvOverrides, Flags, Settings};
 use skillmirror_core::events::Event;
-use skillmirror_core::ops::{Scope, Selection, Workspace, resolve};
+use skillmirror_core::ops::{self, Located, Scope, Selection, Workspace, resolve};
 use skillmirror_core::scan::{ScanIssue, ScanReport};
 use skillmirror_tui::Launch;
 
 use crate::args::{Cli, ScopeArgs};
-use crate::output::{self, ScanLine};
+use crate::output::{self, Origin, ScanLine};
 use crate::report::CliError;
 
 pub(super) fn flags(cli: &Cli) -> Flags {
@@ -114,4 +114,33 @@ pub(super) fn scope_of(workspace: &Workspace, args: &ScopeArgs) -> Result<Scope,
         .map(std::path::absolute)
         .transpose()?;
     Ok(Scope { skills, project })
+}
+
+/// The project a command about local changes works on: the one named with `--project`, else the one
+/// around the current folder (or the only one below it).
+pub(super) fn local_project(
+    workspace: &Workspace,
+    named: Option<&std::path::Path>,
+) -> Result<(std::path::PathBuf, Origin), CliError> {
+    if let Some(dir) = named {
+        let project = ops::project_at(&std::path::absolute(dir)?)?;
+        return Ok((project, Origin::Named));
+    }
+    let here = std::env::current_dir()?;
+    match ops::locate(&here, &workspace.settings.scan_options())? {
+        Located::One { root, found } => Ok((root, found.into())),
+        Located::Several(projects) => Err(CliError::usage(
+            format!(
+                "{} projects are below {}: {}",
+                projects.len(),
+                here.display(),
+                projects
+                    .iter()
+                    .map(|p| p.display().to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
+            "pass --project DIR to pick one, or start in it",
+        )),
+    }
 }

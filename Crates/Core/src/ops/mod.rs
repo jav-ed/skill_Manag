@@ -35,7 +35,7 @@ pub use inspect::info::{
 pub use inspect::list::{Installed, InstalledSet, installed};
 pub use inspect::local::{
     Edit, EditKind, Found, LocalChanges, LocalError, LocalSkill, LocalState, Located,
-    local_changes, locate,
+    local_changes, locate, project_at,
 };
 pub use inspect::report::{Cell, ReportData, report_data};
 pub use inspect::status::{Outdated, Problem, ProjectStatus, StatusReport, status, status_scoped};

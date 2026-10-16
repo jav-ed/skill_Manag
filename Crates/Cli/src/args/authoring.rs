@@ -1,4 +1,5 @@
-//! The arguments of the commands that grow the vault: `new`, `adopt`, `vault init` and `mandatory`.
+//! The arguments of the commands that grow the vault: `new`, `adopt`, `promote`, `vault init` and `mandatory`,
+//! and of `changes`, which shows what `promote` can take.
 use std::path::PathBuf;
 
 use clap::{Args, Subcommand};
@@ -36,6 +37,46 @@ pub(crate) struct AdoptArgs {
     /// Show what would be copied and copy nothing
     #[arg(long)]
     pub(crate) dry_run: bool,
+    /// Print one JSON document instead of text
+    #[arg(long)]
+    pub(crate) json: bool,
+}
+
+#[derive(Debug, Args)]
+pub(crate) struct ChangesArgs {
+    /// The project (a folder with .agents/skills); without it, the one around the current folder
+    #[arg(long, value_name = "DIR")]
+    pub(crate) project: Option<PathBuf>,
+    /// Also list the skills that equal the vault's
+    #[arg(long)]
+    pub(crate) all: bool,
+    /// Print one JSON document instead of text
+    #[arg(long)]
+    pub(crate) json: bool,
+}
+
+// Independent command-line switches, not a state machine.
+#[allow(clippy::struct_excessive_bools)]
+#[derive(Debug, Args)]
+pub(crate) struct PromoteArgs {
+    /// The skill folders of the project to put into the vault
+    #[arg(value_name = "SKILL", required_unless_present = "all")]
+    pub(crate) names: Vec<String>,
+    /// Every skill the project changed
+    #[arg(long, conflicts_with = "names")]
+    pub(crate) all: bool,
+    /// The project (a folder with .agents/skills); without it, the one around the current folder
+    #[arg(long, value_name = "DIR")]
+    pub(crate) project: Option<PathBuf>,
+    /// Afterwards update every other project that has these skills (a sync; it asks again)
+    #[arg(long, conflicts_with = "json")]
+    pub(crate) sync: bool,
+    /// Show what would be replaced and replace nothing
+    #[arg(long)]
+    pub(crate) dry_run: bool,
+    /// Replace without asking
+    #[arg(short, long)]
+    pub(crate) yes: bool,
     /// Print one JSON document instead of text
     #[arg(long)]
     pub(crate) json: bool,

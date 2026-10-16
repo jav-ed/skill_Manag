@@ -4,8 +4,8 @@ use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 
-use super::human::plural;
-use super::style::{HEADER, MUTED, NAME, WARNING};
+use crate::output::human::plural;
+use crate::output::style::{HEADER, MUTED, NAME, WARNING};
 
 /// What happened to the default-vault pointer when a vault was created.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -24,7 +24,7 @@ pub(crate) struct AuthoredJson<'a> {
     command: &'static str,
     dry_run: bool,
     skill: &'a str,
-    #[serde(serialize_with = "super::lossy::path")]
+    #[serde(serialize_with = "crate::output::lossy::path")]
     dir: &'a Path,
     files: Vec<String>,
     /// Files that git did not take; they are not part of the skill.
@@ -99,7 +99,7 @@ pub(crate) fn render_authored(
 #[derive(Debug, Serialize)]
 pub(crate) struct VaultInitJson<'a> {
     dry_run: bool,
-    #[serde(serialize_with = "super::lossy::path")]
+    #[serde(serialize_with = "crate::output::lossy::path")]
     vault: &'a Path,
     root: Option<String>,
     /// `null` on a dry run.

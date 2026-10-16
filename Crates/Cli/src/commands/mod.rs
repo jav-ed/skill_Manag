@@ -52,6 +52,8 @@ fn dispatch(cli: &Cli, command: &Command) -> Result<Exit, CliError> {
         Command::Info(args) => inspect::info::run(cli, args),
         Command::New(args) => authoring::author::new(cli, args),
         Command::Adopt(args) => authoring::author::adopt(cli, args),
+        Command::Changes(args) => inspect::changes::run(cli, args),
+        Command::Promote(args) => authoring::promote::run(cli, args),
         Command::Vault(command) => authoring::vault::run(cli, command),
         Command::Config(command) => config::run(cli, command),
         Command::Mandatory(command) => authoring::mandatory::run(cli, command),

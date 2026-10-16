@@ -1,5 +1,6 @@
-//! The commands that only read: `list`, `skills`, `info`, `status`, `diff`, `doctor` and `report`.
+//! The commands that only read: `list`, `skills`, `info`, `status`, `diff`, `changes`, `doctor` and `report`.
 
+pub(in crate::commands) mod changes;
 pub(in crate::commands) mod diff;
 pub(in crate::commands) mod doctor;
 pub(in crate::commands) mod info;

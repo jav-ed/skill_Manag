@@ -64,6 +64,16 @@ pub fn locate(from: &Path, options: &ScanOptions) -> Result<Located, LocalError>
     }
 }
 
+/// The project at exactly `dir`, for a folder the user named.
+pub fn project_at(dir: &Path) -> Result<PathBuf, LocalError> {
+    if is_project(dir) {
+        return Ok(dir.to_path_buf());
+    }
+    Err(LocalError::NotAProject {
+        path: dir.to_path_buf(),
+    })
+}
+
 /// A project is a folder with `.agents/skills`; a link in its place is still reported as the project,
 /// so the comparison can say what is wrong with it.
 fn is_project(dir: &Path) -> bool {

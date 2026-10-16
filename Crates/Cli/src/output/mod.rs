@@ -4,7 +4,7 @@
 #[macro_use]
 mod macros;
 mod agents;
-mod author;
+mod authoring;
 mod backup;
 mod bridge;
 mod config;
@@ -27,7 +27,10 @@ pub(crate) use agents::{
     AgentRow, Tense as AgentsTense, render_agents_line, render_agents_plan, render_agents_status,
     render_diffs,
 };
-pub(crate) use author::{AuthoredJson, Pointer, VaultInitJson, render_authored, render_vault_init};
+pub(crate) use authoring::author::{
+    AuthoredJson, Pointer, VaultInitJson, render_authored, render_vault_init,
+};
+pub(crate) use authoring::promote::{PromoteJson, render_promote_plan, render_promoted};
 pub(crate) use backup::{
     HistoryJson, HistoryRow, UndoJson, UndoRow, UndoStatus, render_history, render_undo,
 };
@@ -36,6 +39,7 @@ pub(crate) use config::{ConfigJson, MandatoryJson, render_config, render_mandato
 pub(crate) use human::{
     render_delete, render_installed, render_rows, render_summary, render_vault,
 };
+pub(crate) use inspect::changes::{ChangesJson, Origin, render_changes};
 pub(crate) use inspect::diff::{DiffJson, render_diff};
 pub(crate) use inspect::doctor::{DoctorJson, render_doctor};
 pub(crate) use inspect::info::{InfoJson, render_info};

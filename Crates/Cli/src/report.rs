@@ -74,6 +74,8 @@ from_core_error!(
     skillmirror_core::backup::BackupError,
     skillmirror_core::config::ConfigError,
     skillmirror_core::ops::DeleteError,
+    skillmirror_core::ops::LocalError,
+    skillmirror_core::ops::PromoteError,
     skillmirror_core::ops::ProjectError,
     skillmirror_core::ops::ScopeError,
     skillmirror_core::ops::AuthorError,
