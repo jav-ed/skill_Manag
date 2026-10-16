@@ -303,7 +303,7 @@ fn draw_status(frame: &mut Frame, work: &Work, area: Rect) {
     let view = &work.view;
     let len = view.len();
     // An init page that leaves something out says so where it does not push the count away.
-    let note = super::init_notes::status_note(work);
+    let note = crate::ui::pages::work::init_notes::status_note(work);
     let text = format!(
         " rows {}–{} of {}{note}",
         (view.offset + 1).min(len),

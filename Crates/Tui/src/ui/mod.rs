@@ -7,7 +7,8 @@ mod widgets;
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout};
 
-use pages::{diff, history, issues, menu, place, results, select, setup, states};
+use pages::work::{diff, issues, results, select};
+use pages::{history, menu, place, setup, states};
 use widgets::{dialog, footer, header};
 
 use crate::app::{App, Screen};
