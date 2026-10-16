@@ -29,6 +29,10 @@ pub use inspect::info::{
     ProjectState, SkillDetail, SkillInfo, SkillState, profiles_of, skill_detail, skill_info,
 };
 pub use inspect::list::{Installed, InstalledSet, installed};
+pub use inspect::local::{
+    Edit, EditKind, Found, LocalChanges, LocalError, LocalSkill, LocalState, Located,
+    local_changes, locate,
+};
 pub use inspect::report::{Cell, ReportData, report_data};
 pub use inspect::status::{Outdated, Problem, ProjectStatus, StatusReport, status, status_scoped};
 pub use projects::bridge::{

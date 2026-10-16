@@ -1,10 +1,12 @@
 //! Operations that only read: how projects stand against the vault, what a sync would change, what is
-//! installed, everything about one skill, the HTML report, and the doctor.
+//! installed, what a project changed against the vault, everything about one skill, the HTML report, and
+//! the doctor.
 
 pub(in crate::ops) mod diff;
 pub(in crate::ops) mod doctor;
 pub(in crate::ops) mod info;
 pub(in crate::ops) mod list;
+pub(in crate::ops) mod local;
 pub(in crate::ops) mod report;
 pub(in crate::ops) mod status;
 
