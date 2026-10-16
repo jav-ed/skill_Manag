@@ -47,13 +47,23 @@ fn check(purpose: Purpose, path: PathBuf) -> Result<Placed, String> {
             BTreeSet::new()
         }
     };
+    // A new project gets a repository on main, unless its folder is inside one already.
+    let inside_repo = match purpose {
+        Purpose::Init => match ops::repo_for(&path, true).map_err(|e| describe(&e))? {
+            ops::Repo::Inside(top) => Some(top),
+            ops::Repo::Make | ops::Repo::Skip => None,
+        },
+        Purpose::Add => None,
+    };
     Ok(Placed {
         purpose,
         project: Project {
             path,
             installed,
-            git: false,
+            git: purpose == Purpose::Init,
+            inside_repo,
             agents: true,
+            scaffold: purpose == Purpose::Init,
         },
     })
 }
@@ -110,7 +120,7 @@ pub(crate) fn spawn_install(tx: Sender<Event>, id: JobId, dirs: Dirs, job: Insta
             Err(message) => return send(&tx, id, Job::Failed(message)),
         };
         let made = if install.create {
-            match ops::create_new(&install.project, install.git) {
+            match ops::create_new(&install.project, &install.repo) {
                 Ok(made) => Some(made),
                 Err(e) => return send(&tx, id, Job::Failed(describe(&e))),
             }
@@ -143,6 +153,9 @@ pub(crate) fn spawn_install(tx: Sender<Event>, id: JobId, dirs: Dirs, job: Insta
             .filter(|_| wrote > 0)
             .map(|plan| apply_agents(plan, Some(&backup), total, &ignore_events));
         let mut warnings = Vec::new();
+        // The doc-start script comes from the skills just written, so it runs after them, in the new project.
+        let scaffold = (wrote > 0 && install.create && install.scaffold)
+            .then(|| ops::run_scaffold(&install.project));
         // Nothing got installed: the folder and repository this job made go, so it can be run again.
         if wrote == 0
             && let Some(project) = &made
@@ -160,6 +173,18 @@ pub(crate) fn spawn_install(tx: Sender<Event>, id: JobId, dirs: Dirs, job: Insta
                     results.warnings.extend(file.warnings);
                 }
                 results.warnings.extend(warnings);
+                match scaffold {
+                    Some(Ok(lines)) => {
+                        results
+                            .notes
+                            .push("Project scaffold (doc-start script):".to_string());
+                        results
+                            .notes
+                            .extend(lines.iter().map(|l| format!("  {}", l.trim_start())));
+                    }
+                    Some(Err(e)) => results.warnings.push(describe(&e)),
+                    None => {}
+                }
                 if wrote > 0 {
                     link(&bridges, &install.project, &mut results);
                 }

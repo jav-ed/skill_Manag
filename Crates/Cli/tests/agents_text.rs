@@ -49,6 +49,7 @@ fn after_seeding_the_vault_text_is_the_source_and_every_project_is_still_in_step
     let fresh = project(&world, "fresh");
     skillmirror(&world)
         .arg("init")
+        .arg("--no-scaffold")
         .arg(&fresh)
         .arg("--yes")
         .assert()
@@ -166,6 +167,7 @@ fn a_new_file_ends_its_block_with_the_note_about_what_may_be_changed() {
 
     skillmirror(&world)
         .arg("init")
+        .arg("--no-scaffold")
         .arg(&fresh)
         .arg("--yes")
         .assert()

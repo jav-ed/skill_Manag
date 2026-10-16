@@ -2,7 +2,7 @@
 
 use std::path::{Path, PathBuf};
 
-use super::{NewProject, ProjectError, check_new, create_new};
+use super::{NewProject, ProjectError, Repo, check_new, create_new};
 use crate::config::{ConfigError, ConfigUpdate, VaultConfig, save_config};
 
 #[derive(Debug, thiserror::Error)]
@@ -53,7 +53,7 @@ pub fn check_new_vault(dir: &Path) -> Result<(), ProjectError> {
 /// given) and an empty mandatory list, and stages the file. Nothing is committed. A failure takes back
 /// what was made.
 pub fn init_vault(dir: &Path, root: Option<&Path>) -> Result<NewVault, VaultInitError> {
-    let folder = create_new(dir, true)?;
+    let folder = create_new(dir, &Repo::Make)?;
     let config = VaultConfig::path_in(dir);
     let vault = NewVault {
         dir: dir.to_path_buf(),

@@ -58,14 +58,23 @@ contains "$V/project-files/AGENTS.md" "# Coding related" "seed wrote the built-i
 step "agents seed does not overwrite" 3 "$SM" agents seed --vault "$V" --root "$R"; has "already exists"
 printf '# Rules\n\n1. old rule\n' > "$V/project-files/AGENTS.md"
 printf 'about the vault repository itself\n' > "$V/AGENTS.md"
-step "mandatory add" 0 "$SM" mandatory add alpha --vault "$V" --root "$R"
+# the scaffold of a new project is the script of the doc-start skill; this stand-in makes what the checks look for
+step "new skill doc-start" 0 "$SM" new doc-start --vault "$V" --root "$R"
+mkdir -p "$V/doc-start/Code" "$V/doc-start/Templates"
+printf 'set -e\ncd "$1"\nmkdir -p Scratch Repos\nprintf "Repos/\\nScratch/\\n" >> .gitignore\necho "  created: Scratch/"\n' > "$V/doc-start/Code/bootstrap.sh"
+printf '#!/usr/bin/env bash\n' | tee "$V/doc-start/Code/install_Scratch.sh" > "$V/doc-start/Templates/clean_Scratch.sh"
+(cd "$V" && git add -A && git commit -qm doc-start)
+step "mandatory add" 0 "$SM" mandatory add alpha doc-start --vault "$V" --root "$R"
 (cd "$V" && git add -A && git commit -qm mandatory)
 step "doctor" 0 "$SM" doctor --vault "$V" --root "$R"
 
 step "init project, dry run" 0 "$SM" init "$R/p1" --dry-run --vault "$V" --root "$R"
 absent "$R/p1"
-step "init project" 0 "$SM" init "$R/p1" -y --vault "$V" --root "$R"
+step "init project" 0 "$SM" init "$R/p1" -y --vault "$V" --root "$R"; has "Project setup"
 exists "$A"
+contains "$R/p1/.git/HEAD" "refs/heads/main" "init made a repository on main" "init made no repository on main"
+exists "$R/p1/Scratch"
+contains "$R/p1/.gitignore" "^Scratch/$" "the scaffold script ran" "the scaffold script did not run"
 step "status, in sync" 0 "$SM" status --vault "$V" --root "$R"
 
 echo "extra line" >> "$V/alpha/SKILL.md"; (cd "$V" && git add -A && git commit -qm edit)
@@ -90,6 +99,10 @@ exists "$V/handmade/SKILL.md"
 step "info" 0 "$SM" info handmade --vault "$V" --root "$R"; has "handmade"
 step "info, unknown skill" 3 "$SM" info nope --vault "$V" --root "$R"
 step "init second project" 0 "$SM" init "$R/p2" -y --vault "$V" --root "$R"
+step "init without repository and scaffold" 0 "$SM" init "$R/p2b" -y --no-git --no-scaffold --no-agents-md --vault "$V" --root "$R"
+absent "$R/p2b/.git"
+absent "$R/p2b/Scratch"
+rm -rf "$R/p2b"   # a project without AGENTS.md would count in the agents checks below
 (cd "$V" && git add -A && git commit -qm adopt)
 step "add handmade to the second project" 0 "$SM" add handmade -y --project "$R/p2" --vault "$V" --root "$R"
 exists "$R/p2/.agents/skills/handmade/SKILL.md"

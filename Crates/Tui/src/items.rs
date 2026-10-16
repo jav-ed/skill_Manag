@@ -3,6 +3,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
+use skillmirror_core::ops::Repo;
 use skillmirror_core::scan::Target;
 
 use crate::items_projects::{ProjectPane, change_pane, delete_pane};
@@ -101,10 +102,25 @@ pub(crate) struct Project {
     pub(crate) path: PathBuf,
     /// Skill folders the project has already.
     pub(crate) installed: BTreeSet<String>,
-    /// Init: make the new project a git repository.
+    /// Init: git is wanted (a repository on `main`); `g` turns it off.
     pub(crate) git: bool,
+    /// Init: the repository the folder is inside already, so that none is made.
+    pub(crate) inside_repo: Option<PathBuf>,
     /// Init: also write the AGENTS.md of the new project.
     pub(crate) agents: bool,
+    /// Init: run the doc-start script that makes the docs folders, `Scratch/`, `Repos/` and `.gitignore`.
+    pub(crate) scaffold: bool,
+}
+
+impl Project {
+    /// What init does about git with the switches as they are now.
+    pub(crate) fn repo(&self) -> Repo {
+        match (&self.inside_repo, self.git) {
+            (_, false) => Repo::Skip,
+            (Some(top), true) => Repo::Inside(top.clone()),
+            (None, true) => Repo::Make,
+        }
+    }
 }
 
 /// Add and init rows: every skill of the vault, with the project as its one target. A new project starts

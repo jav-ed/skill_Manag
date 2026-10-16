@@ -42,6 +42,7 @@ fn init_writes_the_file_with_the_block_next_to_the_mandatory_skills() {
 
     skillmirror(&world)
         .arg("init")
+        .arg("--no-scaffold")
         .arg(&fresh)
         .arg("--yes")
         .assert()
@@ -66,6 +67,7 @@ fn init_dry_run_lists_the_file_and_writes_nothing() {
 
     skillmirror(&world)
         .arg("init")
+        .arg("--no-scaffold")
         .arg(&fresh)
         .arg("--dry-run")
         .assert()
@@ -84,14 +86,17 @@ fn init_json_has_an_agents_row_unless_the_file_is_switched_off() {
     let with = json_of(
         skillmirror(&world)
             .arg("init")
+            .arg("--no-scaffold")
             .arg(&fresh)
             .args(["--dry-run", "--json"]),
     );
-    let without = json_of(skillmirror(&world).arg("init").arg(&fresh).args([
-        "--dry-run",
-        "--json",
-        "--no-agents-md",
-    ]));
+    let without = json_of(
+        skillmirror(&world)
+            .arg("init")
+            .arg("--no-scaffold")
+            .arg(&fresh)
+            .args(["--dry-run", "--json", "--no-agents-md"]),
+    );
 
     assert_eq!(with["agents"]["action"], "create");
     assert_eq!(with["agents"]["state"], "missing");
@@ -105,6 +110,7 @@ fn init_no_agents_md_makes_no_file() {
 
     skillmirror(&world)
         .arg("init")
+        .arg("--no-scaffold")
         .arg(&fresh)
         .args(["--yes", "--no-agents-md"])
         .assert()
@@ -121,6 +127,7 @@ fn init_stops_before_making_anything_when_the_text_names_skills_the_project_woul
 
     skillmirror(&world)
         .arg("init")
+        .arg("--no-scaffold")
         .arg(&fresh)
         .arg("--yes")
         .assert()
@@ -139,6 +146,7 @@ fn init_uses_the_vault_text_and_does_not_check_skills_for_it() {
 
     skillmirror(&world)
         .arg("init")
+        .arg("--no-scaffold")
         .arg(&fresh)
         .arg("--yes")
         .assert()
@@ -158,6 +166,7 @@ fn init_with_a_vault_text_that_cannot_be_used_is_a_hard_error_not_the_built_in_t
 
     skillmirror(&world)
         .arg("init")
+        .arg("--no-scaffold")
         .arg(&fresh)
         .arg("--yes")
         .assert()

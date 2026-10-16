@@ -92,10 +92,12 @@ ui-check:
 # Install the skillmirror binary from this checkout into ~/.cargo/bin, without the web view.
 install:
     cargo install --path Crates/Cli --locked
+    @echo "Tab completion is a separate one-time step: see 'Tab completion' in the README (one line in your shell startup file)."
 
 # The same with the web view (`skillmirror web`) built in.
 install-web:
     cargo install --path Crates/Cli --locked --features web
+    @echo "Tab completion is a separate one-time step: see 'Tab completion' in the README (one line in your shell startup file)."
 
 # The local gate before a commit: format, lint, tests, file size and the core-without-tokio rule.
 check: fmt-check clippy test loc-gate check-deps check-features

@@ -3,7 +3,7 @@
 use serde::Serialize;
 
 use super::view::{DeleteRow, InstalledRow, Row, SkillRow, Summary};
-use super::{AgentRow, BridgeRow};
+use super::{AgentRow, BridgeRow, SetupRow};
 
 #[derive(Serialize)]
 struct Issue {
@@ -28,6 +28,9 @@ pub(crate) struct RunJson<'a> {
     /// The AGENTS.md that `init` writes into the new project; left out when it writes none.
     #[serde(skip_serializing_if = "Option::is_none")]
     agents: Option<AgentRow>,
+    /// The repository and the scaffold that `init` makes around the skills; left out when it makes none.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    setup: Option<SetupRow>,
 }
 
 impl<'a> RunJson<'a> {
@@ -52,6 +55,7 @@ impl<'a> RunJson<'a> {
             backup: None,
             bridges: Vec::new(),
             agents: None,
+            setup: None,
         }
     }
 
@@ -67,6 +71,11 @@ impl<'a> RunJson<'a> {
 
     pub(crate) fn with_agents(mut self, agents: Option<&AgentRow>) -> Self {
         self.agents = agents.cloned();
+        self
+    }
+
+    pub(crate) fn with_setup(mut self, setup: Option<&SetupRow>) -> Self {
+        self.setup = setup.cloned();
         self
     }
 

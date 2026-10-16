@@ -7,7 +7,7 @@ How the three front ends use Core. None of them contains engine logic: each read
 `main.rs` parses the grammar (`args.rs`), `commands/mod.rs` dispatches, and every command is one file in `commands/` that opens a context, calls one or two `ops` functions and hands rows to `output/`.
 
 - `commands/context.rs`: `open` (settings, vault, scan with the stderr spinner) and `scan_root`.
-- `commands/pipeline.rs`: the shared flow of the writing commands: show the plan, ask (never without `--yes` on a pipe), take a backup run, apply, show the result. `Hooks` lets `add` and `init` make a folder before the first write and the configured links after it.
+- `commands/pipeline.rs`: the shared flow of the writing commands: show the plan, ask (never without `--yes` on a pipe), take a backup run, apply, show the result. `Hooks` lets `add` and `init` make a folder before the first write and the configured links after it, and lets `init` run the doc-start scaffold script as its last step (`SetupHook`, shown as the `Project setup` section and the `setup` field of `--json`).
 - `commands/{mirror,install,delete,backup,bridge,status,diff,doctor,report,list,skills,migrate}.rs`: one command each.
 - `output/`: the only place that prints. Text through `anstream` (colour off for pipes and `NO_COLOR`), JSON documents with `serde`, the scan spinner (`progress.rs`), lossy paths for JSON (`lossy.rs`).
 - `report.rs` and `exit.rs`: `CliError` with its hint, and the exit codes.

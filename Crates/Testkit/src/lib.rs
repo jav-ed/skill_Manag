@@ -122,6 +122,12 @@ impl World {
                 "commit.gpgsign=false",
                 "-c",
                 "init.defaultBranch=main",
+                // A commit starts `git maintenance` in the background, which drops `objects/maintenance.lock` for a moment
+                // and would show up in tests that compare folder trees.
+                "-c",
+                "maintenance.auto=false",
+                "-c",
+                "gc.auto=0",
             ])
             .args(args)
             .output()

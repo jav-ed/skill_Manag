@@ -17,6 +17,7 @@ mod info;
 mod json;
 mod lossy;
 mod progress;
+mod setup;
 mod status;
 mod style;
 mod view;
@@ -43,6 +44,7 @@ pub(crate) use human::{
 pub(crate) use info::{InfoJson, render_info};
 pub(crate) use json::{DeleteJson, ListJson, RunJson, VaultJson};
 pub(crate) use progress::ScanLine;
+pub(crate) use setup::{SetupRow, render_setup};
 pub(crate) use status::{ProjectRow, StatusJson, StatusSummary, render_status};
 pub(crate) use view::{DeleteRow, DeleteStatus, InstalledRow, Row, SkillRow, Summary, Tense};
 

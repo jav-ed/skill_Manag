@@ -40,7 +40,11 @@ fn title(work: &Work) -> String {
         Mode::Init => format!(
             "Select skills for {}{}",
             project_label(work),
-            if work.project.as_ref().is_some_and(|p| p.git) {
+            if work
+                .project
+                .as_ref()
+                .is_some_and(|p| p.git && p.inside_repo.is_none())
+            {
                 "  (git repository)"
             } else {
                 ""
@@ -295,12 +299,8 @@ fn highlight(name: &str, matched: &[u32], at_cursor: bool) -> Vec<Span<'static>>
 fn draw_status(frame: &mut Frame, work: &Work, area: Rect) {
     let view = &work.view;
     let len = view.len();
-    // An init page that will not write the AGENTS.md says so where it does not push the count away.
-    let note = if work.mode == Mode::Init && work.project.as_ref().is_some_and(|p| !p.agents) {
-        "   ·   no AGENTS.md"
-    } else {
-        ""
-    };
+    // An init page that leaves something out says so where it does not push the count away.
+    let note = super::init_notes::status_note(work);
     let text = format!(
         " rows {}–{} of {}{note}",
         (view.offset + 1).min(len),

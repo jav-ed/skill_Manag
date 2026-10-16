@@ -10,6 +10,7 @@ mod help;
 mod help_screens;
 mod help_work;
 mod history;
+mod init_notes;
 mod issues;
 mod link;
 mod menu;

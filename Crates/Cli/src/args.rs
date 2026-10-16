@@ -91,6 +91,12 @@ pub(crate) enum Command {
     /// Copy the vault pointer of the old skill_Manag tool to this tool
     Migrate(MigrateArgs),
     /// Print a shell completion script
+    #[command(after_help = "\
+Tab completion is off after the install; add one line to the startup file of your shell:
+  zsh   in ~/.zshrc, after oh-my-zsh or compinit:  source <(skillmirror completions zsh)
+  bash  in ~/.bashrc:                              source <(skillmirror completions bash)
+  fish  in ~/.config/fish/config.fish:             skillmirror completions fish | source
+Then open a new terminal. The script is made by the installed binary, so it is always current.")]
     Completions {
         #[arg(value_enum)]
         shell: Shell,
@@ -300,15 +306,20 @@ pub(crate) struct AddArgs {
     pub(crate) flags: InstallFlags,
 }
 
+// Independent command-line switches, not a state machine.
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Args)]
 pub(crate) struct InitArgs {
     /// The new project directory; it must not exist or must be empty
     pub(crate) dir: PathBuf,
     #[command(flatten)]
     pub(crate) select: SelectArgs,
-    /// Also run `git init` in the new directory
+    /// Do not make a git repository (one is made on the branch main, unless the folder is inside one already)
     #[arg(long)]
-    pub(crate) git: bool,
+    pub(crate) no_git: bool,
+    /// Do not run the doc-start skill's script (Project_Manag/Docs, Scratch/, Repos/, .gitignore, `just scratch-clean`)
+    #[arg(long)]
+    pub(crate) no_scaffold: bool,
     /// Do not install the vault's mandatory skills
     #[arg(long)]
     pub(crate) no_mandatory: bool,

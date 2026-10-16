@@ -116,12 +116,14 @@ fn init_makes_a_new_project() {
     term.send("quick\r");
     term.wait_for("Select skills for");
     term.wait_for("2 / 3 selected");
-    // The standard vault has not the skills the built-in AGENTS.md names, so the file is switched off.
+    // The standard vault has not the skills the built-in AGENTS.md names, nor doc-start, so both are switched off.
     term.send("m");
     term.wait_for("no AGENTS.md");
-    term.send("g\r");
+    term.send("d");
+    term.wait_for("no scaffold");
+    term.send("\r");
     term.wait_for("Create ");
-    term.wait_for("It becomes a git repository.");
+    term.wait_for("It becomes a git repository on the branch main.");
     assert!(!world.exists("projects/quick"), "nothing before yes");
     term.send("y");
     term.wait_for("Init results");

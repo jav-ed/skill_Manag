@@ -3,7 +3,7 @@
 use super::work::{Action, Phase, Work};
 use crate::binding::{
     AGENTS_FILE, ALL, BACK, CANCEL, CONFIRM, DELETE, DOWN, FILTER, GIT, ISSUES, PAGE_DOWN, PAGE_UP,
-    PANE_DOWN, PANE_FILTER, PANE_PATHS, PANE_UP, PANE_VIEW, SYNC, TOGGLE, UP, VIEW, YES,
+    PANE_DOWN, PANE_FILTER, PANE_PATHS, PANE_UP, PANE_VIEW, SCAFFOLD, SYNC, TOGGLE, UP, VIEW, YES,
 };
 use crate::input::{self, Code, Key, KeyKind};
 use crate::items::Mode;
@@ -82,6 +82,10 @@ impl Work {
         } else if self.mode == Mode::Init && AGENTS_FILE.matches(key) {
             if let Some(project) = &mut self.project {
                 project.agents = !project.agents;
+            }
+        } else if self.mode == Mode::Init && SCAFFOLD.matches(key) {
+            if let Some(project) = &mut self.project {
+                project.scaffold = !project.scaffold;
             }
         } else if self.mode == Mode::List && SYNC.matches(key) {
             return self.plan(Kind::Sync);

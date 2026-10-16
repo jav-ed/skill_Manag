@@ -4,6 +4,7 @@ use std::collections::HashSet;
 use std::path::PathBuf;
 
 use skillmirror_core::agents::AgentsPlan;
+use skillmirror_core::ops::Repo;
 use skillmirror_core::plan::Plan;
 use skillmirror_core::scan::Target;
 use tui_input::Input as TextInput;
@@ -23,10 +24,12 @@ pub(crate) struct Install {
     pub(crate) project: PathBuf,
     /// The project folder does not exist yet (init): it is made right before the first write.
     pub(crate) create: bool,
-    /// Make the new project a git repository.
-    pub(crate) git: bool,
+    /// What happens about git: a new repository, none because the folder is inside one, or none wanted.
+    pub(crate) repo: Repo,
     /// Init: also write its AGENTS.md.
     pub(crate) agents: bool,
+    /// Init: run the doc-start script that makes the docs folders, `Scratch/`, `Repos/` and `.gitignore`.
+    pub(crate) scaffold: bool,
 }
 
 /// A run waiting for a go-ahead or already started.
@@ -230,8 +233,9 @@ impl Work {
         let install = self.project.as_ref().map(|project| Install {
             project: project.path.clone(),
             create: self.mode == Mode::Init,
-            git: project.git,
+            repo: project.repo(),
             agents: project.agents,
+            scaffold: project.scaffold,
         });
         (!targets.is_empty()).then_some(Pending {
             kind,

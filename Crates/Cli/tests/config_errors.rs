@@ -136,3 +136,38 @@ fn completions_print_a_script() {
         .success()
         .stdout(contains("skillmirror"));
 }
+
+#[test]
+fn the_zsh_script_registers_itself_and_knows_the_commands() {
+    let world = World::new();
+    bare(&world)
+        .args(["completions", "zsh"])
+        .assert()
+        .success()
+        .stdout(contains("#compdef skillmirror"))
+        .stdout(contains("compdef _skillmirror skillmirror"))
+        .stdout(contains("completions"))
+        .stdout(contains("sync"));
+}
+
+#[test]
+fn an_unknown_shell_is_a_usage_error_that_lists_the_known_ones() {
+    let world = World::new();
+    bare(&world)
+        .args(["completions", "nushell"])
+        .assert()
+        .code(2)
+        .stderr(contains("zsh"));
+}
+
+#[test]
+fn the_help_of_completions_says_it_has_to_be_switched_on() {
+    let world = World::new();
+    bare(&world)
+        .args(["completions", "--help"])
+        .assert()
+        .success()
+        .stdout(contains("source <(skillmirror completions zsh)"))
+        .stdout(contains("~/.zshrc"))
+        .stdout(contains("off after the install"));
+}

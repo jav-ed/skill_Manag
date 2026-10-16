@@ -15,6 +15,7 @@ mod project;
 mod push;
 mod report;
 mod run;
+mod scaffold;
 mod scope;
 mod select;
 mod status;
@@ -41,10 +42,14 @@ pub use info::{
 };
 pub use list::{Installed, InstalledSet, installed};
 pub use mandatory::{Change as MandatoryChange, MandatoryError, change_mandatory};
-pub use project::{NewProject, ProjectError, check_existing, check_new, create_new, plan_install};
+pub use project::{
+    BRANCH, NewProject, ProjectError, Repo, check_existing, check_new, create_new, plan_install,
+    repo_for,
+};
 pub use push::{plan as plan_push, plan_scoped as plan_push_scoped};
 pub use report::{Cell, ReportData, report_data};
 pub use run::{RunOutcome, run_plan};
+pub use scaffold::{require_scaffold, run_scaffold};
 pub use scope::{Scope, ScopeError};
 pub use select::{SelectError, Selection, resolve, resolve_names};
 pub use status::{Outdated, Problem, ProjectStatus, StatusReport, status, status_scoped};
@@ -80,6 +85,8 @@ mod project_tests;
 mod report_tests;
 #[cfg(test)]
 mod safety_tests;
+#[cfg(test)]
+mod scaffold_tests;
 #[cfg(test)]
 mod scope_tests;
 #[cfg(test)]

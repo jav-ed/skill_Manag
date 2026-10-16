@@ -14,8 +14,8 @@ fn init_makes_the_project_with_the_mandatory_skills_ticked() {
     ui.code(Code::Enter);
     assert_eq!(place(&ui).stage, Stage::Name, "the root is the parent");
     ui.type_text("fresh").code(Code::Enter).wait_select();
-    // The standard vault has not the skills the built-in AGENTS.md names, so the file is switched off.
-    ui.press('m');
+    // The standard vault has neither the skills the built-in AGENTS.md names nor doc-start, so both are switched off.
+    ui.press('m').press('d');
 
     let page = selected_page(&mut ui);
     assert!(page.contains("Select skills for projects/fresh"), "{page}");
@@ -28,15 +28,20 @@ fn init_makes_the_project_with_the_mandatory_skills_ticked() {
         "nothing is made before the question is answered"
     );
 
-    ui.press('g');
-    assert!(ui.screen().contains("(git repository)"));
+    assert!(
+        ui.screen().contains("(git repository)"),
+        "a new project is a repository unless g says otherwise"
+    );
     ui.code(Code::Enter).wait_confirm();
     let page = ui.screen();
     assert!(
         page.contains("Create projects/fresh with 2 skills?"),
         "{page}"
     );
-    assert!(page.contains("It becomes a git repository."), "{page}");
+    assert!(
+        page.contains("It becomes a git repository on the branch main."),
+        "{page}"
+    );
     assert!(!ui.world.exists("projects/fresh"), "still nothing made");
 
     ui.press('y').wait_done();
@@ -50,7 +55,10 @@ fn init_makes_the_project_with_the_mandatory_skills_ticked() {
             "{skill}"
         );
     }
-    assert!(ui.world.exists("projects/fresh/.git"));
+    assert_eq!(
+        ui.world.read("projects/fresh/.git/HEAD").trim(),
+        "ref: refs/heads/main"
+    );
 }
 
 #[test]
@@ -102,7 +110,7 @@ fn init_takes_the_new_folder_back_when_nothing_could_be_installed() {
         .type_text("fresh")
         .code(Code::Enter)
         .wait_select();
-    ui.press('m');
+    ui.press('m').press('d');
     // Untick the mandatory skills, tick the one that cannot be planned.
     ui.press('a').press('a');
     assert!(ui.screen().contains("0 / 4 selected"), "{}", ui.screen());
@@ -163,7 +171,7 @@ fn a_folder_that_got_files_after_the_question_is_never_touched() {
         .type_text("fresh")
         .code(Code::Enter)
         .wait_select();
-    ui.press('m');
+    ui.press('m').press('d');
     ui.code(Code::Enter).wait_confirm();
     // Between the question and the yes, the user (or another program) puts a file there.
     ui.world.project_file("fresh/notes.md", "mine");

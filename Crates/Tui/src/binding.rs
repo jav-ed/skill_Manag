@@ -183,6 +183,11 @@ pub(crate) const AGENTS_FILE: Binding = Binding {
     label: "m",
     help: "AGENTS.md",
 };
+pub(crate) const SCAFFOLD: Binding = Binding {
+    keys: &[(Code::Char('d'), N)],
+    label: "d",
+    help: "project scaffold",
+};
 pub(crate) const GIT: Binding = Binding {
     keys: &[(Code::Char('g'), N)],
     label: "g",

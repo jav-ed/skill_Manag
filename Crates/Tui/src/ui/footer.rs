@@ -9,7 +9,7 @@ use crate::app::Screen;
 use crate::binding::{
     AGENTS_FILE, ALL, BACK, BACK_HELP, Binding, CANCEL, CONFIRM_HELP, DELETE, DOWN, FILTER, GIT,
     HELP, ISSUES, MENU_QUIT, OPEN, PANE_VIEW, QUIT, RESULTS_HELP, RUN_ADD, RUN_AGENTS, RUN_DELETE,
-    RUN_INIT, RUN_PUSH, RUN_SYNC, SCROLL, SYNC, TOGGLE, UP, VIEW, YES,
+    RUN_INIT, RUN_PUSH, RUN_SYNC, SCAFFOLD, SCROLL, SYNC, TOGGLE, UP, VIEW, YES,
 };
 use crate::items::Mode;
 use crate::screens::{History, HistoryPhase, Pending, Phase, Place, Setup, Stage, Step};
@@ -32,7 +32,7 @@ fn mode_keys(mode: Mode) -> Vec<&'static Binding> {
         Mode::Skills => Vec::new(),
         Mode::Agents => vec![&RUN_AGENTS],
         Mode::Add => vec![&RUN_ADD],
-        Mode::Init => vec![&GIT, &AGENTS_FILE, &RUN_INIT],
+        Mode::Init => vec![&GIT, &AGENTS_FILE, &SCAFFOLD, &RUN_INIT],
     }
 }
 

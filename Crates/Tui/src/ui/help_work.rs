@@ -173,8 +173,15 @@ fn run_topic(mode: Mode) -> Option<Topic> {
             "install the ticked skills into the project, after a question that says what is written.",
         )],
         Mode::Init => vec![
-            ("g", "make the new project a git repository, or not."),
+            (
+                "g",
+                "make the new project a git repository on the branch main, or not. Nothing is made when the folder is inside a repository already.",
+            ),
             ("m", "write an AGENTS.md as well, or leave it out."),
+            (
+                "d",
+                "run the doc-start script as well (docs folders, Scratch, Repos, .gitignore), or leave it out. It needs the doc-start skill ticked.",
+            ),
             (
                 "enter",
                 "create the project with the ticked skills, after a question.",

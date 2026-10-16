@@ -7,6 +7,7 @@ use ratatui::layout::{Alignment, Constraint, Flex, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
+use skillmirror_core::ops::Repo;
 
 use super::boxed;
 use crate::hit::{HitMap, Target};
@@ -94,8 +95,18 @@ fn body(pending: &Pending) -> Vec<Line<'static>> {
             "Makes the folder {}.",
             install.project.display()
         )));
-        if install.git {
-            lines.push(Line::raw("It becomes a git repository."));
+        match &install.repo {
+            Repo::Inside(top) => lines.push(Line::raw(format!(
+                "It is inside the git repository {}, so none is made.",
+                top.display()
+            ))),
+            Repo::Make => lines.push(Line::raw("It becomes a git repository on the branch main.")),
+            Repo::Skip => {}
+        }
+        if install.scaffold {
+            lines.push(Line::raw(
+                "The doc-start script then makes Project_Manag/Docs, Scratch, Repos and .gitignore.",
+            ));
         }
     }
     if let Some(plan) = &pending.agents {

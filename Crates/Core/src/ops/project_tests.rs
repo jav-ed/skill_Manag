@@ -150,12 +150,12 @@ fn check_existing_refuses_missing_projects_and_linked_agent_directories() {
 #[test]
 fn create_new_makes_the_directory_and_optionally_a_git_repository() {
     let tree = TempTree::new();
-    create_new(&tree.path().join("a/b"), false).unwrap();
+    create_new(&tree.path().join("a/b"), &Repo::Skip).unwrap();
     assert!(tree.path().join("a/b").is_dir() && !tree.path().join("a/b/.git").exists());
-    create_new(&tree.path().join("c"), true).unwrap();
+    create_new(&tree.path().join("c"), &Repo::Make).unwrap();
     assert!(tree.path().join("c/.git").exists());
     assert!(
-        create_new(&tree.path().join("c"), true).is_err(),
+        create_new(&tree.path().join("c"), &Repo::Make).is_err(),
         "a repository is not empty"
     );
 }
@@ -164,7 +164,7 @@ fn create_new_makes_the_directory_and_optionally_a_git_repository() {
 fn take_back_removes_the_directory_and_repository_that_create_new_made() {
     let tree = TempTree::new();
     let dir = tree.path().join("fresh");
-    let project = create_new(&dir, true).unwrap();
+    let project = create_new(&dir, &Repo::Make).unwrap();
     std::fs::create_dir_all(dir.join(".agents/skills")).unwrap();
 
     project.take_back().unwrap();
@@ -177,7 +177,7 @@ fn take_back_keeps_a_directory_that_was_there_and_anything_that_is_not_empty() {
     let tree = TempTree::new();
     let dir = tree.path().join("mine");
     std::fs::create_dir(&dir).unwrap();
-    let project = create_new(&dir, true).unwrap();
+    let project = create_new(&dir, &Repo::Make).unwrap();
     // A skill got installed, and a file appeared next to it meanwhile.
     tree.write("mine/.agents/skills/coding/SKILL.md", "x");
     tree.write("mine/notes.md", "n");
@@ -216,4 +216,41 @@ fn install_into_a_project_without_skills_dir_creates_it_and_is_idempotent() {
     );
 
     assert_eq!(plan_install(&ws, &project, &skills).counts().unchanged, 3);
+}
+
+#[test]
+fn a_new_repository_starts_on_main() {
+    let tree = TempTree::new();
+    let dir = tree.path().join("fresh");
+    create_new(&dir, &Repo::Make).unwrap();
+    assert_eq!(
+        std::fs::read_to_string(dir.join(".git/HEAD"))
+            .unwrap()
+            .trim(),
+        "ref: refs/heads/main"
+    );
+}
+
+#[test]
+fn a_folder_gets_a_repository_unless_it_is_inside_one_or_none_is_wanted() {
+    let tree = TempTree::new();
+    assert_eq!(repo_for(&tree.path().join("a"), false).unwrap(), Repo::Skip);
+    assert_eq!(repo_for(&tree.path().join("a"), true).unwrap(), Repo::Make);
+
+    tree.git(".", &["init", "-q"]);
+    let top = std::fs::canonicalize(tree.path()).unwrap();
+    // A folder that exists, and one that does not exist yet, are both inside the repository.
+    std::fs::create_dir(tree.path().join("there")).unwrap();
+    assert_eq!(
+        repo_for(&tree.path().join("there"), true).unwrap(),
+        Repo::Inside(top.clone())
+    );
+    assert_eq!(
+        repo_for(&tree.path().join("not/yet/made"), true).unwrap(),
+        Repo::Inside(top)
+    );
+    assert_eq!(
+        repo_for(&tree.path().join("there"), false).unwrap(),
+        Repo::Skip
+    );
 }

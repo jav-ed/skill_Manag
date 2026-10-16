@@ -11,10 +11,10 @@ use skillmirror_core::ops::{self, SelectError, Selection, Workspace};
 
 use super::bridge::link_project;
 use super::context::load_settings;
-use super::pipeline::{AgentsHook, Hooks, Run, execute};
+use super::pipeline::{AgentsHook, Hooks, Run, SetupHook, execute};
 use crate::args::{AddArgs, Cli, InitArgs, InstallFlags, SelectArgs};
 use crate::exit::Exit;
-use crate::output::{self, AgentRow, BridgeRow};
+use crate::output::{self, AgentRow, BridgeRow, SetupRow};
 use crate::report::CliError;
 
 pub(super) fn add(cli: &Cli, args: &AddArgs) -> Result<Exit, CliError> {
@@ -34,6 +34,7 @@ pub(super) fn add(cli: &Cli, args: &AddArgs) -> Result<Exit, CliError> {
         before_write: &|| Ok(()),
         after_write: &link_after(&workspace, &project),
         agents: None,
+        setup: None,
     };
     execute(plan, &[], &run_of(RunKind::Add, &args.flags), &hooks).map(|done| done.exit)
 }
@@ -52,6 +53,23 @@ pub(super) fn init(cli: &Cli, args: &InitArgs) -> Result<Exit, CliError> {
         source.require_skills(&dir, &skills)?;
         Some(source)
     };
+    // Decided before anything is made, like the text above: a folder inside a repository gets no second
+    // one, and the scaffold needs the doc-start skill in this install.
+    let repo = ops::repo_for(&dir, !args.no_git)?;
+    if !args.no_scaffold {
+        ops::require_scaffold(&workspace, &skills)?;
+    }
+    let steps = setup_steps(&repo, !args.no_scaffold);
+    let planned_setup = (!steps.is_empty()).then(|| SetupRow::planned(steps));
+    let run_setup = |planned: &SetupRow| {
+        if args.no_scaffold {
+            return planned.done(&[]);
+        }
+        match ops::run_scaffold(&dir) {
+            Ok(lines) => planned.done(&lines),
+            Err(e) => planned.failed(describe_with_hint(&e)),
+        }
+    };
     let plan = ops::plan_install(&workspace, &dir, &skills);
     let made = RefCell::new(None);
     let agents = source.as_ref().and_then(|source| agents_plan(&dir, source));
@@ -62,7 +80,7 @@ pub(super) fn init(cli: &Cli, args: &InitArgs) -> Result<Exit, CliError> {
     };
     let hooks = Hooks {
         before_write: &|| {
-            *made.borrow_mut() = Some(ops::create_new(&dir, args.git)?);
+            *made.borrow_mut() = Some(ops::create_new(&dir, &repo)?);
             Ok(())
         },
         after_write: &link_after(&workspace, &dir),
@@ -74,6 +92,10 @@ pub(super) fn init(cli: &Cli, args: &InitArgs) -> Result<Exit, CliError> {
                 source: source.describe(),
                 write: &write_agents,
             }),
+        setup: planned_setup.as_ref().map(|planned| SetupHook {
+            planned: planned.clone(),
+            run: &run_setup,
+        }),
     };
     let done = execute(plan, &[], &run_of(RunKind::Init, &args.flags), &hooks)?;
     // Nothing got installed: the project and repository this command made go, so it can be run again.
@@ -83,6 +105,37 @@ pub(super) fn init(cli: &Cli, args: &InitArgs) -> Result<Exit, CliError> {
         output::warn_line(&format!("could not remove the empty project: {e}"));
     }
     Ok(done.exit)
+}
+
+/// What `init` does besides the skills, one line each; none when the repository and the scaffold are both off.
+fn setup_steps(repo: &ops::Repo, scaffold: bool) -> Vec<String> {
+    let mut steps = Vec::new();
+    match repo {
+        ops::Repo::Make => steps.push(format!(
+            "git: a new repository on the branch {} (no remote)",
+            ops::BRANCH
+        )),
+        ops::Repo::Inside(top) => steps.push(format!(
+            "git: none made, the folder is inside the repository {}",
+            top.display()
+        )),
+        ops::Repo::Skip => {}
+    }
+    if scaffold {
+        steps.push(
+            "scaffold: the doc-start skill's Code/bootstrap.sh makes Project_Manag/Docs, Scratch/, Repos/, .gitignore and `just scratch-clean`"
+                .to_string(),
+        );
+    }
+    steps
+}
+
+/// The error and its hint as one line, for a row that cannot show them apart.
+fn describe_with_hint(error: &ops::ProjectError) -> String {
+    match skillmirror_core::Hint::hint(error) {
+        Some(hint) => format!("{error}; {hint}"),
+        None => error.to_string(),
+    }
 }
 
 /// The links the vault config asks for, made in a project right after skills were written there. A link

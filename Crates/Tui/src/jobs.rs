@@ -16,7 +16,7 @@ use skillmirror_core::apply::{ApplyOptions, apply};
 use skillmirror_core::backup::{Backups, Run, RunKind};
 use skillmirror_core::config::{Dirs, Settings};
 use skillmirror_core::events::Event as CoreEvent;
-use skillmirror_core::ops::{self, diff_of_plan};
+use skillmirror_core::ops::{self, ProjectError, diff_of_plan};
 use skillmirror_core::plan::Plan;
 
 use crate::diffview::{lines_of, lines_of_agents};
@@ -69,6 +69,9 @@ pub(crate) fn spawn_plan(tx: Sender<Event>, id: JobId, session: Arc<Session>, pe
             Ok(agents) => agents,
             Err(message) => return send(&tx, id, Job::Failed(message)),
         };
+        if let Err(message) = init_scaffold(&session, &pending) {
+            return send(&tx, id, Job::Failed(message));
+        }
         let planned = Pending {
             plan: Some(plan),
             preview: Some(preview),
@@ -77,6 +80,23 @@ pub(crate) fn spawn_plan(tx: Sender<Event>, id: JobId, session: Arc<Session>, pe
         };
         send(&tx, id, Job::Planned(Box::new(planned)));
     });
+}
+
+/// The project scaffold is the doc-start script, so nothing is made when the skill is not ticked.
+fn init_scaffold(session: &Session, pending: &Pending) -> Result<(), String> {
+    let wanted = pending
+        .install
+        .as_ref()
+        .is_some_and(|i| i.scaffold && i.create && pending.kind == Kind::Init);
+    if !wanted {
+        return Ok(());
+    }
+    let skills: BTreeSet<String> = pending.targets.iter().map(|t| t.skill.clone()).collect();
+    ops::require_scaffold(&session.workspace, &skills).map_err(|e| match e {
+        // The page has a key for this; the command-line flag would send the user elsewhere.
+        ProjectError::ScaffoldNeedsSkill => "The project scaffold is made by the doc-start skill, which is not ticked\n  tick it on this page, or press d here to leave the scaffold out".to_string(),
+        other => describe(&other),
+    })
 }
 
 /// The AGENTS.md of a new project, planned like the skills: nothing is made if the text cannot be used or

@@ -10,9 +10,23 @@ use crate::input::Code;
 
 const FILE: &str = "projects/fresh/AGENTS.md";
 
-/// The standard vault plus the two skills the built-in text names, all four mandatory.
+/// What the doc-start script needs; this one makes only `Scratch/` and says so.
+const SCAFFOLD_FILES: [(&str, &str); 3] = [
+    (
+        "Code/bootstrap.sh",
+        "set -e\ncd \"$1\"\nmkdir -p Scratch\necho '  created: Scratch/'\n",
+    ),
+    ("Code/install_Scratch.sh", "#!/usr/bin/env bash\n"),
+    ("Templates/clean_Scratch.sh", "#!/usr/bin/env bash\n"),
+];
+
+/// The standard vault plus the two skills the built-in text names, all four mandatory. doc-start brings the
+/// scripts of the scaffold, so a new project is complete.
 fn world_with_the_named_skills() -> World {
     let world = world();
+    for (file, text) in SCAFFOLD_FILES {
+        world.vault_file(&format!("doc-start/{file}"), text);
+    }
     world
         .vault_file("doc-start/SKILL.md", "doc-start v1")
         .vault_file("file-tree-optimization/SKILL.md", "ftree v1")
@@ -36,7 +50,7 @@ fn failure(ui: &mut Harness) -> String {
 
 #[test]
 fn the_file_is_written_with_the_skills_and_both_are_in_one_backup_run() {
-    let mut ui = Harness::sized(world_with_the_named_skills(), 100, 30);
+    let mut ui = Harness::sized(world_with_the_named_skills(), 100, 60);
     to_the_skills_page(&mut ui);
     assert!(ui.screen().contains("4 / 5 selected"), "{}", ui.screen());
 
@@ -100,6 +114,8 @@ fn the_vault_text_is_used_and_its_skills_are_not_checked() {
     world.vault_file("project-files/AGENTS.md", "# Mine\n\n1. a rule\n");
     let mut ui = Harness::new(world);
     to_the_skills_page(&mut ui);
+    // This vault has no doc-start, so there is no scaffold to run.
+    ui.press('d');
 
     ui.code(Code::Enter).wait_confirm();
     let question = ui.screen();
@@ -115,6 +131,48 @@ fn the_vault_text_is_used_and_its_skills_are_not_checked() {
 
     let file = ui.world.read(FILE);
     assert!(file.contains("# Mine\n\n1. a rule\n"), "{file}");
+}
+
+#[test]
+fn the_doc_start_script_runs_after_the_skills_and_its_lines_are_on_the_results_page() {
+    let mut ui = Harness::sized(world_with_the_named_skills(), 100, 40);
+    to_the_skills_page(&mut ui);
+
+    ui.code(Code::Enter).wait_confirm();
+    let question = ui.screen();
+    assert!(
+        question.contains("The doc-start script then makes"),
+        "{question}"
+    );
+    assert!(!ui.world.exists("projects/fresh"), "nothing before yes");
+    ui.press('y').wait_done();
+
+    let results = ui.screen();
+    assert!(results.contains("Project scaffold"), "{results}");
+    assert!(results.contains("created: Scratch/"), "{results}");
+    assert!(ui.world.exists("projects/fresh/Scratch"));
+    assert_eq!(
+        ui.world.read("projects/fresh/.git/HEAD").trim(),
+        "ref: refs/heads/main"
+    );
+}
+
+#[test]
+fn a_vault_without_the_scaffold_scripts_stops_the_page_unless_d_leaves_the_scaffold_out() {
+    let world = world();
+    world
+        .vault_file("doc-start/SKILL.md", "doc-start v1")
+        .vault_config(&["coding", "tmux", "doc-start"])
+        .commit_vault();
+    let mut ui = Harness::new(world);
+    to_the_skills_page(&mut ui);
+    ui.press('m');
+
+    ui.code(Code::Enter);
+    let page = failure(&mut ui);
+
+    assert!(page.contains("Code/bootstrap.sh"), "{page}");
+    assert!(!ui.world.exists("projects/fresh"), "nothing was made");
 }
 
 #[test]
@@ -184,7 +242,8 @@ fn no_file_is_made_when_no_skill_could_be_installed() {
     world.vault_file("fresh/SKILL.md", "untracked");
     let mut ui = Harness::new(world);
     to_the_skills_page(&mut ui);
-    // Untick the mandatory skills, tick the one that cannot be planned.
+    // No doc-start in this vault, so no scaffold; untick the mandatory skills, tick the one that cannot be planned.
+    ui.press('d');
     ui.press('a').press('a');
     ui.press('j').press('j').press(' ');
 
