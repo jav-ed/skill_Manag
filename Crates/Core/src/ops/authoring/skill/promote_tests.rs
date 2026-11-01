@@ -77,7 +77,7 @@ fn the_copy_replaces_the_vaults_staged_not_committed_and_undo_brings_the_old_one
         tree.read("projects/p/.agents/skills/coding/SKILL.md"),
         "coding mine"
     );
-    assert!(stage_folders(&tree, "vault").is_empty());
+    assert_eq!(stage_folders(&tree, "vault"), Vec::<String>::new());
     // Now the vault has what the project has, so a sync would not take it back.
     let after = local_changes(&open(&tree), &project(&tree)).unwrap();
     assert_eq!(
@@ -167,6 +167,6 @@ fn an_edit_made_after_the_plan_stops_that_skill_and_leaves_both_sides_alone() {
         "astro edited in the vault"
     );
     assert_eq!(report.backup.stored, 0);
-    assert!(stage_folders(&tree, "vault").is_empty());
-    assert!(stage_folders(&tree, "vault/web").is_empty());
+    assert_eq!(stage_folders(&tree, "vault"), Vec::<String>::new());
+    assert_eq!(stage_folders(&tree, "vault/web"), Vec::<String>::new());
 }

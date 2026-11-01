@@ -41,7 +41,7 @@ fn lines_that_read_alike_stand_together_and_an_added_line_stands_alone() {
     assert_eq!(old_line.text, "alpha beta gamma");
     assert_eq!(new_line.text, "alpha beta gamma!");
     assert_eq!(new_line.marks, vec![16..17], "only the new `!` is marked");
-    assert!(old_line.marks.is_empty());
+    assert_eq!(old_line.marks, Vec::<Range<usize>>::new());
     let (old_line, new_line) = change(&rows[3]);
     assert_eq!(old_line.unwrap().text, "second paragraph line");
     assert_eq!(new_line.unwrap().text, "second paragraph line.");
@@ -147,7 +147,7 @@ fn a_plan_becomes_groups_with_a_body_for_every_kind_of_file() {
 
     let sides = sides_of_plan(&plan_sync(&ws, &report));
 
-    assert!(sides.failed.is_empty());
+    assert_eq!(sides.failed, []);
     assert_eq!(sides.groups.len(), 1, "only coding in p1 differs");
     let group = &sides.groups[0];
     assert_eq!(group.skill, "coding");
