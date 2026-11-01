@@ -1,6 +1,6 @@
 # Side-by-side diff
 
-Decision, 2026-11-01: the changes of a sync, push, add, init or agents run are shown on one page of our own, the old text on the left and the new text on the right, as in the diff editor of an editor. The page is opened with `v` on a skill of the sync or push list (before anything is ticked) and with `v` on the question of a run. It replaces the one-column unified page that only the question had. It is built on `similar` (already a dependency), with our own pairing of replaced lines, our own word marks and plain ratatui drawing. The evidence is in [Diff options](../Investigation/Diff_View/diff_Options.md).
+Decision, 2026-11-01: the changes of a sync, push, add, init or agents run are shown on one page of our own, the old text on the left and the new text on the right, as in the diff editor of an editor. The page is opened with `v` on a skill of the sync or push list (before anything is ticked) and with `v` on the question of a run. It replaces the one-column unified page that only the question had. It is built on `similar` 3 (already a dependency), with our own pairing of replaced lines, our own word marks and plain ratatui drawing. The evidence is in [Diff options](../Investigation/Diff_View/diff_Options.md).
 
 ## What the page is
 
@@ -20,5 +20,4 @@ Decision, 2026-11-01: the changes of a sync, push, add, init or agents run are s
 ## Rulings still open (the user's)
 
 1. Move to ratatui-diff when it is published and its Rust floor is acceptable? It would bring search, selection and horizontal scroll, and would take over the drawing; the grouping, fold ids, ruler and failures would stay ours.
-2. Raise `similar` from 2 to 3? Not needed for this page; only worth it together with item 1, which uses 3.
-3. Ideas not built, in the order they would help: search with `/`, a switch that ignores whitespace, horizontal scroll instead of wrapping, copying the text of a line, syntax colours, a click on a project in the right pane to see only its changes, and the same page on the Override page (vault left, project right).
+2. Ideas not built, in the order they would help: search with `/`, a switch that ignores whitespace, horizontal scroll instead of wrapping, copying the text of a line, syntax colours, a click on a project in the right pane to see only its changes, and the same page on the Override page (vault left, project right).

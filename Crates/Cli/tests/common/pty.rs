@@ -2,6 +2,7 @@
 #![allow(dead_code, clippy::unwrap_used, clippy::expect_used)]
 
 use std::io::{Read, Write};
+use std::num::NonZeroU16;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
@@ -74,7 +75,9 @@ impl Terminal {
         drop(pair.slave);
         let mut reader = pair.master.try_clone_reader().unwrap();
         let writer = pair.master.take_writer().unwrap();
-        let screen = Arc::new(Mutex::new(vt100::Parser::new(rows, cols, 0)));
+        // vt100 0.18 takes sizes that are not zero; a terminal of no rows or no columns is a test bug.
+        let size = |n: u16| NonZeroU16::new(n).expect("a terminal needs rows and columns");
+        let screen = Arc::new(Mutex::new(vt100::Parser::new(size(rows), size(cols), 0)));
         let sink = Arc::clone(&screen);
         let raw = Arc::new(Mutex::new(Vec::new()));
         let record = Arc::clone(&raw);

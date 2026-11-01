@@ -45,7 +45,9 @@ pub(super) fn side_file(raw: RawFile) -> SideFile {
 /// Every line of both texts as rows, in file order.
 pub(super) fn rows_of(old: &str, new: &str) -> Vec<SideRow> {
     let diff = TextDiff::from_lines(old, new);
-    let (old_lines, new_lines) = (diff.old_slices(), diff.new_slices());
+    // The ops index into the lines, so they are collected once: `similar` 3 has no slice of them.
+    let old_lines: Vec<&str> = diff.iter_old_slices().collect();
+    let new_lines: Vec<&str> = diff.iter_new_slices().collect();
     let mut rows = Vec::new();
     for op in diff.ops() {
         match *op {
@@ -62,7 +64,7 @@ pub(super) fn rows_of(old: &str, new: &str) -> Vec<SideRow> {
             )),
             DiffOp::Delete {
                 old_index, old_len, ..
-            } => rows.extend(lines(old_lines, old_index, old_len).map(|(no, line)| {
+            } => rows.extend(lines(&old_lines, old_index, old_len).map(|(no, line)| {
                 SideRow::Change {
                     old: Some(alone(no, line)),
                     new: None,
@@ -70,7 +72,7 @@ pub(super) fn rows_of(old: &str, new: &str) -> Vec<SideRow> {
             })),
             DiffOp::Insert {
                 new_index, new_len, ..
-            } => rows.extend(lines(new_lines, new_index, new_len).map(|(no, line)| {
+            } => rows.extend(lines(&new_lines, new_index, new_len).map(|(no, line)| {
                 SideRow::Change {
                     old: None,
                     new: Some(alone(no, line)),
@@ -82,10 +84,10 @@ pub(super) fn rows_of(old: &str, new: &str) -> Vec<SideRow> {
                 new_index,
                 new_len,
             } => {
-                let old_run: Vec<&str> = lines(old_lines, old_index, old_len)
+                let old_run: Vec<&str> = lines(&old_lines, old_index, old_len)
                     .map(|(_, line)| line)
                     .collect();
-                let new_run: Vec<&str> = lines(new_lines, new_index, new_len)
+                let new_run: Vec<&str> = lines(&new_lines, new_index, new_len)
                     .map(|(_, line)| line)
                     .collect();
                 for (a, b) in pair(&old_run, &new_run) {
