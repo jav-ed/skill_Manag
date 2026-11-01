@@ -25,6 +25,10 @@ pub use authoring::vault::mandatory::{
 };
 pub use authoring::vault::vault_init::{NewVault, VaultInitError, check_new_vault, init_vault};
 pub use history::{RunRow, Step, UndoLine, UndoView, do_undo, list_runs, plan_undo};
+pub use inspect::diff::sides::{
+    AGENTS_FILE, ChangeGroup, SideBody, SideFile, SideLine, SideReport, SideRow, sides_of_agents,
+    sides_of_plan,
+};
 pub use inspect::diff::{
     DiffFilter, DiffKind, DiffReport, FileDiff, SkillDiff, Skipped, diff, diff_of_plan,
 };

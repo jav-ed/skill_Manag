@@ -7,7 +7,7 @@ use crate::events::ignore_events;
 use crate::ops::*;
 use crate::testutil::TempTree;
 
-fn world() -> (TempTree, Workspace) {
+pub(in crate::ops::inspect::diff) fn world() -> (TempTree, Workspace) {
     let tree = TempTree::new();
     tree.write_all(&[
         ("vault/coding/SKILL.md", "title\nsame\nnew line\n"),

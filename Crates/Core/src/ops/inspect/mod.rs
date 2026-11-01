@@ -11,8 +11,6 @@ pub(in crate::ops) mod report;
 pub(in crate::ops) mod status;
 
 #[cfg(test)]
-mod diff_tests;
-#[cfg(test)]
 mod info_tests;
 #[cfg(test)]
 mod report_tests;
