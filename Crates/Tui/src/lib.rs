@@ -3,7 +3,6 @@
 
 mod backend;
 mod binding;
-mod diffview;
 mod error;
 mod filter;
 mod hit;

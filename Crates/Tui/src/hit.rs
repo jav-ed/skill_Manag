@@ -34,6 +34,12 @@ pub(crate) enum Target {
     Overlay,
     /// Behind an overlay: a click closes it.
     Dismiss,
+    /// A button in the header of the changes page: previous change, next change, mode, unchanged lines.
+    DiffButton(usize),
+    /// A folded stretch of unchanged lines on the changes page; the number is the item of the layout.
+    DiffFold(usize),
+    /// The overview at the right edge of the changes page: a click scrolls there.
+    DiffRuler,
 }
 
 /// Regions in paint order. The last region pushed is the topmost one.

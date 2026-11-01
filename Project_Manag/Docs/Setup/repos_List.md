@@ -73,6 +73,9 @@ Convention: every clone uses `git clone --depth 1` and lands inside `/Repos/`. S
 - **cursive**: Retained-mode TUI library: no hover events.
   - URL: https://github.com/gyscos/cursive
   - Clone: `git clone --depth 1 https://github.com/gyscos/cursive Repos/cursive`
+- **ratatui-diff**: Unified and split diff widget for ratatui (joshka). The closest ready-made match to the changes page and not usable yet: unpublished, MSRV 1.98. Read it for how it pairs replaced lines and wraps both columns; check again once it is on crates.io (see the diff investigation).
+  - URL: https://github.com/joshka/ratatui-diff
+  - Clone: `git clone --depth 1 https://github.com/joshka/ratatui-diff Repos/ratatui-diff`
 - **yazi**: File manager with its own terminal layer and per-event layout, a reference for mouse handling.
   - URL: https://github.com/sxyazi/yazi
   - Clone: `git clone --depth 1 https://github.com/sxyazi/yazi Repos/yazi`
@@ -121,6 +124,9 @@ Convention: every clone uses `git clone --depth 1` and lands inside `/Repos/`. S
 - **diffy**: Diff and patch library, no advantage here.
   - URL: https://github.com/bmwill/diffy
   - Clone: `git clone --depth 1 https://github.com/bmwill/diffy Repos/diffy`
+- **delta**: The syntax-highlighting pager with the best known side-by-side view in a terminal. A binary only, so nothing to depend on; read `src/edits.rs` (which removed line goes with which added line, by edit distance), `src/align.rs` (the edit alignment inside a line), `src/wrapping.rs` and `src/features/side_by_side.rs` (long lines in two columns).
+  - URL: https://github.com/dandavison/delta
+  - Clone: `git clone --depth 1 https://github.com/dandavison/delta Repos/delta`
 - **serde-saphyr**: Strict typed YAML with error snippets, the config reader.
   - URL: https://github.com/bourumir-wyngs/serde-saphyr
   - Clone: `git clone --depth 1 https://github.com/bourumir-wyngs/serde-saphyr Repos/serde-saphyr`

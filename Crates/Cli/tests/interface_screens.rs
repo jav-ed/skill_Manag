@@ -150,9 +150,9 @@ fn the_question_shows_the_changes_before_anything_is_written() {
     term.wait_for("v view changes");
 
     term.send("v");
-    term.wait_for("is taken from the project");
-    term.wait_for("-coding v1");
-    term.wait_for("+coding v2");
+    term.wait_for("after the sync");
+    term.wait_for("coding v1");
+    term.wait_for("coding v2");
     assert_eq!(
         world.read("projects/one/.agents/skills/coding/SKILL.md"),
         "coding v1",

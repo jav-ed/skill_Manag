@@ -158,6 +158,20 @@ impl App {
         jobs::spawn_diff(self.tx.clone(), id, pending);
     }
 
+    /// Starts working out and reading what the skill under the cursor would change.
+    pub(super) fn peek(&mut self, pending: Pending) {
+        let Some(session) = self.session.clone() else {
+            if let Some(work) = self.work_mut() {
+                work.phase =
+                    Phase::Failed("internal error: no scan to look at the changes in".to_string());
+            }
+            return;
+        };
+        let id = self.new_job();
+        self.running = Some(id);
+        jobs::spawn_peek(self.tx.clone(), id, session, pending);
+    }
+
     /// The plan is ready: a run that would write something is shown first, one that would not goes on.
     fn on_planned(&mut self, pending: Pending) {
         let writes = pending.preview.as_ref().is_some_and(Preview::writes);

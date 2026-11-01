@@ -1,3 +1,4 @@
+use super::changes::{open_the_list_changes_of_coding, wide_lines_world};
 use super::{Harness, world};
 use crate::input::Code;
 
@@ -244,7 +245,7 @@ fn the_pages_of_add_and_init() {
 }
 
 #[test]
-fn the_changes_page_colours_come_from_the_tone_of_each_line() {
+fn the_changes_page_as_snapshot() {
     let mut ui = Harness::new(world());
     ui.open("Sync").wait_select();
     ui.code(Code::Enter).wait_confirm().press('v');
@@ -252,4 +253,16 @@ fn the_changes_page_colours_come_from_the_tone_of_each_line() {
         matches!(&app.screen, crate::app::Screen::Work(w) if matches!(w.phase, crate::screens::Phase::Diff(_)))
     });
     insta::assert_snapshot!("changes_page", ui.screen());
+}
+
+// Rule: the look of the page, side by side and inline, with long lines wrapped and the changed words
+// marked. 7/10: a layout is not read from asserts, and in review a changed snapshot is a picture to look at.
+#[test]
+fn the_changes_page_split_and_inline_as_snapshots() {
+    let mut ui = Harness::sized(wide_lines_world(), 100, 30);
+    open_the_list_changes_of_coding(&mut ui);
+    insta::assert_snapshot!("changes_split", ui.screen());
+
+    ui.press('s');
+    insta::assert_snapshot!("changes_inline", ui.screen());
 }

@@ -48,13 +48,19 @@ pub(in crate::ops::inspect::diff) fn world() -> (TempTree, Workspace) {
     )
     .unwrap();
     tree.git_init_commit("vault");
+    let ws = open(&tree);
+    (tree, ws)
+}
+
+/// The workspace of the tree as it is now: files written after `world` are in it.
+pub(in crate::ops::inspect::diff) fn open(tree: &TempTree) -> Workspace {
     let flags = Flags {
         vault: Some(tree.path().join("vault")),
         root: Some(tree.path().join("projects")),
     };
     let dirs = Dirs::under(&tree.path().join("home"));
     let settings = Settings::load(&flags, &EnvOverrides::default(), &dirs).unwrap();
-    (tree, Workspace::open(settings).unwrap())
+    Workspace::open(settings).unwrap()
 }
 
 fn run(ws: &Workspace, filter: &DiffFilter) -> DiffReport {
@@ -217,13 +223,7 @@ fn a_folder_that_cannot_be_compared_is_reported() {
     // A vault skill whose SKILL.md git does not track: the plan refuses it, and p2 has a copy of it.
     tree.write("vault/ghost/SKILL.md", "not committed\n");
     tree.write("projects/p2/.agents/skills/ghost/SKILL.md", "old\n");
-    let flags = Flags {
-        vault: Some(tree.path().join("vault")),
-        root: Some(tree.path().join("projects")),
-    };
-    let dirs = Dirs::under(&tree.path().join("home"));
-    let ws =
-        Workspace::open(Settings::load(&flags, &EnvOverrides::default(), &dirs).unwrap()).unwrap();
+    let ws = open(&tree);
 
     let report = run(&ws, &DiffFilter::default());
 

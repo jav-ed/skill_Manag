@@ -22,7 +22,7 @@ Two guards could not be proved by a test and were kept on purpose: the `wrote > 
 
 ## Left as it is, on purpose
 
-- The changes page reads the diff of every file of the plan in a job when `v` is pressed (the command `diff` does the same). A plan that touches thousands of large files makes that page slow and large; it is on demand and never blocks the interface, and the page cuts at 5000 lines.
+- The changes page reads the diff of every file of the plan in a job when `v` is pressed (the command `diff` does the same). A plan that touches thousands of large files makes that page slow and large; it is on demand and never blocks the interface, and the page cuts at 5000 lines. Update 2026-11-01: the page is now the side-by-side one (contract Q72); a file over 1 MiB is listed and not shown, and the page stops at 20,000 items and names `skillmirror diff`.
 - The report puts at most 400 lines of each file's diff into a card; `skillmirror diff` shows all of them.
 - The folder picker lists directories on the interface thread (as the setup wizard always did); a very slow network folder would stall a key press. Everything else on disk is in a job.
 

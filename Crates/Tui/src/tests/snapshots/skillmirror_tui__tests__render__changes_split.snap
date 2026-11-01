@@ -1,0 +1,34 @@
+---
+source: Crates/Tui/src/tests/render.rs
+expression: ui.screen()
+---
+ ← skillmirror  ·  javedab.com  ·  sync
+
+ Changes   1 file in 2 projects, +2 −1            ◀ prev   next ▶   [split] inline   [folded] whole
+ coding   2 changes
+      − in the project                                  + after the sync
+▌ coding   the same change in 2 projects
+  projects/one, projects/two
+  SKILL.md  changed  +2 −1
+  1   Customising is expected: most projects     │  1   Customising is expected: most projects
+      change the look, drop chrome they do not   │      change the look, drop chrome they do not
+      need and add their own components, one     │      need and add their own components, one
+  2 - Customising is expected: most projects     │  2 + Customising is expected: most projects
+      change the look, drop chrome they do not   │      change the look, drop chrome they do not
+      need and add their own components, two     │      need and add their own components, 2
+  3   Customising is expected: most projects     │  3   Customising is expected: most projects
+      change the look, drop chrome they do not   │      change the look, drop chrome they do not
+      need and add their own components, three   │      need and add their own components, three
+      ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱│  4 + Customising is expected: most projects
+      ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱│      change the look, drop chrome they do not
+      ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱│      need and add their own components, four
+
+
+
+
+
+
+
+
+
+ ↑/↓ scroll • n/p change • [/] file • s split/inline • c folds • esc back

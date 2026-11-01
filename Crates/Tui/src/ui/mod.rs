@@ -7,8 +7,8 @@ mod widgets;
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout};
 
-use pages::work::{diff, issues, results, select};
-use pages::{history, menu, place, setup, states};
+use pages::work::{issues, results, select};
+use pages::{diff, history, menu, place, setup, states};
 use widgets::{dialog, footer, header};
 
 use crate::app::{App, Screen};
@@ -71,7 +71,7 @@ fn draw_work(
         Phase::Diffing => states::waiting(frame, tick, "Reading the changes…", area),
         Phase::Diff(_) => {
             if let Phase::Diff(page) = &mut work.phase {
-                diff::draw(frame, page, area);
+                diff::draw(frame, hits, hover, page, area);
             }
         }
         Phase::Confirm(_) => {

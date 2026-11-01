@@ -150,6 +150,7 @@ impl App {
             }
             Action::Plan(pending) => self.plan(pending),
             Action::Diff(pending) => self.diff(pending),
+            Action::Peek(pending) => self.peek(pending),
             Action::Run(pending) => self.start(pending),
         }
     }
@@ -251,7 +252,7 @@ impl App {
                         work.phase = Phase::Select;
                     }
                     Screen::Work(work) if matches!(work.phase, Phase::Diff(_)) => {
-                        work.return_to_question();
+                        work.leave_diff();
                     }
                     Screen::History(history)
                         if matches!(history.phase, HistoryPhase::Confirm(_)) =>

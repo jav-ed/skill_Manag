@@ -19,14 +19,13 @@ use skillmirror_core::apply::{ApplyOptions, apply};
 use skillmirror_core::backup::{Backups, Run, RunKind};
 use skillmirror_core::config::{Dirs, Settings};
 use skillmirror_core::events::Event as CoreEvent;
-use skillmirror_core::ops::{self, ProjectError, diff_of_plan};
+use skillmirror_core::ops::{self, ProjectError, sides_of_agents, sides_of_plan};
 use skillmirror_core::plan::Plan;
 
-use crate::diffview::{lines_of, lines_of_agents};
 use crate::event::{Event, Job, JobId};
 use crate::preview::Preview;
 use crate::results::{Kind, Results};
-use crate::screens::{DiffPage, Pending, check_vault};
+use crate::screens::{Back, DiffPage, DiffView, Labels, Pending, check_vault};
 use crate::session::{Session, describe, load};
 use crate::undo::{do_undo, list_runs, plan_undo};
 
@@ -269,21 +268,34 @@ pub(crate) fn spawn_undo(tx: Sender<Event>, id: JobId, dirs: Dirs, run: String, 
     });
 }
 
-/// Reads the files that the plan of a question would change and turns the differences into lines.
+/// Reads the files that the plan of a question would change and lays the differences side by side.
 pub(crate) fn spawn_diff(tx: Sender<Event>, id: JobId, pending: Pending) {
     thread::spawn(move || {
-        let mut lines = pending
-            .plan
-            .as_ref()
-            .map(|plan| lines_of(&diff_of_plan(plan)))
-            .unwrap_or_default();
+        let mut report = pending.plan.as_ref().map(sides_of_plan).unwrap_or_default();
         if let Some(plan) = &pending.agents {
-            lines.extend(lines_of_agents(plan));
+            report.extend(sides_of_agents(plan));
         }
+        let view = DiffView::new(report, Labels::of(pending.kind));
         let page = DiffPage {
-            lines,
-            pending,
-            scroll: 0,
+            back: Back::Question(Box::new(pending)),
+            view,
+        };
+        send(&tx, id, Job::Diffed(Box::new(page)));
+    });
+}
+
+/// The same for the skill under the cursor of the list: it makes the plan first, as the question would.
+pub(crate) fn spawn_peek(tx: Sender<Event>, id: JobId, session: Arc<Session>, pending: Pending) {
+    thread::spawn(move || {
+        let plan = Plan::for_targets(
+            &session.workspace.vault,
+            &session.workspace.files,
+            pending.targets,
+        );
+        let view = DiffView::new(sides_of_plan(&plan), Labels::of(pending.kind));
+        let page = DiffPage {
+            back: Back::List,
+            view,
         };
         send(&tx, id, Job::Diffed(Box::new(page)));
     });

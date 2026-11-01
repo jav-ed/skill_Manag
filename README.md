@@ -159,7 +159,7 @@ The built-in text names the skills `doc-start`, `coding` and `file-tree-optimiza
 | Entry | What it does |
 |---|---|
 | Override | Opens on the project around the folder you started in (or lists the ones below it to pick from) and shows its skills against the vault: edited, behind, new. Nothing is read before the entry is opened. Space ticks an edited skill, `a` all of them, `s` also updates the other projects that have them; Enter asks, then replaces the vault's copy. The old copy is kept for History |
-| Sync, Push | Pick skills, see what would be written (`v` shows the changes as a diff), confirm, run. A pane beside the list (under it on a terminal narrower than 100 columns) follows the cursor and names the projects of the skill: `tab` switches it between the projects that would change, the others, and all of them; `p` (or a click on `↔`) writes them short (`parent/project`) or long (the path below your scan root); `f` filters them; `ctrl+d` and `ctrl+u` scroll it |
+| Sync, Push | Pick skills, see what would be written (`v` shows the changes side by side, see below), confirm, run. A pane beside the list (under it on a terminal narrower than 100 columns) follows the cursor and names the projects of the skill: `tab` switches it between the projects that would change, the others, and all of them; `p` (or a click on `↔`) writes them short (`parent/project`) or long (the path below your scan root); `f` filters them; `ctrl+d` and `ctrl+u` scroll it |
 | List | Every installed skill; `/` filters, space selects, `s` syncs and `d` deletes the selection in place |
 | Skills | The vault's skills with a detail card for the one under the cursor: description, files, profiles, and what it is in each project. Read-only; `/` filters |
 | Delete | Nothing is pre-selected; you pick, then confirm. The pane names every project the skill would be removed from |
@@ -170,6 +170,21 @@ The built-in text names the skills `doc-start`, `coding` and `file-tree-optimiza
 | Setup | Pick the vault and the root, tick the mandatory skills, save |
 
 Every page that works out a plan shows it before anything is written. If the scan could not read something, the heading says so and `i` lists it.
+
+### The changes page
+
+`v` on a skill of the Sync or Push list opens what a run would change in that skill, before anything is ticked; `v` on the question of any run (and on the Agents page) opens the changes of the plan that is about to run. The old text is on the left (the project now, or the AGENTS.md now) and the new text on the right (after the sync), with line numbers, red and green lines, the changed words marked more strongly, hatching where one side has no line, and long lines wrapped so that both sides stay in step. A change that many projects get in exactly the same way is shown once, with the names of the projects. Binary, oversized and unreadable files are named without lines, and a project that cannot be compared is listed with the reason. Looking writes nothing, and `esc` returns to the list as it was, or to the same question, so `y` still runs exactly what was shown.
+
+| Key | |
+|---|---|
+| `n` `p` | next and previous change (the buttons in the header do the same) |
+| `]` `[` or `tab` | next and previous file |
+| `}` `{` | next and previous skill |
+| `g` `G`, `ctrl+d` `ctrl+u` | top and bottom, half a page; the arrows, page keys and the wheel scroll |
+| `s` | side by side or one column (a terminal narrower than 70 columns always shows one column) |
+| `c` | fold the unchanged lines far from a change, or show whole files; a click on a fold opens that one |
+
+The strip at the right edge is the whole page squeezed into its height, with the changes marked; click or drag on it to go there. `skillmirror diff` shows the same changes as unified text for scripts.
 
 ## The web view
 

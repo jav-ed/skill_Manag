@@ -4,13 +4,14 @@ use ratatui::Frame;
 use ratatui::layout::Rect;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
+use unicode_width::UnicodeWidthStr;
 
 use crate::app::Screen;
 use crate::binding::{
-    AGENTS_FILE, ALL, BACK, BACK_HELP, Binding, CANCEL, CONFIRM_HELP, DELETE, DOWN, FILTER, GIT,
-    HELP, ISSUES, MENU_QUIT, OPEN, PANE_VIEW, QUIT, RESULTS_HELP, RUN_ADD, RUN_AGENTS, RUN_DELETE,
-    RUN_INIT, RUN_PROMOTE, RUN_PUSH, RUN_SYNC, SCAFFOLD, SCROLL, SPREAD, SYNC, TOGGLE, UP, VIEW,
-    YES,
+    AGENTS_FILE, ALL, BACK, BACK_HELP, Binding, CANCEL, CHANGES, CONFIRM_HELP, CONTEXT_KEY, DELETE,
+    DOWN, FILES, FILTER, GIT, HELP, ISSUES, MENU_QUIT, MODE_KEY, OPEN, PANE_VIEW, QUIT,
+    RESULTS_HELP, RUN_ADD, RUN_AGENTS, RUN_DELETE, RUN_INIT, RUN_PROMOTE, RUN_PUSH, RUN_SYNC,
+    SCAFFOLD, SCROLL, SPREAD, SYNC, TOGGLE, UP, VIEW, VIEW_ROW, YES,
 };
 use crate::items::Mode;
 use crate::screens::{
@@ -62,7 +63,11 @@ fn short(screen: &Screen) -> Vec<Hint> {
                 hints(&keys)
             }
             Phase::Confirm(pending) => confirm_hints(pending),
-            Phase::Diff(_) => vec![("↑/↓", "scroll"), ("esc", "back to the question")],
+            Phase::Diff(_) => {
+                let mut keys = hints(&[&SCROLL, &CHANGES, &FILES, &MODE_KEY, &CONTEXT_KEY]);
+                keys.push(("esc", "back"));
+                keys
+            }
             Phase::Done(_) => hints(RESULTS_HELP),
             Phase::Loading
             | Phase::Failed(_)
@@ -71,6 +76,26 @@ fn short(screen: &Screen) -> Vec<Hint> {
             | Phase::Running { .. } => hints(BACK_HELP),
         },
     }
+}
+
+/// Keys the line shows only when it has room left after the ones it always shows: a hint cut in the middle
+/// of a word is worse than no hint, and the full help lists them all.
+fn extras(screen: &Screen) -> Vec<Hint> {
+    match screen {
+        Screen::Work(work) if matches!(work.phase, Phase::Select) && work.mode.has_changes() => {
+            hints(&[&VIEW_ROW])
+        }
+        _ => Vec::new(),
+    }
+}
+
+/// The cells a line of hints takes: a space, then the hints with ` • ` between them.
+fn line_width(hints: &[Hint]) -> usize {
+    let text: usize = hints
+        .iter()
+        .map(|(label, help)| label.width() + 1 + help.width())
+        .sum();
+    1 + text + 3 * hints.len().saturating_sub(1)
 }
 
 /// The keys of a question; a plan can be looked at, a delete has none.
@@ -178,8 +203,17 @@ pub(in crate::ui) fn draw(frame: &mut Frame, screen: &Screen, notice: Option<&st
         frame.render_widget(Paragraph::new(line), area);
         return;
     }
+    let mut shown = short(screen);
+    for extra in extras(screen) {
+        // Before the last two (help and back), which stay where every page has them.
+        let at = shown.len().saturating_sub(2);
+        shown.insert(at, extra);
+        if line_width(&shown) > usize::from(area.width) {
+            shown.remove(at);
+        }
+    }
     let mut spans = vec![Span::raw(" ")];
-    for (i, (label, help)) in short(screen).into_iter().enumerate() {
+    for (i, (label, help)) in shown.into_iter().enumerate() {
         if i > 0 {
             spans.push(Span::styled(" • ", theme::muted()));
         }

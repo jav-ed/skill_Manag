@@ -5,3 +5,4 @@ Decisions that shape the project and the reasons behind them, written so a later
 ## Docs
 
 - [Rewrite in Rust as skillmirror](rust_Rewrite.md): the name, the Cargo workspace layout, the transition from Go, the chosen crates for the engine, CLI, TUI and web view, the feature scope (build now, later, never), licence consequences, the phase plan, and the list of rulings still open. Open it before adding a dependency, moving code between crates, or questioning why a library was chosen or rejected.
+- [Side-by-side diff](side_By_Side_Diff.md): the one changes page (old text left, new text right) behind `v` on the sync and push lists and on the question of a run; why it is our own code on `similar` and not a ready-made widget, what it shows and what it never hides, the keys, and the rulings still open (moving to ratatui-diff once it is published, `similar` 3, the ideas not built). Open it before changing the page or adding a diff dependency.

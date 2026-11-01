@@ -2,25 +2,13 @@
 
 use super::{Topic, general, topic};
 use crate::items::Mode;
-use crate::screens::{Pending, Phase, Work};
+use crate::screens::{Back, DiffPage, Pending, Phase, Work};
 
 pub(in crate::ui) fn work_topics(work: &Work) -> Vec<Topic> {
     match &work.phase {
         Phase::Select => select_topics(work),
         Phase::Confirm(pending) => vec![question_topic(pending), general(&[])],
-        Phase::Diff(_) => vec![
-            topic(
-                "The changes",
-                vec![
-                    ("↑/↓  pgup  pgdn", "scroll. The mouse wheel scrolls too."),
-                    (
-                        "esc  v",
-                        "go back to the question. Nothing has been written.",
-                    ),
-                ],
-            ),
-            general(&[]),
-        ],
+        Phase::Diff(page) => vec![changes_topic(page), general(&[])],
         Phase::Done(_) => vec![
             topic(
                 "The results",
@@ -46,6 +34,45 @@ pub(in crate::ui) fn work_topics(work: &Work) -> Vec<Topic> {
             vec![general(&[("q", "go back, when nothing is being written.")])]
         }
     }
+}
+
+/// The changes page: the old text on the left, the new text on the right, and how to get around in it.
+fn changes_topic(page: &DiffPage) -> Topic {
+    let back = match page.back {
+        Back::List => "go back to the list, as you left it.",
+        Back::Question(_) => "go back to the question, with the same plan.",
+    };
+    topic(
+        "The changes (old on the left, new on the right; nothing has been written)",
+        vec![
+            ("↑/↓  pgup  pgdn", "scroll. The mouse wheel scrolls too."),
+            (
+                "ctrl+d  ctrl+u  g  G",
+                "half a page down or up, the top, the bottom.",
+            ),
+            (
+                "n  p",
+                "the next or previous change. The buttons in the header do the same.",
+            ),
+            (
+                "]  [  tab",
+                "the next or previous file. { and } go to the previous or next skill.",
+            ),
+            (
+                "s",
+                "side by side or inline: one column with the old lines in red and the new ones in green. A narrow terminal always shows one column.",
+            ),
+            (
+                "c",
+                "fold the unchanged lines far from a change, or show whole files. A click on a fold opens that one.",
+            ),
+            (
+                "ruler",
+                "the strip at the right edge shows where the changes are in the whole page; click or drag on it to go there.",
+            ),
+            ("esc  v  q", back),
+        ],
+    )
 }
 
 fn question_topic(pending: &Pending) -> Topic {
@@ -145,14 +172,26 @@ fn pane_topic(mode: Mode) -> Option<Topic> {
 /// What the key that does the work of the page does.
 fn run_topic(mode: Mode) -> Option<Topic> {
     let keys = match mode {
-        Mode::Sync => vec![(
-            "enter",
-            "work out what a sync would write, then ask. Nothing changes before you confirm.",
-        )],
-        Mode::Push => vec![(
-            "enter",
-            "work out what a push would write (the mandatory skills, into every project that has a skills folder), then ask.",
-        )],
+        Mode::Sync => vec![
+            (
+                "v",
+                "see what the skill under the cursor would change, old and new side by side, before you tick anything.",
+            ),
+            (
+                "enter",
+                "work out what a sync would write, then ask. Nothing changes before you confirm.",
+            ),
+        ],
+        Mode::Push => vec![
+            (
+                "v",
+                "see what the skill under the cursor would change, old and new side by side, before you tick anything.",
+            ),
+            (
+                "enter",
+                "work out what a push would write (the mandatory skills, into every project that has a skills folder), then ask.",
+            ),
+        ],
         Mode::Delete => vec![(
             "enter",
             "ask, then remove the ticked skills from every project that has them. A copy is kept, so History can undo it.",

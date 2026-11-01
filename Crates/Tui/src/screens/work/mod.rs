@@ -12,9 +12,9 @@ use skillmirror_core::plan::Plan;
 use skillmirror_core::scan::Target;
 use tui_input::Input as TextInput;
 
+use super::diff::DiffView;
 use super::list_view::ListView;
 use super::pane::PaneState;
-use crate::diffview::DiffLine;
 use crate::filter::Fuzzy;
 use crate::items::{self, Item, Mode, Project};
 use crate::preview::Preview;
@@ -87,12 +87,18 @@ pub(crate) enum Phase {
     Done(Box<Results>),
 }
 
-/// The plan of a question, and its changes as text.
+/// The changes page and the place it leads back to.
 pub(crate) struct DiffPage {
-    pub(crate) pending: Pending,
-    pub(crate) lines: Vec<DiffLine>,
-    /// First visible line.
-    pub(crate) scroll: usize,
+    pub(crate) back: Back,
+    pub(crate) view: DiffView,
+}
+
+/// Where the changes page was opened from.
+pub(crate) enum Back {
+    /// The list, as it was: nothing is waiting for an answer.
+    List,
+    /// The question, with the plan it asked about.
+    Question(Box<Pending>),
 }
 
 /// What the app must do after a key or a click.
@@ -102,6 +108,8 @@ pub(crate) enum Action {
     Back,
     /// Read what the plan of the question would change.
     Diff(Pending),
+    /// Work out and read what the skill under the cursor would change, before anything is ticked.
+    Peek(Pending),
     /// Work out what the selection would do, then ask.
     Plan(Pending),
     Run(Pending),

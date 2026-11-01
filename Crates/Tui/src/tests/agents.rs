@@ -4,7 +4,7 @@ use skillmirror_core::agents::{Intent, apply_agents, load_source, plan_agents};
 use skillmirror_core::events::ignore_events;
 use skillmirror_testkit::World;
 
-use super::{Harness, phase_name};
+use super::{Harness, column, phase_name, row_with};
 use crate::app::Screen;
 use crate::input::Code;
 
@@ -98,10 +98,15 @@ fn enter_plans_then_asks_and_shows_the_changes_before_anything_is_written() {
     ui.press('v');
     ui.wait_for("the changes page", |app| phase_name(app) == "diff");
     let diff = ui.screen();
-    assert!(diff.contains("AGENTS.md in projects/two"), "{diff}");
+    assert!(diff.contains("▌ AGENTS.md   in projects/two"), "{diff}");
     assert!(
-        diff.contains("-1. old") && diff.contains("+1. new"),
-        "{diff}"
+        diff.contains("AGENTS.md now"),
+        "the sides are named: {diff}"
+    );
+    let row = row_with(&diff, "1. old");
+    assert!(
+        row.contains("1. new") && column(row, "1. old") < column(row, "1. new"),
+        "the old line on the left, the new one on the right: {row}"
     );
     assert_eq!(
         ui.world.read(TWO),

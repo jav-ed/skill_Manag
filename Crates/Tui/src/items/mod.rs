@@ -44,6 +44,11 @@ impl Mode {
         matches!(self, Self::Sync | Self::Push | Self::Delete)
     }
 
+    /// Whether a row has changes to look at before anything is ticked: the pages that plan a write.
+    pub(crate) fn has_changes(self) -> bool {
+        matches!(self, Self::Sync | Self::Push)
+    }
+
     /// Whether the pane has the three views that `tab` goes through.
     pub(crate) fn has_views(self) -> bool {
         matches!(self, Self::Sync | Self::Push)

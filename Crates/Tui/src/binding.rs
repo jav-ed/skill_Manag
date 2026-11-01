@@ -108,6 +108,12 @@ pub(crate) const VIEW: Binding = Binding {
     label: "v",
     help: "view changes",
 };
+/// `v` on the list of a sync or push: the changes of the skill under the cursor.
+pub(crate) const VIEW_ROW: Binding = Binding {
+    keys: &[(Code::Char('v'), N)],
+    label: "v",
+    help: "diff",
+};
 pub(crate) const UNDO: Binding = Binding {
     keys: &[(Code::Char('u'), N)],
     label: "u",
@@ -212,6 +218,83 @@ pub(crate) const QUIT: Binding = Binding {
     keys: &[(Code::Char('c'), Mods::CTRL)],
     label: "ctrl+c",
     help: "quit",
+};
+
+// The changes page. `n` and `p` and the like are two bindings each, one per direction, and one that only
+// names the pair in the help line.
+pub(crate) const NEXT_CHANGE: Binding = Binding {
+    keys: &[(Code::Char('n'), N)],
+    label: "n",
+    help: "next change",
+};
+pub(crate) const PREVIOUS_CHANGE: Binding = Binding {
+    keys: &[(Code::Char('p'), N)],
+    label: "p",
+    help: "previous change",
+};
+pub(crate) const CHANGES: Binding = Binding {
+    keys: &[(Code::Char('n'), N), (Code::Char('p'), N)],
+    label: "n/p",
+    help: "change",
+};
+pub(crate) const NEXT_FILE: Binding = Binding {
+    keys: &[(Code::Char(']'), N), (Code::Tab, N)],
+    label: "]",
+    help: "next file",
+};
+pub(crate) const PREVIOUS_FILE: Binding = Binding {
+    keys: &[(Code::Char('['), N), (Code::Tab, Mods::SHIFT)],
+    label: "[",
+    help: "previous file",
+};
+pub(crate) const FILES: Binding = Binding {
+    keys: &[(Code::Char(']'), N), (Code::Char('['), N)],
+    label: "[/]",
+    help: "file",
+};
+pub(crate) const NEXT_GROUP: Binding = Binding {
+    keys: &[(Code::Char('}'), N), (Code::Char('}'), Mods::SHIFT)],
+    label: "}",
+    help: "next skill",
+};
+pub(crate) const PREVIOUS_GROUP: Binding = Binding {
+    keys: &[(Code::Char('{'), N), (Code::Char('{'), Mods::SHIFT)],
+    label: "{",
+    help: "previous skill",
+};
+pub(crate) const MODE_KEY: Binding = Binding {
+    keys: &[(Code::Char('s'), N)],
+    label: "s",
+    help: "split/inline",
+};
+pub(crate) const CONTEXT_KEY: Binding = Binding {
+    keys: &[(Code::Char('c'), N)],
+    label: "c",
+    help: "folds",
+};
+pub(crate) const TOP: Binding = Binding {
+    keys: &[(Code::Char('g'), N), (Code::Home, N)],
+    label: "g",
+    help: "top",
+};
+pub(crate) const BOTTOM: Binding = Binding {
+    keys: &[
+        (Code::Char('G'), N),
+        (Code::Char('G'), Mods::SHIFT),
+        (Code::End, N),
+    ],
+    label: "G",
+    help: "bottom",
+};
+pub(crate) const HALF_DOWN: Binding = Binding {
+    keys: &[(Code::Char('d'), Mods::CTRL)],
+    label: "ctrl+d",
+    help: "half a page down",
+};
+pub(crate) const HALF_UP: Binding = Binding {
+    keys: &[(Code::Char('u'), Mods::CTRL)],
+    label: "ctrl+u",
+    help: "half a page up",
 };
 
 pub(crate) const RESULTS_HELP: &[&Binding] = &[&SCROLL, &DETAILS, &BACK, &QUIT];

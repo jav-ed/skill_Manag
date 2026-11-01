@@ -5,7 +5,7 @@ use skillmirror_core::backup::{Backups, Subject};
 use skillmirror_core::config::Dirs;
 use skillmirror_testkit::World;
 
-use super::{Harness, phase_name, world};
+use super::{Harness, phase_name, row_with, world};
 use crate::input::Code;
 
 const FILE: &str = "projects/fresh/AGENTS.md";
@@ -65,7 +65,14 @@ fn the_file_is_written_with_the_skills_and_both_are_in_one_backup_run() {
     ui.press('v');
     ui.wait_for("the changes page", |app| phase_name(app) == "diff");
     let changes = ui.screen();
-    assert!(changes.contains("AGENTS.md in projects/fresh"), "{changes}");
+    assert!(
+        changes.contains("▌ AGENTS.md   in projects/fresh"),
+        "{changes}"
+    );
+    assert!(
+        row_with(&changes, "AGENTS.md  new file").contains("new file"),
+        "the file is made, so it is new: {changes}"
+    );
     ui.press('v');
 
     ui.press('y').wait_done();

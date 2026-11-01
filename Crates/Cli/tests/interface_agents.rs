@@ -51,9 +51,10 @@ fn agents_writes_the_new_text_into_the_ticked_projects_and_keeps_the_rest_of_the
         "the question is asked before anything is written"
     );
     term.send("v");
-    term.wait_for("AGENTS.md in projects/one");
-    term.wait_for("-1. old");
-    term.wait_for("+1. new");
+    term.wait_for("AGENTS.md now");
+    term.wait_for("in projects/one");
+    term.wait_for("1. old");
+    term.wait_for("1. new");
     term.send("v");
     term.wait_for("Write AGENTS.md in 2 projects?");
 

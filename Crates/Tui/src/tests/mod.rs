@@ -212,6 +212,23 @@ fn hyperlink_text(symbol: &str) -> Option<String> {
     Some(text.to_string())
 }
 
+/// The first screen row that holds `needle`.
+pub(super) fn row_with<'a>(screen: &'a str, needle: &str) -> &'a str {
+    screen
+        .lines()
+        .find(|row| row.contains(needle))
+        .unwrap_or_else(|| panic!("no row holds {needle:?}:\n{screen}"))
+}
+
+/// The column where `needle` starts in `row`, counted in characters: the pages these tests read are made of
+/// characters one cell wide.
+pub(super) fn column(row: &str, needle: &str) -> usize {
+    let at = row
+        .find(needle)
+        .unwrap_or_else(|| panic!("{needle:?} is not in {row:?}"));
+    row[..at].chars().count()
+}
+
 /// The standard world with an extra skill group and nothing else changed.
 pub(super) fn world() -> World {
     World::standard()

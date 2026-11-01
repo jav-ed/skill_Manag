@@ -20,7 +20,7 @@ impl Work {
             Phase::Select => self.select_mouse(mouse, target, hits),
             Phase::Confirm(_) => self.confirm_mouse(mouse, target),
             Phase::Diff(_) => {
-                self.diff_mouse(mouse);
+                self.diff_mouse(mouse, hits);
                 Action::None
             }
             Phase::Done(_) => {
@@ -35,13 +35,9 @@ impl Work {
         }
     }
 
-    fn diff_mouse(&mut self, mouse: Mouse) {
+    fn diff_mouse(&mut self, mouse: Mouse, hits: &HitMap) {
         if let Phase::Diff(page) = &mut self.phase {
-            match mouse.kind {
-                MouseKind::ScrollUp => page.scroll = page.scroll.saturating_sub(3),
-                MouseKind::ScrollDown => page.scroll = page.scroll.saturating_add(3),
-                _ => {}
-            }
+            page.view.on_mouse(mouse, hits);
         }
     }
 

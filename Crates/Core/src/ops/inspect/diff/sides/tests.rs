@@ -10,7 +10,7 @@ use super::rows::rows_of;
 use super::words::marks;
 use super::*;
 use crate::events::ignore_events;
-use crate::ops::inspect::diff::tests::world;
+use crate::ops::inspect::diff::tests::{open, world};
 use crate::ops::plan_sync;
 
 fn change(row: &SideRow) -> (Option<&SideLine>, Option<&SideLine>) {
@@ -182,6 +182,28 @@ fn a_plan_becomes_groups_with_a_body_for_every_kind_of_file() {
     assert_eq!(file("run.sh").body, SideBody::ModeOnly);
     assert_eq!(file("img.bin").body, SideBody::Skipped(Skipped::Binary));
     assert_eq!(file("stray/notes.md").kind, DiffKind::Removed);
+}
+
+// Rule: a target the plan cannot make is listed with the reason and is not a group: the page must say that a
+// skill could not be compared, or "nothing to update" would be a lie. 7/10.
+#[test]
+fn a_target_that_cannot_be_planned_is_listed_with_its_reason() {
+    let (tree, _) = world();
+    // A vault skill whose SKILL.md git does not track: the plan refuses it, and p2 has a copy of it.
+    tree.write("vault/ghost/SKILL.md", "not committed\n");
+    tree.write("projects/p2/.agents/skills/ghost/SKILL.md", "old\n");
+    let ws = open(&tree);
+    let report = ws.scan(&ignore_events).unwrap();
+
+    let sides = sides_of_plan(&plan_sync(&ws, &report));
+
+    assert_eq!(sides.failed.len(), 1, "{:?}", sides.failed);
+    let (target, reason) = &sides.failed[0];
+    assert!(target.project.ends_with("p2"));
+    assert_eq!(target.skill, "ghost");
+    assert!(!reason.is_empty(), "a failure says why");
+    assert!(sides.groups.iter().all(|g| g.skill != "ghost"));
+    assert!(!sides.is_empty());
 }
 
 // Rule: targets of one skill with exactly the same change are one group, the biggest group of a skill first;

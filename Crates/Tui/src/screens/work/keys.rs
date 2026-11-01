@@ -1,6 +1,6 @@
 //! Keys and mouse of the selection screens.
 
-use super::{Action, Phase, Work};
+use super::{Action, Back, Pending, Phase, Work};
 use crate::binding::{
     AGENTS_FILE, ALL, BACK, CANCEL, CONFIRM, DELETE, DOWN, FILTER, GIT, ISSUES, PAGE_DOWN, PAGE_UP,
     PANE_DOWN, PANE_FILTER, PANE_PATHS, PANE_UP, PANE_VIEW, SCAFFOLD, SYNC, TOGGLE, UP, VIEW, YES,
@@ -8,6 +8,7 @@ use crate::binding::{
 use crate::input::{self, Code, Key, KeyKind};
 use crate::items::Mode;
 use crate::results::Kind;
+use crate::screens::DiffAction;
 
 /// Rows one press of the pane keys scrolls by.
 const SCROLL_STEP: usize = 8;
@@ -73,6 +74,8 @@ impl Work {
             self.refilter();
         } else if key.code == Code::Esc && !self.pane.filter.value().is_empty() {
             self.pane.filter.reset();
+        } else if self.mode.has_changes() && VIEW.matches(key) {
+            return self.peek();
         } else if CONFIRM.matches(key) {
             return self.confirm_selection();
         } else if self.mode == Mode::Init && GIT.matches(key) {
@@ -190,30 +193,47 @@ impl Work {
         }
     }
 
-    /// The changes page scrolls; any way back returns to the question.
+    /// The changes page has its own keys; any way back leaves it for where it was opened from.
     fn diff_key(&mut self, key: Key) -> Action {
         let Phase::Diff(page) = &mut self.phase else {
             return Action::None;
         };
-        if UP.matches(key) {
-            page.scroll = page.scroll.saturating_sub(1);
-        } else if DOWN.matches(key) {
-            page.scroll = page.scroll.saturating_add(1);
-        } else if PAGE_UP.matches(key) {
-            page.scroll = page.scroll.saturating_sub(10);
-        } else if PAGE_DOWN.matches(key) {
-            page.scroll = page.scroll.saturating_add(10);
-        } else if BACK.matches(key) || key.code == Code::Esc || VIEW.matches(key) {
-            self.return_to_question();
+        if page.view.on_key(key) == DiffAction::Leave {
+            self.leave_diff();
         }
         Action::None
     }
 
-    /// From the changes page back to the question, with the same plan.
-    pub(crate) fn return_to_question(&mut self) {
-        if let Phase::Diff(page) = std::mem::replace(&mut self.phase, Phase::Select) {
-            self.phase = Phase::Confirm(page.pending);
+    /// From the changes page back to the question, with the same plan, or to the list as it was.
+    pub(crate) fn leave_diff(&mut self) {
+        if let Phase::Diff(page) = std::mem::replace(&mut self.phase, Phase::Select)
+            && let Back::Question(pending) = page.back
+        {
+            self.phase = Phase::Confirm(*pending);
         }
+    }
+
+    /// `v` on the list: the changes of the skill under the cursor, whatever is ticked.
+    fn peek(&mut self) -> Action {
+        let kind = if self.mode == Mode::Push {
+            Kind::Push
+        } else {
+            Kind::Sync
+        };
+        let Some(item) = self.view.current().and_then(|i| self.items.get(i)) else {
+            return Action::None;
+        };
+        let pending = Pending {
+            kind,
+            targets: item.targets.clone(),
+            skills: 1,
+            plan: None,
+            preview: None,
+            install: None,
+            agents: None,
+        };
+        self.phase = Phase::Diffing;
+        Action::Peek(pending)
     }
 
     fn done_key(&mut self, key: Key) -> Action {

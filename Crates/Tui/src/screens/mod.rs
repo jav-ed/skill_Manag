@@ -1,5 +1,6 @@
 //! The screens' state and input handling. Drawing lives in `ui`.
 
+pub(crate) mod diff;
 mod history;
 mod list_view;
 pub(crate) mod local;
@@ -10,6 +11,7 @@ mod place;
 mod setup;
 mod work;
 
+pub(crate) use diff::{DiffAction, DiffView, Labels};
 pub(crate) use history::{Action as HistoryAction, History, Phase as HistoryPhase};
 pub(crate) use list_view::ListView;
 pub(crate) use local::{Action as LocalAction, Local, Phase as LocalPhase};
@@ -19,7 +21,7 @@ pub(crate) use place::{Place, PlaceAction, Purpose, Stage};
 pub(crate) use setup::{
     SaveRequest, Setup, SetupAction, SetupStart, Step, VaultCheck, check_vault,
 };
-pub(crate) use work::{Action, DiffPage, Install, Pending, Phase, Work};
+pub(crate) use work::{Action, Back, DiffPage, Install, Pending, Phase, Work};
 
 #[cfg(test)]
 mod tests;
