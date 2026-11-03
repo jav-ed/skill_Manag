@@ -4,6 +4,8 @@
 
 A command line tool and a full-screen interface that keep your agent skills in sync across all your projects: one vault, zero drift.
 
+Website and docs: [skillmirror.javedab.com](https://skillmirror.javedab.com)
+
 Built by [javedab.com](https://javedab.com). Get in touch if you want help with your tooling.
 
 ---
