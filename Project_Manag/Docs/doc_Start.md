@@ -22,5 +22,5 @@ Entry point(s): `Cargo.toml` in the repo root, then `Crates/Core/src/lib.rs` (en
 
 ## Repo References
 
-- [Internal repo paths](Setup/internal_Repo_Paths.md): first-party repo shortcut names and host-scoped checkout paths. Use this for repos the project owns or operates across machines, including the skill vault.
+- [Internal repo paths](Setup/internal_Repo_Paths.md): first-party repo shortcut names and host-scoped checkout paths, and how this repository sits next to its docs repository (`Skillmirror_Docs`, the public site). Use this for repos the project owns or operates across machines, including the skill vault.
 - [External reference repos](Setup/repos_List.md): third-party or external shallow clones that belong under the gitignored `/Repos/` folder. Use this for upstream source/docs clones used as references, such as the bubbles TUI library.
