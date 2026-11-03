@@ -266,6 +266,8 @@ just parity     # replay 131 scenarios of the old Go tool against this one (need
 Code/Development/Gate/check_Gate.sh      # all of the above plus the second toolchain and the feature build: GATE OK
 Code/Development/Smoke/check_Smoke.sh    # the built binary end to end in a throwaway world, web server included
 Code/Development/Web/check_Web.sh       # the web interface in Chromium
+just world                              # a shell in a throwaway home: a vault and five projects in different states
+just world-check                        # the tool read against that world: every state as it was built
 ```
 
 **Building Rust is heavy.** A clean build of the workspace and its tests with Cargo's defaults uses 2.5 GB of disk and peaks near 1.7 GB of memory, and a `target/` folder that has been used for a few days reaches 10 GB or more (debug information and the incremental cache). This repository turns both off in the root `Cargo.toml` (0.58 GB, peak near 1.2 GB, 35 s on four cores). It is still not light: on a small machine add `CARGO_BUILD_JOBS=1` (peak about 0.5 GB, three and a half times as long); `cargo clean` frees everything. Numbers, what to switch back on for a debugger, and the rest: [`build_Resources.md`](Project_Manag/Docs/Setup/build_Resources.md).

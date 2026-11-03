@@ -12,3 +12,5 @@ It prints one `PASS` or `FAIL` line per check and ends with `SMOKE OK`, or `SMOK
 Needs bash, git, curl and python3 (only to read JSON fields). It uses a temporary `HOME`, vault and scan root and removes them on exit: not your vault, not your projects, not your configuration.
 
 What it is for: the one thing the Rust tests cannot say is whether the artifact a user gets, built from a clean checkout and installed, works. Run it against `cargo install --path Crates/Cli --locked` from a fresh clone before a release. It does not replace `Code/Development/Web/check_Web.sh` (the browser side).
+
+For a standing home to explore by hand, with a project for every state the tool tells apart, and the check that reads the tool against it, see `Code/Development/World/`.

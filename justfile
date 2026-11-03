@@ -110,3 +110,13 @@ msrv:
 parity binary="target/debug/skillmirror":
     cargo build --locked -p skillmirror
     bash Code/Development/Parity/check_Parity.sh {{binary}}
+
+# A shell in a fresh throwaway home with a vault and projects in different states (stage: lab or first-run); see Code/Development/World/README.md.
+world stage="lab":
+    cargo build --locked -p skillmirror
+    SKILLMIRROR_BIN=target/debug/skillmirror bash Code/Development/World/enter_World.sh {{stage}}
+
+# Build that world and check that the skillmirror binary reads every state as it was built to be read.
+world-check binary="target/debug/skillmirror":
+    cargo build --locked -p skillmirror
+    bash Code/Development/World/check_World.sh {{binary}}

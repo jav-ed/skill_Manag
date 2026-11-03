@@ -1,0 +1,15 @@
+# The vault configuration of the sandbox world. __ROOT__ is replaced with the projects folder of the world.
+root: __ROOT__
+mandatory:
+  - doc-start
+  - coding
+  - file-tree-optimization
+targets: [claude]
+# Test fixtures that look like projects are not projects: testdata folders are skipped wherever they are.
+exclude_dirs:
+  - testdata
+profiles:
+  websites:
+    description: Everything for a website
+    groups: [Web_Skills]
+    skills: [coding]
